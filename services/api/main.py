@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 from accessibility import MemoryProfileStore, PostgresProfileStore, router as accessibility_router
 from response_adaptation import router as assistant_accessibility_router
+from assistant_generation import router as generation_router
+from model_orchestration import build_orchestrator_from_env
 
 
 @asynccontextmanager
@@ -13,6 +15,7 @@ async def lifespan(application: FastAPI):
     database_url = os.getenv("DATABASE_URL")
     environment = os.getenv("ORIOM7_ENV", "development").lower()
     pool = None
+    application.state.model_orchestrator = build_orchestrator_from_env()
 
     if database_url:
         try:
@@ -36,6 +39,7 @@ async def lifespan(application: FastAPI):
 app = FastAPI(title="ORIOM7 API", version="1.1.0", lifespan=lifespan)
 app.include_router(accessibility_router)
 app.include_router(assistant_accessibility_router)
+app.include_router(generation_router)
 
 
 class SearchRequest(BaseModel):
