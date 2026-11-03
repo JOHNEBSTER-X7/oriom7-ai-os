@@ -1,4 +1,5 @@
 import {
+  ACCESSIBLE_STARTER_PROFILE,
   DEFAULT_ACCESSIBILITY_PROFILE,
   normalizeAccessibilityProfile,
   resolveAccessibilityProfile,
@@ -12,6 +13,18 @@ export function runAccessibilityProfileContractTests(assert: (condition: boolean
   assert(defaults.interaction.showFocus === true, "visible focus is enabled by default");
   assert(defaults.sensory.disableAutoplay === true, "autoplay is disabled by default");
   assert(defaults.content.preserveCitations === true, "citations cannot be disabled");
+
+  const starter = normalizeAccessibilityProfile(ACCESSIBLE_STARTER_PROFILE);
+  assert(starter.display.textScale > 1, "starter preset increases text size");
+  assert(starter.display.contrast === "high", "starter preset enables high contrast");
+  assert(starter.interaction.largeTargets, "starter preset enables larger controls");
+  assert(starter.reading.speechOutput, "starter preset enables read-aloud preference");
+  assert(starter.reading.plainLanguage, "starter preset enables plain language");
+  assert(starter.sensory.calmPresentation, "starter preset enables Calm Mode");
+  assert(starter.interaction.voiceNavigation, "starter preset offers voice navigation");
+  assert(!starter.interaction.voiceInput, "starter preset does not grant microphone permission");
+  assert(starter.display.readingGuide && starter.reading.highlightSpokenText, "reading assistance is enabled");
+  assert(starter.interaction.saveProgress, "starter preset remembers progress");
 
   const bounded = normalizeAccessibilityProfile({
     display: { textScale: 9, lineHeight: 0.1 },
