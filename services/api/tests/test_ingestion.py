@@ -24,14 +24,14 @@ def test_source_registration_requires_https():
         )
 
 
-def test_source_registration_normalises_origin_and_path():
+def test_source_registration_rejects_path_scoped_origins():
     source = SourceRegistration(
-        base_url="https://Example.org/research/",
+        base_url="https://Example.org/",
         rights_basis="Publisher licence",
         approval_reference="LIC-123",
         approved_by="operator",
     )
-    assert source.base_url == "https://example.org/research"
+    assert source.base_url == "https://example.org"
 
 
 def test_ingestion_routes_require_secret_token(monkeypatch):
@@ -49,3 +49,13 @@ def test_ingestion_routes_require_secret_token(monkeypatch):
     )
     assert response.status_code == 401
     assert response.json()["detail"]["code"] == "ingestion_unauthorised"
+
+
+def test_source_registration_rejects_path_scope():
+    with pytest.raises(ValueError):
+        SourceRegistration(
+            base_url="https://example.org/private",
+            rights_basis="Publisher licence",
+            approval_reference="LIC-123",
+            approved_by="operator",
+        )
