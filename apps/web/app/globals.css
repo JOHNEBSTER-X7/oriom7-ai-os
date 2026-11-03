@@ -64,3 +64,111 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .settings-card[data-reduce-motion="true"] *, .settings-card[data-reduce-motion="true"] *::before, .settings-card[data-reduce-motion="true"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 .settings-card[data-theme="dark"] .setting select, .settings-card[data-theme="dark"] .secondary-button { background: #242424; color: #fff; border-color: #aaa; }
 .settings-card[data-theme="dark"] .muted, .settings-card[data-theme="dark"] .note { color: #d0d0d0; }
+
+
+/* Global adaptive accessibility design-system tokens. */
+.oriom7-accessibility-root {
+  min-height: 100vh;
+  color: var(--oriom7-text, var(--text));
+  background: var(--oriom7-page, var(--page));
+  font-family: var(--oriom7-font-family, system-ui, sans-serif);
+  font-size: var(--oriom7-text-scale, 1rem);
+  font-weight: var(--oriom7-font-weight, 400);
+  line-height: var(--oriom7-line-height, 1.6);
+  letter-spacing: var(--oriom7-letter-spacing, 0);
+  color-scheme: light;
+}
+.oriom7-accessibility-root[data-theme="dark"] {
+  --oriom7-page: #111111;
+  --oriom7-surface: #1d1d1d;
+  --oriom7-text: #f7f7f7;
+  --oriom7-muted: #d0d0d0;
+  --oriom7-border: #777777;
+  color-scheme: dark;
+}
+.oriom7-accessibility-root[data-theme="warm"] {
+  --oriom7-page: #fff8ec;
+  --oriom7-surface: #fffdf8;
+  --oriom7-text: #292117;
+  --oriom7-muted: #594d3d;
+  --oriom7-border: #b8a990;
+}
+@media (prefers-color-scheme: dark) {
+  .oriom7-accessibility-root[data-theme="system"] {
+    --oriom7-page: #111111;
+    --oriom7-surface: #1d1d1d;
+    --oriom7-text: #f7f7f7;
+    --oriom7-muted: #d0d0d0;
+    --oriom7-border: #777777;
+    color-scheme: dark;
+  }
+}
+.oriom7-accessibility-root[data-contrast="high"],
+.oriom7-accessibility-root[data-contrast="more"] {
+  --oriom7-text: #000000;
+  --oriom7-page: #ffffff;
+  --oriom7-surface: #ffffff;
+  --oriom7-muted: #242424;
+  --oriom7-border: #000000;
+}
+.oriom7-accessibility-root[data-theme="dark"][data-contrast="high"],
+.oriom7-accessibility-root[data-theme="dark"][data-contrast="more"] {
+  --oriom7-text: #ffffff;
+  --oriom7-page: #000000;
+  --oriom7-surface: #101010;
+  --oriom7-muted: #eeeeee;
+  --oriom7-border: #ffffff;
+}
+.oriom7-accessibility-root[data-theme="warm"] .settings-card,
+.oriom7-accessibility-root[data-theme="dark"] .settings-card {
+  background: var(--oriom7-surface);
+  color: var(--oriom7-text);
+  border-color: var(--oriom7-border);
+}
+.oriom7-accessibility-root :where(button, input, select, textarea) {
+  font: inherit;
+  letter-spacing: inherit;
+}
+.oriom7-accessibility-root :where(button, input, select, textarea, summary, a) {
+  scroll-margin-block: 1rem;
+}
+.oriom7-accessibility-root[data-large-targets="true"] :where(button, input, select, textarea, summary) {
+  min-height: 52px;
+}
+.oriom7-accessibility-root[data-show-focus="false"] :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.oriom7-accessibility-root[data-show-focus="true"] :focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 2px var(--oriom7-page, #fff);
+}
+.oriom7-accessibility-root[data-reduce-clutter="true"] .section-heading,
+.oriom7-accessibility-root[data-reduce-clutter="true"] .preview {
+  border-color: transparent;
+}
+.oriom7-accessibility-root[data-calm="true"] :where(*) {
+  scroll-behavior: auto !important;
+}
+.oriom7-accessibility-root[data-reduce-motion="true"] *,
+.oriom7-accessibility-root[data-reduce-motion="true"] *::before,
+.oriom7-accessibility-root[data-reduce-motion="true"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.oriom7-accessibility-root .settings-card {
+  font: inherit;
+  background: var(--oriom7-surface, var(--surface));
+  color: var(--oriom7-text, var(--text));
+  border-color: var(--oriom7-border, var(--border));
+}
+.oriom7-accessibility-root .settings-card .muted,
+.oriom7-accessibility-root .settings-card .note {
+  color: var(--oriom7-muted, var(--muted));
+}
+.oriom7-accessibility-root .preview-text {
+  font-size: inherit;
+  line-height: inherit;
+}
