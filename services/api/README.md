@@ -74,3 +74,23 @@ Configure `ORIOM7_INGESTION_TOKEN` as a long random secret in the API secret man
 The initial crawler is deliberately single-page: it does not follow links or redirects, accepts only HTTPS on port 443, checks public DNS resolution and robots.txt, accepts HTML/plain text only, and caps page downloads at 2 MB. It records indexed/unchanged/blocked/failed outcomes. The ingestion token is an operator credential, not a replacement for an enterprise identity and role-management system.
 
 A host registration is an operator attestation. Confirm licence/terms, privacy, copyright, retention and deletion permissions before registering a source. Deploy network-level egress restrictions as an additional SSRF defence, because DNS validation at application level cannot guarantee address pinning across a later HTTP connection.
+
+
+## Distributed crawl workers
+
+Apply `004_distributed_crawl_queue.sql` after migration 003. The API exposes `POST /v1/ingestion/queue`, protected by `X-ORIOM7-INGESTION-TOKEN`; it validates that the exact HTTPS host is registered and approved, then stores a durable queue job without fetching the page in the API process.
+
+Run one or more independent worker processes from `services/api`:
+
+```bash
+python worker.py
+```
+
+Each worker claims jobs using PostgreSQL row locks and `SKIP LOCKED`, records a lease, checks source approval again, enforces per-source request spacing and a rolling 24-hour page quota, checks robots.txt, and indexes the page. Expired worker leases can be reclaimed. Transient failures use bounded exponential retry; policy/content failures are terminal until an operator explicitly requeues the page. Repeated queue requests refresh terminal/completed jobs.
+
+Worker settings:
+- `DATABASE_URL` — required.
+- `ORIOM7_CRAWL_WORKER_ID` — optional worker identifier; defaults to hostname.
+- `ORIOM7_CRAWL_IDLE_SECONDS` — idle polling interval; defaults to 3 seconds.
+
+Run workers as a separately supervised service (for example, a container or process manager), not inside the FastAPI web process. Configure database backups, metrics, queue-age alerts and network egress controls before production use. A worker fleet is not automatically provisioned by this repository change.
