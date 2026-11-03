@@ -163,3 +163,89 @@ async def search(
         ],
         "external_search_configured": bool(service.external_providers),
     }
+
+import hashlib
+import logging
+import os
+from datetime import timezone
+from urllib.parse import urlsplit
+
+import httpx
+
+logger = logging.getLogger("oriom7.search")
+
+
+class ExternalSearchUnavailable(Exception):
+    pass
+
+
+class SerpApiGoogleSearch:
+    """Optional Google web-results adapter using the SerpApi search endpoint.
+
+    Results are transient retrieval candidates. This adapter does not crawl,
+    persist, or claim ownership of third-party page content.
+    """
+
+    name = "serpapi_google"
+
+    def __init__(self, api_key: str, country: str = "gb", timeout_seconds: float = 15.0):
+        self.api_key = api_key
+        self.country = country.lower()
+        self.timeout_seconds = timeout_seconds
+
+    async def search(self, query: str, limit: int, language: str | None = None) -> list[SearchResult]:
+        params = {
+            "engine": "google",
+            "q": query,
+            "api_key": self.api_key,
+            "num": min(limit, 20),
+            "gl": self.country,
+            "output": "json",
+        }
+        if language:
+            params["hl"] = language.split("-")[0].lower()
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                response = await client.get("https://serpapi.com/search.json", params=params)
+            response.raise_for_status()
+            data = response.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("external_search_provider_failed", extra={"provider": self.name})
+            raise ExternalSearchUnavailable(self.name) from exc
+
+        if data.get("error") or data.get("search_metadata", {}).get("status") not in (None, "Success"):
+            logger.warning("external_search_provider_failed", extra={"provider": self.name})
+            raise ExternalSearchUnavailable(self.name)
+
+        fetched_at = datetime.now(timezone.utc)
+        results = []
+        for position, item in enumerate(data.get("organic_results", [])[:limit], start=1):
+            title = item.get("title")
+            url = item.get("link")
+            if not isinstance(title, str) or not title.strip() or not isinstance(url, str):
+                continue
+            parsed = urlsplit(url)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                continue
+            snippet = item.get("snippet") or ""
+            fingerprint = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
+            results.append(SearchResult(
+                source_id=f"serpapi-{fingerprint}",
+                title=title.strip(),
+                canonical_url=url,
+                snippet=snippet[:2000] if isinstance(snippet, str) else "",
+                provider=self.name,
+                source_type="external",
+                fetched_at=fetched_at,
+                published_at=None,
+                language=language,
+                score=1.0 / position,
+            ))
+        return results
+
+
+def build_external_search_providers_from_env() -> list[ExternalSearchProvider]:
+    api_key = os.getenv("SERPAPI_API_KEY")
+    if not api_key:
+        return []
+    return [SerpApiGoogleSearch(api_key, os.getenv("ORIOM7_SEARCH_COUNTRY", "gb"))]
