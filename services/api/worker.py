@@ -133,6 +133,11 @@ class CrawlWorker:
                        WHERE job_id = $1""",
                     job["job_id"], document_id,
                 )
+        if self.embedder is not None:
+            try:
+                await self.embedder.index_document(self.pool, document_id, title + chr(10) + body, digest)
+            except Exception:
+                logger.exception("document_embedding_failed", extra={"document_id": document_id})
 
     async def record_failure(self, job: dict, error: str, status_code: int | None = None):
         now = datetime.now(timezone.utc)
@@ -180,7 +185,7 @@ async def serve():
     if not database_url:
         raise RuntimeError("DATABASE_URL is required for the crawler worker")
     pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
-    worker = CrawlWorker(pool, os.getenv("ORIOM7_CRAWL_WORKER_ID"))
+    worker = CrawlWorker(pool, os.getenv("ORIOM7_CRAWL_WORKER_ID"), build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None)
     idle_seconds = float(os.getenv("ORIOM7_CRAWL_IDLE_SECONDS", "3"))
     try:
         while True:
