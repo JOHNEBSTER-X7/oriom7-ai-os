@@ -149,8 +149,8 @@ async def submit_observations(
                 row = await connection.fetchrow(
                     """INSERT INTO knowledge_assertions
                        (subject_entity_id, predicate, object_entity_id, evidence_document_id,
-                        evidence_excerpt, confidence, extraction_method, submitted_by, status)
-                       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, 'unverified')
+                        evidence_excerpt, confidence, valid_from, valid_to, extraction_method, submitted_by, status)
+                       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, 'unverified')
                        RETURNING assertion_id::text""",
                     subject_id, relation.predicate, object_id, payload.evidence_document_id,
                     relation.evidence_excerpt, relation.confidence,
