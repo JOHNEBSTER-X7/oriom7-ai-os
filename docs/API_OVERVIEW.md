@@ -30,3 +30,12 @@ This endpoint does not generate an AI answer, translate content, call a model pr
 The initial provider adapters use the Responses API contract. Configure provider credentials and explicit model IDs in the deployment secret manager; see [Model Provider Configuration](MODEL_PROVIDER_CONFIGURATION.md). The primary provider is attempted before the configured fallback. Token usage and provider latency are logged without logging prompts; cost estimates are emitted only when token prices are configured.
 
 The first generation slice is non-streaming and text-only. Retrieval grounding, source validation, tool execution, streaming and durable conversation history are not yet connected. Responses explicitly report `grounding.status = not_connected`; the model is instructed not to invent citations.
+
+
+## Hybrid search and grounded assistant
+
+`POST /search` queries the permission-aware PostgreSQL first-party index and can optionally query the configured SerpApi Google adapter. Results expose canonical URLs, snippets, source provenance and retrieval timestamps. A requested provider that is not configured is listed in `unavailable_sources`; the API returns a partial status rather than claiming full federation.
+
+`POST /assistant/responses` now accepts a `grounding` object with `search` and `minimum_sources`. When enabled, the API retrieves evidence before model invocation, supplies numbered source labels, and maps labels in the model output back to retrieved records. Unknown source labels are reported as invalid references. This is reference validation, not semantic proof that a source supports a claim.
+
+See [Hybrid Search and Grounding](HYBRID_SEARCH_AND_GROUNDING.md) for database setup, external provider configuration, API examples and remaining limitations.
