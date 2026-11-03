@@ -148,11 +148,17 @@ async def search(
             "code": "search_index_not_configured",
             "message": "The ORIOM7 search index is not configured.",
         })
-    results = await service.search(
-        payload.query, payload.limit, payload.language,
-        include_owned="oriom7_index" in payload.sources,
-        include_external="external" in payload.sources,
-    )
+    try:
+        results = await service.search(
+            payload.query, payload.limit, payload.language,
+            include_owned="oriom7_index" in payload.sources,
+            include_external="external" in payload.sources,
+        )
+    except ExternalSearchUnavailable:
+        raise HTTPException(status_code=502, detail={
+            "code": "external_search_unavailable",
+            "message": "An explicitly requested external search provider is unavailable.",
+        })
     unavailable_sources = []
     if "external" in payload.sources and not service.external_providers:
         unavailable_sources.append("external")
