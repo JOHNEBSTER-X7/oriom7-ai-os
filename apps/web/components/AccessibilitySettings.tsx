@@ -48,10 +48,13 @@ export default function AccessibilitySettings() {
     }));
   };
 
-  const previewStyle = useMemo(() => ({
-    "--preview-scale": String(profile.display.textScale),
-    "--preview-line": String(profile.display.lineHeight),
-  } as CSSProperties), [profile.display.textScale, profile.display.lineHeight]);
+  const uiStyle = useMemo(() => ({
+    "--ui-text-scale": `${profile.display.textScale}rem`,
+    "--ui-line-height": String(profile.display.lineHeight),
+    "--ui-letter-spacing": `${profile.display.letterSpacing}em`,
+    "--ui-font-family": profile.display.fontFamily === "serif" ? "Georgia, serif" : "system-ui, sans-serif",
+    "--ui-font-weight": profile.display.fontWeight === "bold" ? "700" : profile.display.fontWeight === "medium" ? "550" : "400",
+  } as CSSProperties), [profile.display]);
 
   async function save() {
     setStatus({ message: "Saving settings…", kind: "idle" });
@@ -85,7 +88,16 @@ export default function AccessibilitySettings() {
   }
 
   return (
-    <section className="settings-card" aria-labelledby="settings-title">
+    <section
+      className="settings-card"
+      aria-labelledby="settings-title"
+      style={uiStyle}
+      data-theme={profile.display.theme}
+      data-contrast={profile.display.contrast}
+      data-reduce-motion={profile.sensory.reduceMotion}
+      data-large-targets={profile.interaction.largeTargets}
+      data-reduce-clutter={profile.content.reduceClutter}
+    >
       <div className="section-heading">
         <h2 id="settings-title">Accessibility preferences</h2>
         <p className="muted">Combine any settings. Change them whenever you need.</p>
@@ -151,7 +163,7 @@ export default function AccessibilitySettings() {
           );
         })}
       </div>
-      <div className="preview" style={previewStyle}>
+      <div className="preview">
         <strong>Reading preview</strong>
         <p className="preview-text">ORIOM7 can present information in a way that is easier for you to read. Your settings can be combined and changed at any time.</p>
       </div>
