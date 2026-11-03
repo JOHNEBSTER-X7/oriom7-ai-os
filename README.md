@@ -33,6 +33,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - [Universal Language and Voice Access](docs/UNIVERSAL_LANGUAGE_AND_VOICE_ACCESS.md)
 - [Universal Accessibility and Inclusion](docs/UNIVERSAL_ACCESSIBILITY_AND_INCLUSION.md)
 - [Adaptive Accessibility System](docs/ADAPTIVE_ACCESSIBILITY_SYSTEM.md)
+- [Adaptive Accessibility Design System](docs/ACCESSIBILITY_DESIGN_SYSTEM.md)
 - [Adaptive Accessibility Engine — Technical Design](docs/ADAPTIVE_ACCESSIBILITY_ENGINE.md)
 - [Adaptive Accessibility Engine package](packages/accessibility-engine/README.md)
 - [Technical Specifications](docs/TECHNICAL_SPECIFICATIONS.md)
