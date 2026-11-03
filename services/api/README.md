@@ -105,3 +105,17 @@ When enabled, search combines PostgreSQL lexical results with pgvector cosine si
 The queue worker embeds new/updated pages. To populate the existing eligible corpus, run `python semantic_index.py` from this directory. The backfill sends up to 12,000 characters per document to the configured embedding provider in batches. It only processes indexed, non-deleted documents with a non-empty rights basis and an allowed/not-applicable robots status. Review data-processing terms and provider costs first.
 
 Vectors are document-level, fixed at 1,536 dimensions and do not establish factual support. Passage chunking, claim-to-passage verification and multilingual evaluation benchmarks remain future work. Lexical search remains available when semantic search is disabled.
+
+
+## Evidence-linked knowledge graph
+
+Apply `migrations/006_knowledge_graph.sql` after migrations 001–005. The API provides candidate observation submission, token-protected human review, entity/alias lookup and one-hop graph reads:
+
+- `POST /v1/knowledge/observations`
+- `POST /v1/knowledge/assertions/{assertion_id}/review`
+- `GET /v1/knowledge/entities?q=...`
+- `GET /v1/knowledge/entities/{entity_id}`
+
+Every assertion must reference an eligible indexed evidence document and includes an excerpt, confidence and extraction method. Submitted assertions remain `unverified`; graph reads return accepted assertions only. Set `ORIOM7_GRAPH_REVIEW_TOKEN` in the backend secret manager to enable the review endpoint. Reviewer identity is taken from the authenticated request context. Do not expose this token to the browser.
+
+No automatic model-based extraction, entity disambiguation, contradiction resolution, multi-hop reasoning or graph visualisation is included yet. Reviewers must verify the source context themselves; confidence is not proof of truth. See [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
