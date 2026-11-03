@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";\nimport type { CSSProperties } from "react";
 
 type Profile = {
   version: 1;
@@ -51,7 +51,7 @@ export default function AccessibilitySettings() {
   const previewStyle = useMemo(() => ({
     "--preview-scale": String(profile.display.textScale),
     "--preview-line": String(profile.display.lineHeight),
-  } as React.CSSProperties), [profile.display.textScale, profile.display.lineHeight]);
+  } as CSSProperties), [profile.display.textScale, profile.display.lineHeight]);
 
   async function save() {
     setStatus({ message: "Saving settings…", kind: "idle" });
