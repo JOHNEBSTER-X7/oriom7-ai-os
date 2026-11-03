@@ -7,7 +7,7 @@ The API now has a provider-neutral retrieval contract and two retrieval paths:
 1. **ORIOM7-owned index:** PostgreSQL full-text search over the `search_documents` table, using a weighted generated `tsvector`, GIN index, query ranking and highlighted excerpts.
 2. **External web search:** an optional SerpApi Google organic-results adapter. It normalises result title, canonical URL, snippet, provider, retrieval time and source type into the same internal result model.
 
-The retrieval service deduplicates canonical URLs and retains the highest-scoring candidate. External results are transient; this adapter does not crawl or persist third-party page content.
+The retrieval service applies reciprocal-rank fusion across provider-ranked lists so incomparable provider score scales are not mixed directly, then deduplicates canonical URLs while retaining the strongest fused rank. External results are transient; this adapter does not crawl or persist third-party page content.
 
 ## Database setup
 
@@ -85,7 +85,7 @@ A valid label only proves that the label maps to a retrieved result. It does not
 
 ## Current limitations
 
-- PostgreSQL lexical retrieval only; semantic/vector retrieval and hybrid rank fusion are not yet implemented.
+- PostgreSQL lexical retrieval only; semantic/vector retrieval and semantic reranking are not yet implemented.
 - External provider support currently includes the optional SerpApi Google adapter only.
 - The external adapter returns search snippets, not full page contents.
 - No crawler, ingestion worker, content parser, source approval console or rights-review automation is included.
