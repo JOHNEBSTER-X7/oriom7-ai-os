@@ -51,6 +51,10 @@ def _parse_candidate_payload(text: str) -> dict:
     return value
 
 
+def filter_verbatim_relations(payload: KnowledgeObservationRequest, source_text: str):
+    """Keep only model relations whose evidence excerpt is copied verbatim."""
+    return [relation for relation in payload.relations if relation.evidence_excerpt in source_text]
+
 async def extract_document_candidates(
     pool,
     orchestrator: ModelOrchestrator,
@@ -105,10 +109,7 @@ async def extract_document_candidates(
     except ValidationError as exc:
         raise ExtractionError("model_output_failed_validation") from exc
 
-    eligible_relations = [
-        relation for relation in payload.relations
-        if relation.evidence_excerpt in source_text
-    ]
+    eligible_relations = filter_verbatim_relations(payload, source_text)
     if not eligible_relations:
         return {"status": "no_candidates", "entities": 0, "assertions": 0,
                 "reason": "no_verbatim_evidence_excerpts"}
