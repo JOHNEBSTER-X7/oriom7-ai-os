@@ -713,6 +713,60 @@
           }
         }
       }
+    },
+    "/v1/knowledge/assertions/review-queue": {
+      "get": {
+        "tags": [
+          "knowledge-graph"
+        ],
+        "summary": "List pending graph assertions for authorised human review",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "predicate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unverified assertions with eligible source provenance"
+          },
+          "403": {
+            "description": "Authenticated subject is not an authorised reviewer"
+          },
+          "503": {
+            "description": "Database or reviewer allow-list unavailable"
+          }
+        }
+      }
     }
   },
   "components": {

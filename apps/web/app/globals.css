@@ -235,3 +235,40 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .research-disclaimer { margin-top: 24px; color: var(--muted); font-size: .9rem; }
 @media (max-width: 800px) { .research-results-grid { grid-template-columns: 1fr; } .source-cards { grid-template-columns: 1fr; } }
 @media (max-width: 540px) { .research-shell { width: min(100% - 24px, 1240px); } .workspace-link { font-size: .9rem; } .source-card dl { grid-template-columns: 1fr; } }
+
+
+/* Evidence verification centre */
+.verification-shell { width: min(1120px, calc(100% - 36px)); margin: 0 auto; padding-bottom: 72px; }
+.verification-nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 14px; }
+.verification-nav a { color: var(--accent); font-weight: 700; text-underline-offset: 4px; }
+.verification-guidance, .verification-queue { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: clamp(18px, 3vw, 28px); margin-bottom: 20px; }
+.verification-guidance h2, .verification-queue h2 { margin-bottom: 10px; }
+.verification-guidance li { margin: 7px 0; }
+.verification-guidance p:last-child { margin: 14px 0 0; color: var(--muted); }
+.verification-filter { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-top: 20px; }
+.verification-filter label { flex-basis: 100%; font-weight: 700; }
+.verification-filter input { flex: 1 1 260px; min-width: 0; min-height: 46px; padding: 9px 12px; border: 1px solid #777; border-radius: 8px; background: var(--surface); color: var(--text); }
+.verification-list { display: grid; gap: 18px; }
+.verification-card { min-width: 0; border: 1px solid var(--border); border-radius: 14px; padding: clamp(16px, 3vw, 24px); }
+.verification-card-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; }
+.pending-label { display: inline-flex; border: 1px solid #a66a28; color: #81430e; background: #fff6e8; border-radius: 99px; padding: 4px 10px; font-size: .75rem; font-weight: 800; letter-spacing: .06em; }
+.assertion-statement { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 18px 0; font-size: 1.2rem; }
+.assertion-predicate { color: var(--accent); font-size: .9rem; text-transform: capitalize; }
+.assertion-metadata { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 20px; }
+.assertion-metadata div { min-width: 0; }
+.assertion-metadata dt { color: var(--muted); font-size: .8rem; }
+.assertion-metadata dd { margin: 3px 0 0; overflow-wrap: anywhere; font-weight: 600; }
+.evidence-source { border-top: 1px solid var(--border); padding-top: 18px; }
+.evidence-source h4 { margin: 0; font-size: 1.05rem; }
+.source-open-link { display: inline-flex; align-items: center; text-decoration: none; }
+.evidence-source blockquote { margin: 14px 0; border-left: 4px solid var(--accent); padding: 12px 16px; background: var(--page); overflow-wrap: anywhere; }
+.source-metadata { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.review-confirmation { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+.review-confirmation label { display: flex; align-items: flex-start; gap: 12px; font-weight: 650; }
+.review-confirmation input { width: 22px; height: 22px; min-height: 22px; flex: 0 0 auto; accent-color: var(--accent); }
+.review-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.review-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.danger-button { min-height: 48px; border: 2px solid #9b1c1c; border-radius: 9px; padding: 10px 18px; background: transparent; color: #9b1c1c; font-weight: 750; cursor: pointer; }
+.queue-pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px; padding-top: 22px; }
+@media (max-width: 700px) { .assertion-metadata, .source-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); } .verification-nav { margin-left: 0; } }
+@media (max-width: 460px) { .verification-shell { width: calc(100% - 24px); } .assertion-metadata, .source-metadata { grid-template-columns: 1fr; } .workspace-section-heading { align-items: flex-start; } }

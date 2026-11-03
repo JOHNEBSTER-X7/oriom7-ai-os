@@ -8,6 +8,7 @@ export default function ResearchPage() {
         <header className="site-header">
           <a className="brand" href="/" aria-label="ORIOM7 home">ORIOM7</a>
           <span className="header-caption">Research intelligence</span>
+          <a className="workspace-link" href="/research/review">Evidence review centre</a>
           <a className="workspace-link" href="/">Accessibility settings</a>
         </header>
         <ResearchWorkspace />

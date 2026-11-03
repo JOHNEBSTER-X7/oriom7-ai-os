@@ -7,10 +7,13 @@ function upstreamPath(segments: string[], search: string) {
   if (path === "search") return "/v1/search";
   if (path === "assistant") return "/v1/assistant/responses";
   if (path === "entities") return `/v1/knowledge/entities${search}`;
+  if (path === "review-queue") return `/v1/knowledge/assertions/review-queue${search}`;
   const entity = path.match(/^entities\/([0-9a-f-]{36})$/i);
   if (entity) return `/v1/knowledge/entities/${entity[1]}${search}`;
   const paths = path.match(/^entities\/([0-9a-f-]{36})\/paths$/i);
   if (paths) return `/v1/knowledge/entities/${paths[1]}/paths${search}`;
+  const review = path.match(/^assertions\/([0-9a-f-]{36})\/review$/i);
+  if (review) return `/v1/knowledge/assertions/${review[1]}/review`;
   return null;
 }
 
@@ -28,6 +31,11 @@ async function forward(request: NextRequest, context: RouteContext, method: "GET
   if (authorization) headers.set("authorization", authorization);
   const body = method === "POST" ? await request.text() : undefined;
   if (body !== undefined) headers.set("content-type", "application/json");
+  if (method === "POST" && path.includes("/review")) {
+    const reviewToken = process.env.ORIOM7_GRAPH_REVIEW_TOKEN;
+    if (!reviewToken) return NextResponse.json({ error: "Graph review is not configured on the server." }, { status: 503 });
+    headers.set("X-ORIOM7-GRAPH-REVIEW-TOKEN", reviewToken);
+  }
 
   try {
     const upstream = await fetch(new URL(target, apiOrigin), {
