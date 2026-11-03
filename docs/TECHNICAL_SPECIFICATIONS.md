@@ -142,4 +142,4 @@ The reference package is at `packages/accessibility-engine/` and currently conta
 - JSON Schema contract for profile validation.
 - Framework-neutral contract test cases.
 
-The package is not yet connected to the FastAPI persistence layer or Next.js design system. Integration routes and UI work are tracked in `docs/ADAPTIVE_ACCESSIBILITY_ENGINE.md`.
+The FastAPI endpoints, in-memory development store, PostgreSQL adapter/migration, Next.js settings screen and same-origin proxy routes are now committed. Production authentication middleware, database provisioning, global design-system application and speech/voice adapters remain to be integrated. See `docs/ADAPTIVE_ACCESSIBILITY_ENGINE.md` for exact status and limitations.
