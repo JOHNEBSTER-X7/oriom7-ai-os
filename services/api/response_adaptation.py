@@ -58,11 +58,11 @@ async def assistant_presentation(
     store: ProfileStore = Depends(get_store),
 ) -> dict[str, Any]:
     """Return the user's response-formatting directives without invoking a model."""
-    saved = await store.get(subject) or default_profile()
-    resolved = merge_profile(saved, payload.overrides)
+    stored_profile = await store.get(subject)
+    resolved = merge_profile(stored_profile or default_profile(), payload.overrides)
     return {
         "presentation": build_response_presentation(resolved),
-        "profile_saved": await store.get(subject) is not None,
+        "profile_saved": stored_profile is not None,
         "overrides_persisted": False,
         "status": "ready_for_orchestrator",
     }
