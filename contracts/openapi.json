@@ -81,7 +81,12 @@
                         "oriom7_index",
                         "external"
                       ]
-                    }
+                    },
+                    "default": [
+                      "oriom7_index"
+                    ],
+                    "minItems": 1,
+                    "maxItems": 2
                   },
                   "limit": {
                     "type": "integer",
@@ -90,7 +95,11 @@
                     "default": 10
                   },
                   "language": {
-                    "type": "string"
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 35
                   },
                   "region": {
                     "type": "string"
@@ -115,8 +124,17 @@
           },
           "429": {
             "description": "Rate limit or quota exceeded"
+          },
+          "503": {
+            "description": "No requested search source is configured"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Authenticated search over the permission-aware ORIOM7 first-party PostgreSQL index and optionally configured external search providers. Results include canonical source URLs, retrieval timestamps and provenance. Requested but unconfigured providers are reported as unavailable."
       }
     },
     "/assistant/responses": {
@@ -157,6 +175,7 @@
                   },
                   "grounding": {
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                       "search": {
                         "type": "boolean",
@@ -165,7 +184,8 @@
                       "minimum_sources": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 20
+                        "maximum": 20,
+                        "default": 1
                       }
                     }
                   },
@@ -200,10 +220,10 @@
             "description": "All configured model providers failed"
           },
           "503": {
-            "description": "No model providers are configured"
+            "description": "Model provider or requested retrieval service is not configured or unavailable"
           }
         },
-        "description": "Generate a non-streaming assistant response using configured model providers and the caller's saved accessibility preferences. Primary provider is attempted before fallback. Retrieval grounding and citation verification are not yet connected.",
+        "description": "Generate a non-streaming response using configured model providers, retrieved ORIOM7 evidence and the caller's saved accessibility preferences. The response exposes source references and reports citation-label validation. External retrieval is used only when configured.",
         "security": [
           {
             "bearerAuth": []
