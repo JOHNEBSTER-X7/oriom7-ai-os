@@ -11,7 +11,7 @@ type Status = { message: string; kind: "idle" | "success" | "error" };
 
 export default function AccessibilitySettings() {
   const { profile, setProfile, saveProfile, resetProfile, applyStarterProfile, ready } = useAccessibility();
-  const [status, setStatus] = useState<Status>({ message: "Loading your preferences…", kind: "idle" });
+  const [status, setStatus] = useState<Status>({ message: "Preferences apply immediately. Save to keep them on this device and sync when signed in.", kind: "idle" });
 
   function update(section: keyof AccessibilityProfile, key: string, value: unknown) {
     const currentSection = profile[section] as unknown as Record<string, unknown>;
