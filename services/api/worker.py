@@ -98,6 +98,7 @@ class CrawlWorker:
                        WHERE canonical_url = $1 AND content_hash = $2 AND deleted_at IS NULL""",
                     job["url"], digest,
                 )
+                outcome = "unchanged" if existing else "indexed"
                 if existing:
                     document_id = existing["document_id"]
                     await connection.execute(
@@ -123,8 +124,8 @@ class CrawlWorker:
                 await connection.execute(
                     """INSERT INTO search_ingestion_runs
                        (source_id, requested_url, final_url, outcome, detail, document_id, completed_at)
-                       VALUES ($1, $2, $2, 'indexed', $3, $4::uuid, NOW())""",
-                    job["source_id"], job["url"], content_type, document_id,
+                       VALUES ($1, $2, $2, $3, $4, $5::uuid, NOW())""",
+                    job["source_id"], job["url"], outcome, content_type, document_id,
                 )
                 await connection.execute(
                     """UPDATE search_crawl_jobs
