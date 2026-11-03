@@ -30,7 +30,7 @@ def test_profile_lifecycle_and_user_isolation():
 
     initial = client.get("/v1/accessibility/profile", headers=alice)
     assert initial.status_code == 200
-    assert initial.json()["saved"] is False
+    assert initial.json()["saved"] is False\n    assert initial.json()["profile"]["interaction"]["voiceNavigation"] is False
 
     profile = initial.json()["profile"]
     profile["display"]["textScale"] = 1.6
