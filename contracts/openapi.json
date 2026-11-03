@@ -1,0 +1,133 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ORIOM7 API",
+    "version": "1.0.0",
+    "description": "Initial versioned contract for the ORIOM7 hybrid search and assistant platform."
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Placeholder; replace with the configured deployment URL."
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Service status",
+        "responses": {
+          "200": {
+            "description": "Service is responding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "version": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "operationId": "listModels",
+        "summary": "List models available to the authenticated caller",
+        "responses": {
+          "200": {
+            "description": "Model catalogue"
+          }
+        }
+      }
+    },
+    "/search": {
+      "post": {
+        "operationId": "search",
+        "summary": "Run hybrid search",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": { "type": "string", "minLength": 1 },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["oriom7_index", "external"]
+                    }
+                  },
+                  "limit": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 },
+                  "language": { "type": "string" },
+                  "region": { "type": "string" }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Ranked search results" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthenticated" },
+          "429": { "description": "Rate limit or quota exceeded" }
+        }
+      }
+    },
+    "/assistant/responses": {
+      "post": {
+        "operationId": "createAssistantResponse",
+        "summary": "Create an evidence-aware assistant response",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": { "type": "string", "minLength": 1 },
+                  "conversation_id": { "type": ["string", "null"] },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["chat", "research", "coding", "business", "education"]
+                  },
+                  "stream": { "type": "boolean", "default": true },
+                  "grounding": {
+                    "type": "object",
+                    "properties": {
+                      "search": { "type": "boolean", "default": true },
+                      "minimum_sources": { "type": "integer", "minimum": 0, "maximum": 20 }
+                    }
+                  }
+                },
+                "required": ["input"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Assistant response or event stream" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthenticated" },
+          "429": { "description": "Rate limit or quota exceeded" }
+        }
+      }
+    },
+    "/usage": {
+      "get": {
+        "operationId": "getUsage",
+        "summary": "Get caller usage summary",
+        "responses": {
+          "200": { "description": "Usage summary" }
+        }
+      }
+    }
+  }
+}
