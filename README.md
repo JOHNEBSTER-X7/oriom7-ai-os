@@ -49,3 +49,8 @@ The Adaptive Accessibility Engine now includes a shared TypeScript profile resol
 ORIOM7 does not diagnose or treat medical or mental health conditions. Accessibility settings are user-selected accommodations, not diagnostic labels or inferred health profiles.
 
 Security: never commit credentials, secrets or private customer data. See SECURITY.md.
+
+
+## Hybrid search implementation
+
+The API now includes PostgreSQL lexical retrieval over a rights-basis-filtered first-party index, an optional SerpApi Google search adapter, canonical URL deduplication and evidence-aware assistant prompting with source-label mapping. The index schema is in `services/api/migrations/002_search_index.sql`. A production crawler, controlled ingestion/source-approval workflow, semantic retrieval, external provider expansion and semantic claim-to-source verification remain outstanding. See [Hybrid Search and Grounding](docs/HYBRID_SEARCH_AND_GROUNDING.md).
