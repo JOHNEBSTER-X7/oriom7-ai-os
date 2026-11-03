@@ -1,8 +1,7 @@
 """Authenticated API for durable, user-scoped research-agent jobs and schedules."""
 from __future__ import annotations
-import json, uuid
-from datetime import datetime, timezone
-from typing import Any
+import json
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from accessibility import authenticated_subject
@@ -22,7 +21,11 @@ class AgentRunRequest(BaseModel):
     extract_graph_candidates:bool=False
 
 class ScheduleRequest(AgentRunRequest):
-    interval_minutes:int=Field(default=1440,ge=60,le=43200)
+    interval_minutes: int = Field(default=1440, ge=60, le=43200)
+
+class ScheduleUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool
 
 async def _dependencies(request):
     pool=getattr(request.app.state,"database_pool",None)
@@ -88,12 +91,11 @@ async def list_schedules(request:Request,subject:str=Depends(authenticated_subje
       "next_run_at":r["next_run_at"].isoformat(),"last_run_id":r["last_run_id"]} for r in rows]}
 
 @router.patch("/schedules/{schedule_id}")
-async def update_schedule(schedule_id:uuid.UUID,payload:dict[str,bool],request:Request,subject:str=Depends(authenticated_subject)):
-    if set(payload)!={"enabled"} or not isinstance(payload["enabled"],bool):
-        raise HTTPException(422,detail={"code":"enabled_boolean_required"})
+async def update_schedule(schedule_id: uuid.UUID, payload: ScheduleUpdate, request: Request, subject: str = Depends(authenticated_subject)):
+
     pool=await _dependencies(request)
     async with pool.acquire() as con:
         result=await con.execute("""UPDATE research_agent_schedules SET enabled=$3,updated_at=NOW()
-          WHERE schedule_id=$1 AND owner_subject=$2""",schedule_id,subject,payload["enabled"])
+          WHERE schedule_id=$1 AND owner_subject=$2""",schedule_id,subject,payload.enabled)
     if result.endswith("0"): raise HTTPException(404,detail={"code":"research_schedule_not_found"})
-    return {"schedule_id":str(schedule_id),"enabled":payload["enabled"]}
+    return {"schedule_id":str(schedule_id),"enabled":payload.enabled}
