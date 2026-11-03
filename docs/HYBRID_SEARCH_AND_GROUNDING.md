@@ -21,6 +21,7 @@ psql "$DATABASE_URL" -f services/api/migrations/002_search_index.sql
 The index searches only records where:
 - `index_status = 'indexed'`
 - `rights_basis` is non-empty
+- `robots_status` is `allowed` or `not_applicable`
 - `deleted_at IS NULL`
 
 This is a query-time eligibility filter, not a substitute for a documented source approval process. A source must be reviewed for terms, rights, privacy, retention and deletion obligations before indexing.
