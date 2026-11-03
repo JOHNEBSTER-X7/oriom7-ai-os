@@ -37,7 +37,7 @@ pip install -r requirements-dev.txt
 PYTHONPATH=. pytest -q
 ```
 
-Apply migrations `001_accessibility_profiles.sql`, `002_search_index.sql` and `003_search_ingestion.sql` in order before using persistent search and ingestion. Apply migrations `001_accessibility_profiles.sql`, `002_search_index.sql` and `003_search_ingestion.sql` in order before using persistent search and ingestion. Search now uses the PostgreSQL lexical index and optional external search adapters; see [Hybrid Search and Grounding](../../docs/HYBRID_SEARCH_AND_GROUNDING.md). A controlled single-page ingestion endpoint is now available for operator-approved HTTPS hosts. It checks robots.txt, blocks redirects and non-public DNS targets, caps downloaded content, extracts text, records ingestion outcomes and indexes content only with the approved rights basis. Recursive crawling, queue-backed workers and scheduled refresh remain outstanding.
+Apply migrations `001_accessibility_profiles.sql` through `004_distributed_crawl_queue.sql` in order before using persistent search, ingestion and queued workers. Search now uses the PostgreSQL lexical index and optional external search adapters; see [Hybrid Search and Grounding](../../docs/HYBRID_SEARCH_AND_GROUNDING.md). A controlled single-page ingestion endpoint is now available for operator-approved HTTPS hosts. It checks robots.txt, blocks redirects and non-public DNS targets, caps downloaded content, extracts text, records ingestion outcomes and indexes content only with the approved rights basis. Recursive crawling, queue-backed workers and scheduled refresh remain outstanding.
 
 
 ## Model providers and assistant generation
@@ -94,3 +94,14 @@ Worker settings:
 - `ORIOM7_CRAWL_IDLE_SECONDS` — idle polling interval; defaults to 3 seconds.
 
 Run workers as a separately supervised service (for example, a container or process manager), not inside the FastAPI web process. Configure database backups, metrics, queue-age alerts and network egress controls before production use. A worker fleet is not automatically provisioned by this repository change.
+
+
+## Multilingual semantic search
+
+Semantic retrieval is optional. The PostgreSQL target must support pgvector; apply `migrations/005_semantic_search.sql` after migrations 001–004. Set `ORIOM7_SEMANTIC_SEARCH_ENABLED=true` and configure `ORIOM7_EMBEDDING_API_KEY`, `ORIOM7_EMBEDDING_BASE_URL` and `ORIOM7_EMBEDDING_MODEL` in the API and worker secret managers. Defaults are the OpenAI embeddings endpoint and `text-embedding-3-small` (1,536 dimensions). Never expose embedding credentials to the web client.
+
+When enabled, search combines PostgreSQL lexical results with pgvector cosine similarity using reciprocal-rank fusion. Semantic retrieval is cross-language by default; set `ORIOM7_SEMANTIC_LANGUAGE_FILTER=true` to constrain results to the requested language. This depends on embedding-model quality and must be evaluated per language before advertising coverage.
+
+The queue worker embeds new/updated pages. To populate the existing eligible corpus, run `python semantic_index.py` from this directory. The backfill sends up to 12,000 characters per document to the configured embedding provider in batches. It only processes indexed, non-deleted documents with a non-empty rights basis and an allowed/not-applicable robots status. Review data-processing terms and provider costs first.
+
+Vectors are document-level, fixed at 1,536 dimensions and do not establish factual support. Passage chunking, claim-to-passage verification and multilingual evaluation benchmarks remain future work. Lexical search remains available when semantic search is disabled.
