@@ -120,3 +120,15 @@ See `UNIVERSAL_ACCESSIBILITY_AND_INCLUSION.md` for the full product requirements
 - Dependency, secret and static-analysis scans.
 - Privacy and tenant-isolation tests.
 - Keyboard, screen-reader and automated accessibility checks.
+
+## 10. Adaptive accessibility and personalisation
+
+- Provide optional user-selected functional preferences; do not require diagnostic disclosure.
+- Support combinations of text scaling, contrast, typography/spacing, screen-reader/speech, voice input, reduced motion, information density, larger targets and session continuity.
+- Persist preferences only with user consent; allow reset, export and deletion.
+- Never infer diagnoses, emotional states or health conditions from search queries, voice, reading speed or interaction patterns.
+- Ensure simplified content retains caveats, warnings, uncertainty and source references.
+- Essential controls must work without fine motor gestures and have keyboard/switch-compatible alternatives.
+- Avoid forced audio, autoplay, flashing, strobing and uncontrolled motion.
+
+Full product requirements: `ADAPTIVE_ACCESSIBILITY_SYSTEM.md`.
