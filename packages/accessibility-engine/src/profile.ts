@@ -33,6 +33,7 @@ export interface AccessibilityProfile {
   };
   interaction: {
     voiceInput: boolean;
+    voiceNavigation: boolean;
     largeTargets: boolean;
     keyboardFirst: boolean;
     showFocus: boolean;
@@ -74,6 +75,7 @@ export const DEFAULT_ACCESSIBILITY_PROFILE: AccessibilityProfile = {
   },
   interaction: {
     voiceInput: false,
+    voiceNavigation: false,
     largeTargets: false,
     keyboardFirst: false,
     showFocus: true,
@@ -91,6 +93,54 @@ export const DEFAULT_ACCESSIBILITY_PROFILE: AccessibilityProfile = {
     disableAutoplay: true,
     muteNonessentialAudio: false,
     calmPresentation: false,
+  },
+};
+
+/**
+ * Optional starter preset matching the requested ORIOM7 accessibility set.
+ * It is applied only when the user chooses it; it is not the global default.
+ * Voice navigation is a saved preference, not microphone consent. The
+ * application must request capture permission separately before listening.
+ */
+export const ACCESSIBLE_STARTER_PROFILE: AccessibilityProfile = {
+  version: 1,
+  display: {
+    textScale: 1.25,
+    fontFamily: "system",
+    fontWeight: "medium",
+    lineHeight: 1.7,
+    letterSpacing: 0.02,
+    contrast: "high",
+    theme: "system",
+    readingGuide: true,
+  },
+  reading: {
+    speechOutput: true,
+    speechRate: 1,
+    highlightSpokenText: true,
+    plainLanguage: true,
+    detailLevel: "balanced",
+  },
+  interaction: {
+    voiceInput: false,
+    voiceNavigation: true,
+    largeTargets: true,
+    keyboardFirst: false,
+    showFocus: true,
+    confirmDestructiveActions: true,
+    saveProgress: true,
+  },
+  content: {
+    reduceClutter: true,
+    stepByStep: true,
+    showShortAnswerFirst: true,
+    preserveCitations: true,
+  },
+  sensory: {
+    reduceMotion: true,
+    disableAutoplay: true,
+    muteNonessentialAudio: false,
+    calmPresentation: true,
   },
 };
 
@@ -153,6 +203,7 @@ export function normalizeAccessibilityProfile(input: unknown): AccessibilityProf
     },
     interaction: {
       voiceInput: bool(i.voiceInput, defaults.interaction.voiceInput),
+      voiceNavigation: bool(i.voiceNavigation, defaults.interaction.voiceNavigation),
       largeTargets: bool(i.largeTargets, defaults.interaction.largeTargets),
       keyboardFirst: bool(i.keyboardFirst, defaults.interaction.keyboardFirst),
       showFocus: bool(i.showFocus, defaults.interaction.showFocus),
