@@ -253,6 +253,78 @@ async def get_entity_graph(
     }
 
 
+@router.get("/assertions/review-queue")
+async def list_assertion_review_queue(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=100000),
+    predicate: str | None = Query(default=None, min_length=2, max_length=80),
+    subject: str = Depends(authenticated_subject),
+):
+    """List pending assertions with complete source provenance for human review."""
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
+    async with pool.acquire() as connection:
+        rows = await connection.fetch(
+            """SELECT a.assertion_id::text, a.predicate, a.evidence_excerpt, a.confidence,
+                      a.extraction_method, a.submitted_by, a.created_at, a.valid_from, a.valid_to,
+                      s.entity_id::text AS subject_id, s.entity_type AS subject_type,
+                      s.canonical_name AS subject_name,
+                      o.entity_id::text AS object_id, o.entity_type AS object_type,
+                      o.canonical_name AS object_name,
+                      d.document_id::text AS document_id, d.title AS source_title,
+                      d.canonical_url AS source_url, d.provider AS source_provider,
+                      d.language AS source_language, d.published_at, d.fetched_at,
+                      d.rights_basis, d.robots_status
+               FROM knowledge_assertions a
+               JOIN knowledge_entities s ON s.entity_id=a.subject_entity_id
+               JOIN knowledge_entities o ON o.entity_id=a.object_entity_id
+               JOIN search_documents d ON d.document_id=a.evidence_document_id
+               WHERE a.status='unverified'
+                 AND d.deleted_at IS NULL AND d.index_status='indexed'
+                 AND d.rights_basis IS NOT NULL AND btrim(d.rights_basis)<>''
+                 AND d.robots_status IN ('allowed','not_applicable')
+                 AND ($1::text IS NULL OR a.predicate=$1)
+               ORDER BY a.created_at ASC, a.assertion_id
+               LIMIT $2 OFFSET $3""",
+            predicate, limit, offset,
+        )
+        total = await connection.fetchval(
+            """SELECT count(*) FROM knowledge_assertions a
+               JOIN search_documents d ON d.document_id=a.evidence_document_id
+               WHERE a.status='unverified'
+                 AND d.deleted_at IS NULL AND d.index_status='indexed'
+                 AND d.rights_basis IS NOT NULL AND btrim(d.rights_basis)<>''
+                 AND d.robots_status IN ('allowed','not_applicable')
+                 AND ($1::text IS NULL OR a.predicate=$1)""",
+            predicate,
+        )
+    return {
+        "items": [{
+            "assertion_id": row["assertion_id"],
+            "subject": {"id": row["subject_id"], "type": row["subject_type"], "name": row["subject_name"]},
+            "predicate": row["predicate"],
+            "object": {"id": row["object_id"], "type": row["object_type"], "name": row["object_name"]},
+            "evidence": {
+                "document_id": row["document_id"], "excerpt": row["evidence_excerpt"],
+                "title": row["source_title"], "url": row["source_url"],
+                "provider": row["source_provider"], "language": row["source_language"],
+                "published_at": row["published_at"].isoformat() if row["published_at"] else None,
+                "retrieved_at": row["fetched_at"].isoformat(),
+                "rights_basis": row["rights_basis"], "robots_status": row["robots_status"],
+            },
+            "confidence": row["confidence"], "extraction_method": row["extraction_method"],
+            "submitted_by": row["submitted_by"], "created_at": row["created_at"].isoformat(),
+            "valid_from": row["valid_from"].isoformat() if row["valid_from"] else None,
+            "valid_to": row["valid_to"].isoformat() if row["valid_to"] else None,
+            "status": "unverified",
+        } for row in rows],
+        "total": total, "limit": limit, "offset": offset,
+        "note": "Queue contains only unverified assertions with currently eligible source documents. A reviewer must assess source context before deciding.",
+    }
+
+
 class AssertionReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     decision: str = Field(pattern="^(accepted|rejected)$")
