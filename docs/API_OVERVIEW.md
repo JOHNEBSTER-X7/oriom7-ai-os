@@ -81,14 +81,6 @@ The Next.js interface is available at `/research/review`; its same-origin proxy 
 
 ## Autonomous research agents
 
-- `POST /v1/research/agents/runs` starts a bounded research plan-and-retrieve run.
-- `GET /v1/research/agents/runs` lists the authenticated user's run history.
-- `GET /v1/research/agents/runs/{run_id}` retrieves one owned run.
-
-Apply migration 009. The first implementation runs synchronously in the request and is not a scheduled or durable background agent. See [Autonomous Research Agents](AUTONOMOUS_RESEARCH_AGENTS.md).
-
-## Autonomous research agents
-
 - `POST /v1/research/agents/runs` enqueues a durable run (202).
 - `GET /v1/research/agents/runs` lists the authenticated user's run history.
 - `GET /v1/research/agents/runs/{run_id}` retrieves status and result.
