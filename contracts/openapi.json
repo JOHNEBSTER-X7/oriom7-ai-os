@@ -281,6 +281,299 @@
           }
         }
       }
+    },
+    "/knowledge/entities/{entity_id}/resolution-candidates": {
+      "get": {
+        "operationId": "suggestEntityResolutionCandidates",
+        "summary": "Suggest possible duplicate entities",
+        "description": "Similarity-ranked suggestions only; no automatic merging.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidate identities for human review"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Entity not found"
+          }
+        }
+      }
+    },
+    "/knowledge/assertions/potential-conflicts": {
+      "get": {
+        "operationId": "listPotentialAssertionConflicts",
+        "summary": "Find potentially inconsistent accepted claims",
+        "description": "Caller must confirm predicate is single-valued. Results are potential inconsistencies, not proven contradictions.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "predicate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "single_valued",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Potential inconsistencies with source evidence"
+          },
+          "400": {
+            "description": "Single-valued predicate confirmation required"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/knowledge/entities/{entity_id}/paths": {
+      "get": {
+        "operationId": "getBoundedKnowledgePaths",
+        "summary": "Traverse bounded accepted knowledge paths",
+        "description": "Returns evidence-linked paths of up to three edges; does not establish causation or transitive truth.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "max_depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3,
+              "default": 2
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence-linked graph paths"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Entity not found"
+          }
+        }
+      }
+    },
+    "/knowledge/documents/{document_id}/extract": {
+      "post": {
+        "operationId": "extractKnowledgeCandidates",
+        "summary": "Extract graph candidates from an indexed document",
+        "description": "Model proposals require verbatim evidence excerpts and remain unverified pending human review.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Extraction completed or no candidates found"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Document is not eligible"
+          },
+          "502": {
+            "description": "Model extraction failed"
+          },
+          "503": {
+            "description": "Model provider or database unavailable"
+          }
+        }
+      }
+    },
+    "/knowledge/entities/{entity_id}": {
+      "get": {
+        "operationId": "getKnowledgeEntityNeighbourhood",
+        "summary": "Read accepted one-hop graph relationships",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entity and evidence-backed accepted relationships"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Entity not found"
+          }
+        }
+      }
+    },
+    "/knowledge/entities": {
+      "get": {
+        "operationId": "findKnowledgeEntities",
+        "summary": "Find canonical graph entities and aliases",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching entities"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
     }
   },
   "components": {
