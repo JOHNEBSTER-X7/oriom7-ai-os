@@ -6,6 +6,7 @@ from knowledge_graph import (
     GraphRelationInput,
     KnowledgeObservationRequest,
     normalise_name,
+    require_graph_reviewer,
 )
 
 
@@ -55,3 +56,24 @@ def test_graph_entity_aliases_are_normalised_and_deduplicated():
         aliases=["ACME", " ACME ", "Acme Energy Group"],
     )
     assert entity.aliases == ["ACME", "Acme Energy Group"]
+
+
+def test_graph_reviewer_allow_list_is_required(monkeypatch):
+    from fastapi import HTTPException
+    monkeypatch.delenv("ORIOM7_GRAPH_REVIEWER_SUBJECTS", raising=False)
+    with pytest.raises(HTTPException) as error:
+        require_graph_reviewer("reviewer-1")
+    assert error.value.status_code == 503
+
+
+def test_graph_reviewer_allow_list_denies_unapproved_subject(monkeypatch):
+    from fastapi import HTTPException
+    monkeypatch.setenv("ORIOM7_GRAPH_REVIEWER_SUBJECTS", "reviewer-1, reviewer-2")
+    with pytest.raises(HTTPException) as error:
+        require_graph_reviewer("ordinary-user")
+    assert error.value.status_code == 403
+
+
+def test_graph_reviewer_allow_list_accepts_authorised_subject(monkeypatch):
+    monkeypatch.setenv("ORIOM7_GRAPH_REVIEWER_SUBJECTS", "reviewer-1, reviewer-2")
+    require_graph_reviewer("reviewer-2")
