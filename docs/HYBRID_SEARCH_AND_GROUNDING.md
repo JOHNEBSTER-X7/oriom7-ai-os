@@ -19,6 +19,8 @@ psql "$DATABASE_URL" -f services/api/migrations/002_search_index.sql
 psql "$DATABASE_URL" -f services/api/migrations/003_search_ingestion.sql
 psql "$DATABASE_URL" -f services/api/migrations/004_distributed_crawl_queue.sql
 psql "$DATABASE_URL" -f services/api/migrations/005_semantic_search.sql
+psql "$DATABASE_URL" -f services/api/migrations/006_knowledge_graph.sql
+psql "$DATABASE_URL" -f services/api/migrations/007_knowledge_assertion_dedup.sql
 ```
 
 The index searches only records where:
@@ -194,3 +196,12 @@ The backfill selects only eligible, non-deleted documents with an explicit right
 - This is document-level retrieval, not passage-level chunking. Long documents are embedded using the first 12,000 characters; passage chunking and citation-to-passage grounding remain future work.
 - A vector similarity score measures embedding proximity, not factual correctness or source entailment.
 - Search quality must be evaluated on representative multilingual query/document pairs, including dialects, transliteration, mixed-language queries and low-resource languages.
+
+
+## Knowledge graph candidate extraction
+
+The evidence-linked knowledge graph now has an optional model-assisted extraction path. See [Knowledge Graph Foundation](KNOWLEDGE_GRAPH_FOUNDATION.md). The authenticated `POST /v1/knowledge/documents/{document_id}/extract` endpoint asks a configured model to propose structured entities and relationships from an eligible indexed document. The application validates the JSON, checks relation endpoints and requires every evidence excerpt to be an exact substring of the supplied source text. Repeated assertions are deduplicated by migration 007.
+
+All extracted relationships remain `unverified` until the separately protected human review endpoint accepts them. The model never writes accepted facts. The crawler worker can invoke extraction after indexing when `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true`; this is disabled by default and requires configured model credentials and an explicit model ID. Extraction errors do not roll back a successfully indexed page.
+
+The model receives up to 12,000 characters of source text. Review provider data processing, retention, residency and cost before enabling this on licensed or sensitive material. No bulk extraction scheduler, automatic entity disambiguation, contradiction resolution or multi-hop reasoning is included yet.
