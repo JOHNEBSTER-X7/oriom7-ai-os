@@ -63,3 +63,6 @@ The search API now supports optional pgvector semantic retrieval alongside Postg
 ## Knowledge graph foundation
 
 The API now includes a provenance-aware graph schema and endpoints for candidate entity/relation submission, token-protected human review, entity/alias lookup and accepted one-hop relationship reads. Candidate assertions remain hidden from graph reads until reviewed and accepted against eligible indexed evidence. This is a foundation, not yet an automated knowledge graph extraction or reasoning system. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
+
+
+The graph foundation now includes an optional model-assisted extraction endpoint and worker hook. Extracted relationships are retained only when their evidence excerpt is an exact substring of the indexed source, and they remain unverified until human review. Enable worker-side extraction only after configuring model credentials, reviewing provider data-processing terms and setting `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true`. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).

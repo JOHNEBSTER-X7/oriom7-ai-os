@@ -37,7 +37,7 @@ pip install -r requirements-dev.txt
 PYTHONPATH=. pytest -q
 ```
 
-Apply migrations `001_accessibility_profiles.sql` through `004_distributed_crawl_queue.sql` in order before using persistent search, ingestion and queued workers. Search now uses the PostgreSQL lexical index and optional external search adapters; see [Hybrid Search and Grounding](../../docs/HYBRID_SEARCH_AND_GROUNDING.md). A controlled single-page ingestion endpoint is now available for operator-approved HTTPS hosts. It checks robots.txt, blocks redirects and non-public DNS targets, caps downloaded content, extracts text, records ingestion outcomes and indexes content only with the approved rights basis. Recursive crawling, queue-backed workers and scheduled refresh remain outstanding.
+Apply migrations 001–007 in numerical order before using all persistent search, semantic retrieval, queued ingestion and knowledge graph features. See [Hybrid Search and Grounding](../../docs/HYBRID_SEARCH_AND_GROUNDING.md) and [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md). Controlled single-page ingestion and a PostgreSQL-backed queue worker are implemented; recursive link discovery and scheduled URL discovery are not.
 
 
 ## Model providers and assistant generation
@@ -118,4 +118,4 @@ Apply `migrations/006_knowledge_graph.sql` after migrations 001–005. The API p
 
 Every assertion must reference an eligible indexed evidence document and includes an excerpt, confidence and extraction method. Submitted assertions remain `unverified`; graph reads return accepted assertions only. Set `ORIOM7_GRAPH_REVIEW_TOKEN` in the backend secret manager to enable the review endpoint. Reviewer identity is taken from the authenticated request context. Do not expose this token to the browser.
 
-No automatic model-based extraction, entity disambiguation, contradiction resolution, multi-hop reasoning or graph visualisation is included yet. Reviewers must verify the source context themselves; confidence is not proof of truth. See [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
+The authenticated `POST /v1/knowledge/documents/{document_id}/extract` endpoint uses a configured model to propose structured entities and relations. It validates schema and endpoint references, requires each excerpt to match the indexed source text verbatim, and persists only `unverified` assertions. The queue worker can run this after indexing when `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true`; it is disabled by default. Configure model credentials and an explicit model ID before enabling it. Repeated candidates are deduplicated by migration 007. This is not automated fact verification: reviewers must verify context, negation, dates and source meaning. Entity disambiguation, contradiction resolution, multi-hop reasoning, bulk extraction scheduling and graph visualisation remain outstanding. See [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
