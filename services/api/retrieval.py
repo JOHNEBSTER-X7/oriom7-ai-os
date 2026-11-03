@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Protocol
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from accessibility import authenticated_subject
 
@@ -59,7 +59,7 @@ class PostgresLexicalIndex:
             FROM search_documents
             WHERE deleted_at IS NULL
               AND index_status = 'indexed'
-              AND rights_basis IS NOT NULL
+              AND rights_basis IS NOT NULL AND btrim(rights_basis) <> ''
               AND search_vector @@ websearch_to_tsquery('simple', $1)
               AND ($3::text IS NULL OR language = $3)
             ORDER BY score DESC, fetched_at DESC
@@ -111,12 +111,13 @@ class SearchRequest(BaseModel):
     language: str | None = Field(default=None, max_length=35)
     sources: list[str] = Field(default_factory=lambda: ["oriom7_index"], max_length=2)
 
+    @field_validator("sources")
     @classmethod
     def validate_sources(cls, value):
         allowed = {"oriom7_index", "external"}
         if not value or any(source not in allowed for source in value):
             raise ValueError("sources must contain oriom7_index and/or external")
-        return value
+        return list(dict.fromkeys(value))
 
 
 @router.post("/search")
