@@ -1,4 +1,5 @@
 import ResearchWorkspace from "../../components/ResearchWorkspace";
+import AutonomousResearchPanel from "../../components/AutonomousResearchPanel";
 
 export default function ResearchPage() {
   return (
@@ -11,6 +12,7 @@ export default function ResearchPage() {
           <a className="workspace-link" href="/research/review">Evidence review centre</a>
           <a className="workspace-link" href="/">Accessibility settings</a>
         </header>
+        <AutonomousResearchPanel />
         <ResearchWorkspace />
       </main>
     </>

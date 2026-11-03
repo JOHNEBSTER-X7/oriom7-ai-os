@@ -78,3 +78,8 @@ The Next.js app now includes a dedicated `/research` workspace for hybrid source
 ## Evidence verification centre
 
 The `/research/review` workspace lets explicitly authorised human reviewers inspect pending graph assertions, open their source, and accept or reject claims. The API restricts access to an explicit authenticated-subject allow-list and a server-held review token. See [Evidence Verification Centre](docs/EVIDENCE_VERIFICATION_CENTRE.md).
+
+
+## Autonomous research agents
+
+The first supervised research agent can plan focused sub-questions, search configured ORIOM7 sources, synthesise cited findings, persist run history and optionally submit evidence-checked graph candidates for human review. It never automatically accepts graph assertions. See [Autonomous Research Agents](docs/AUTONOMOUS_RESEARCH_AGENTS.md).

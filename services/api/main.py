@@ -11,6 +11,7 @@ from retrieval import (PostgresLexicalIndex, RetrievalService, build_external_se
 from ingestion import router as ingestion_router
 from semantic_index import PostgresVectorIndex, build_embedding_provider_from_env
 from knowledge_graph import router as knowledge_graph_router
+from research_agents import router as research_agents_router
 
 
 @asynccontextmanager
@@ -56,6 +57,7 @@ app.include_router(model_catalog_router)
 app.include_router(search_router)
 app.include_router(ingestion_router)
 app.include_router(knowledge_graph_router)
+app.include_router(research_agents_router)
 
 
 @app.get("/v1/status", tags=["system"])

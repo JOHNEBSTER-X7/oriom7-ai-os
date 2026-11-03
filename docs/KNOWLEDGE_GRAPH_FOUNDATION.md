@@ -194,7 +194,7 @@ Paths are navigational connections, not proof of causation or transitive truth. 
 
 ### Migration order
 
-Apply migrations 001 through 008 in numerical order. Migration 008 is additive and leaves existing assertion validity dates null.
+Apply migrations 001 through 009 in numerical order. Migration 008 is additive and leaves existing assertion validity dates null.
 
 
 ## Human review interface
