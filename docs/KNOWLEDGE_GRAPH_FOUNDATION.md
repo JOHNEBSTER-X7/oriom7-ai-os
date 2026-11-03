@@ -84,8 +84,11 @@ Returns only accepted relationships, with source document IDs, evidence excerpts
 
 ## Current boundaries
 
-- No automatic LLM entity/relation extraction is triggered by search or ingestion yet.
-- No entity disambiguation, entity merging, temporal knowledge, contradiction resolution or multi-hop reasoning.
+- Model-assisted extraction is optional and runs only when explicitly invoked or enabled in the crawler worker.
+- Entity matching produces similarity suggestions only; no automatic entity merge or canonical identity rewrite.
+- Temporal validity is optional and depends on explicit dates in source evidence.
+- Conflict triage is limited to caller-designated single-valued predicates and does not resolve contradictions.
+- Multi-hop traversal is bounded to three edges and does not imply causation or transitive truth.
 - No graph visualisation or public graph export.
 - No bulk review console or fine-grained reviewer role integration.
 - Only one-hop accepted relationships are returned.
@@ -94,7 +97,7 @@ Returns only accepted relationships, with source document IDs, evidence excerpts
 
 ## Deployment
 
-Apply migrations 001 through 006 in order. Set `ORIOM7_GRAPH_REVIEW_TOKEN` only in the API secret manager. Do not put it in frontend configuration. Before production, integrate reviewer roles, audit monitoring, rate limits and source-deletion propagation tests.
+Apply migrations 001 through 008 in order. Set `ORIOM7_GRAPH_REVIEW_TOKEN` only in the API secret manager. Do not put it in frontend configuration. Before production, integrate reviewer roles, audit monitoring, rate limits and source-deletion propagation tests.
 
 ## Model-assisted candidate extraction
 
