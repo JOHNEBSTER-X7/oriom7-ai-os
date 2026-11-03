@@ -8,6 +8,7 @@ from accessibility import MemoryProfileStore, PostgresProfileStore, router as ac
 from response_adaptation import router as assistant_accessibility_router
 from assistant_generation import router as generation_router, catalog_router as model_catalog_router
 from model_orchestration import build_orchestrator_from_env
+from retrieval import PostgresLexicalIndex, RetrievalService, router as search_router
 
 
 @asynccontextmanager
@@ -24,10 +25,12 @@ async def lifespan(application: FastAPI):
             raise RuntimeError("Install asyncpg to use DATABASE_URL-backed profile storage.") from exc
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
         application.state.accessibility_profile_store = PostgresProfileStore(pool)
+        application.state.retrieval_service = RetrievalService(PostgresLexicalIndex(pool))
     else:
         if environment == "production":
             raise RuntimeError("DATABASE_URL is required in production; refusing ephemeral profile storage.")
         application.state.accessibility_profile_store = MemoryProfileStore()
+        application.state.retrieval_service = None
 
     try:
         yield
@@ -41,27 +44,7 @@ app.include_router(accessibility_router)
 app.include_router(assistant_accessibility_router)
 app.include_router(generation_router)
 app.include_router(model_catalog_router)
+app.include_router(search_router)
 
-
-class SearchRequest(BaseModel):
-    query: str = Field(min_length=1, max_length=2000)
-    limit: int = Field(default=10, ge=1, le=50)
-
-
-@app.get("/v1/status")
-async def status() -> dict[str, str]:
-    return {"status": "ok", "version": app.version}
-
-
-@app.post("/v1/search")
-async def search(request: SearchRequest) -> dict:
-    # Explicit placeholder: replace with the hybrid retrieval planner.
-    # Never present placeholder data as real search results.
-    return {
-        "request_id": "development-placeholder",
-        "query": request.query,
-        "results": [],
-        "status": "not_implemented",
-    }
 
 # Model orchestration router is registered in the service startup module.
