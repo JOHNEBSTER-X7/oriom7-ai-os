@@ -12,6 +12,7 @@ from accessibility import ProfileStore, authenticated_subject, default_profile, 
 from model_orchestration import ModelOrchestrator, ProviderUnavailable
 from response_adaptation import build_response_presentation
 from retrieval import RetrievalService
+from graph_research import format_graph_context, retrieve_graph_context
 
 router = APIRouter(prefix="/v1/assistant", tags=["assistant"])
 
@@ -67,6 +68,8 @@ async def create_response(
     profile = await store.get(subject) or default_profile()
     presentation = build_response_presentation(profile)
     evidence = []
+    graph_evidence = []
+    graph_context = {"entities": [], "assertions": [], "potential_inconsistencies": []}
     retrieval_status = "not_requested"
     if payload.grounding.search:
         retrieval: RetrievalService | None = getattr(request.app.state, "retrieval_service", None)
@@ -87,6 +90,22 @@ async def create_response(
                 "code": "retrieval_unavailable",
                 "message": "The ORIOM7 search index could not complete this request.",
             })
+
+    if payload.grounding.search:
+        graph_pool = getattr(request.app.state, "database_pool", None)
+        if graph_pool is not None:
+            try:
+                graph_context = await retrieve_graph_context(graph_pool, payload.input)
+                graph_block, graph_evidence = format_graph_context(graph_context)
+            except Exception:
+                raise HTTPException(status_code=503, detail={
+                    "code": "knowledge_graph_unavailable",
+                    "message": "The ORIOM7 knowledge graph could not complete this request.",
+                })
+        else:
+            graph_block = ""
+    else:
+        graph_block = ""
 
     evidence_block = ""
     if evidence:
@@ -111,7 +130,9 @@ async def create_response(
         instructions += (
             " Use only the supplied evidence for claims presented as search-supported. "
             "Cite supporting excerpts using [S1], [S2] labels exactly. "
-            "If evidence is insufficient or conflicting, say so explicitly."
+            "If evidence is insufficient or conflicting, say so explicitly. "
+            "Graph relationships are evidence-linked assertions, not proof of causation or transitive truth. "
+            "Do not infer an entity identity from name similarity alone. Distinguish source statements from graph-derived connections."
         )
     try:
         result, fallback_used = await orchestrator.generate(
@@ -142,6 +163,8 @@ async def create_response(
         grounding_status = "insufficient_sources"
     else:
         grounding_status = "grounded"
+    invalid_graph_citations = [f"G{number}" for number in graph_cited_numbers if number < 1 or number > len(graph_evidence)]
+    valid_graph_citations = [graph_evidence[number - 1] for number in graph_cited_numbers if 1 <= number <= len(graph_evidence)]
     citation_status = (
         "invalid_references" if invalid_citations
         else "no_citations" if evidence and not cited_numbers
@@ -175,6 +198,15 @@ async def create_response(
                 "invalid_references": invalid_citations,
             },
             "minimum_sources": payload.grounding.minimum_sources,
+            "knowledge_graph": {
+                "status": "retrieved" if graph_context.get("assertions") else "no_matching_accepted_assertions",
+                "matched_entities": graph_context.get("entities", []),
+                "assertion_count": len(graph_context.get("assertions", [])),
+                "potential_inconsistencies": graph_context.get("potential_inconsistencies", []),
+                "interpretation": graph_context.get("interpretation", "No graph evidence supplied."),
+                "citations": valid_graph_citations,
+                "invalid_references": invalid_graph_citations,
+            },
         },
         "presentation": presentation,
         "provider_request_id": result.provider_request_id,
