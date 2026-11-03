@@ -219,6 +219,8 @@ async def get_entity_graph(
                JOIN search_documents d ON d.document_id = a.evidence_document_id
                WHERE a.status = 'accepted'
                  AND d.deleted_at IS NULL AND d.index_status = 'indexed'
+                 AND d.rights_basis IS NOT NULL AND btrim(d.rights_basis) <> ''
+                 AND d.robots_status IN ('allowed', 'not_applicable')
                AND (a.subject_entity_id = $1 OR a.object_entity_id = $1)
                ORDER BY a.confidence DESC, a.created_at DESC LIMIT $2""",
             entity_id, limit,
