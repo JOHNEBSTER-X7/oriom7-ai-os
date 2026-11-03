@@ -6,7 +6,8 @@ function upstreamPath(segments: string[], search: string) {
   const path = segments.join("/");
   if (path === "search") return "/v1/search";
   if (path === "assistant") return "/v1/assistant/responses";
-  if (path === "agent-runs") return `/v1/research/agents/runs${search}`;\n  if (path === "agent-schedules") return `/v1/research/agents/schedules${search}`;\n  const schedule = path.match(/^agent-schedules\\/([0-9a-f-]{36})$/i);\n  if (schedule) return `/v1/research/agents/schedules/${schedule[1]}${search}`;
+  if (path === "agent-runs") return `/v1/research/agents/runs${search}`;
+  if (path === "agent-schedules") return `/v1/research/agents/schedules${search}`;\n  const schedule = path.match(/^agent-schedules\/([0-9a-f-]{36})$/i);\n  if (schedule) return `/v1/research/agents/schedules/${schedule[1]}${search}`;
   const agentRun = path.match(/^agent-runs\/([0-9a-f-]{36})$/i);
   if (agentRun) return `/v1/research/agents/runs/${agentRun[1]}${search}`;
   if (path === "entities") return `/v1/knowledge/entities${search}`;
