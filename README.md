@@ -43,7 +43,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 ## Status and scope
 This repository establishes the architecture baseline; it does not claim that a global search index, agent catalogue, proprietary models, cloud or silicon already exist. Targets such as 195+ countries/languages, 120+ agents and 300+ tools are ambitions, not current capabilities. Language support must be evaluated per language, dialect and task before it is advertised. Accessibility must be tested with assistive technologies and disabled users; automated scans alone are insufficient.
 
-The Adaptive Accessibility Engine now has a committed TypeScript profile resolver, JSON Schema and contract test cases. Its FastAPI persistence routes, web settings interface and product integrations remain to be implemented and tested.
+The Adaptive Accessibility Engine now includes a TypeScript profile resolver, JSON Schema, FastAPI profile endpoints, a PostgreSQL migration, a first Next.js settings screen and CI test workflows. Production OIDC/session middleware, database provisioning, application-wide preference application, speech/voice adapters and assistive-technology validation remain integration work.
 
 ORIOM7 does not diagnose or treat medical or mental health conditions. Accessibility settings are user-selected accommodations, not diagnostic labels or inferred health profiles.
 
