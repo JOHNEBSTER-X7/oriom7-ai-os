@@ -91,3 +91,4 @@ def test_presentation_cannot_disable_citations_or_safety_preservation():
     assert result["preserve_citations"] is True
     assert result["preserve_uncertainty"] is True
     assert result["preserve_safety_warnings"] is True
+    assert result["language_source"] == "unspecified"
