@@ -127,22 +127,34 @@ async def assert_public_dns(host: str) -> None:
         raise HTTPException(status_code=403, detail={"code": "non_public_host_blocked"})
 
 
+async def bounded_get(client: httpx.AsyncClient, url: str, maximum: int):
+    async with client.stream("GET", url) as response:
+        chunks = []
+        size = 0
+        async for chunk in response.aiter_bytes():
+            size += len(chunk)
+            if size > maximum:
+                raise HTTPException(status_code=413, detail={"code": "response_too_large"})
+            chunks.append(chunk)
+        return response.status_code, dict(response.headers), b"".join(chunks)
+
+
 async def fetch_allowed_page(url: str, host: str) -> tuple[str, str, str]:
     await assert_public_dns(host)
     timeout = httpx.Timeout(12.0, connect=5.0)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, headers={"User-Agent": USER_AGENT}) as client:
         robots_url = f"https://{host}/robots.txt"
         try:
-            robots_response = await client.get(robots_url)
+            robots_status, _, robots_content = await bounded_get(client, robots_url, 200_000)
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail={"code": "robots_fetch_failed"}) from exc
-        if robots_response.status_code >= 400:
+        if robots_status >= 400:
             # A missing robots file (404) is treated as no published disallow rules.
-            if robots_response.status_code != 404:
+            if robots_status != 404:
                 raise HTTPException(status_code=403, detail={"code": "robots_unavailable"})
             robots_text = ""
         else:
-            robots_text = robots_response.text[:200_000]
+            robots_text = robots_content.decode("utf-8", errors="replace")
         parser = RobotFileParser()
         parser.set_url(robots_url)
         parser.parse(robots_text.splitlines())
@@ -150,22 +162,24 @@ async def fetch_allowed_page(url: str, host: str) -> tuple[str, str, str]:
             raise HTTPException(status_code=403, detail={"code": "robots_disallowed"})
 
         try:
-            response = await client.get(url)
+            page_status, page_headers, page_content = await bounded_get(client, url, MAX_BODY_BYTES)
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail={"code": "page_fetch_failed"}) from exc
-        if response.is_redirect:
+        if 300 <= page_status < 400:
             raise HTTPException(status_code=403, detail={"code": "redirect_not_followed"})
-        if response.status_code != 200:
-            raise HTTPException(status_code=422, detail={"code": "page_not_successful", "status": response.status_code})
-        content_type = response.headers.get("content-type", "").lower()
+        if page_status != 200:
+            raise HTTPException(status_code=422, detail={"code": "page_not_successful", "status": page_status})
+        content_type = page_headers.get("content-type", "").lower()
         if not (content_type.startswith("text/html") or content_type.startswith("text/plain")):
             raise HTTPException(status_code=415, detail={"code": "unsupported_content_type"})
-        if len(response.content) > MAX_BODY_BYTES:
-            raise HTTPException(status_code=413, detail={"code": "page_too_large"})
+        charset = "utf-8"
+        for part in content_type.split(";")[1:]:
+            if part.strip().lower().startswith("charset="):
+                charset = part.split("=", 1)[1].strip().strip('"')
         try:
-            body = response.content.decode(response.encoding or "utf-8", errors="replace")
+            body = page_content.decode(charset, errors="replace")
         except LookupError:
-            body = response.content.decode("utf-8", errors="replace")
+            body = page_content.decode("utf-8", errors="replace")
         if content_type.startswith("text/html"):
             extractor = PageText()
             extractor.feed(body)
