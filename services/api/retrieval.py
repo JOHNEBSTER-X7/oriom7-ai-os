@@ -66,6 +66,7 @@ class PostgresLexicalIndex:
             WHERE deleted_at IS NULL
               AND index_status = 'indexed'
               AND rights_basis IS NOT NULL AND btrim(rights_basis) <> ''
+              AND robots_status IN ('allowed', 'not_applicable')
               AND search_vector @@ websearch_to_tsquery('simple', $1)
               AND ($3::text IS NULL OR language = $3 OR split_part(language, '-', 1) = split_part($3, '-', 1))
             ORDER BY score DESC, fetched_at DESC
