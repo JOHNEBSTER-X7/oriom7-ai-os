@@ -125,3 +125,8 @@ Assertions may include `valid_from` and `valid_to` when dates are explicitly sup
 Resolution candidates are similarity-ranked suggestions only; ORIOM7 does not merge entities automatically. Potential conflicts are returned only when the caller explicitly confirms the predicate should be single-valued; overlapping accepted claims with different objects are flagged for human assessment, not automatically labelled false. Multi-valued relationships must not be analysed as single-valued.
 
 Every assertion must reference eligible indexed evidence. Submitted and extracted assertions remain `unverified`; graph reads return accepted assertions only. Set `ORIOM7_GRAPH_REVIEW_TOKEN` in backend secrets to enable review. The model extraction endpoint requires a configured provider and the optional worker hook remains disabled by default. These capabilities are research and review aids, not automated fact verification. See [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
+
+
+## Research agent worker
+
+Run `python worker.py` as a separate supervised process. Apply migrations 001–010 first. The worker processes approved crawl jobs and durable research-agent jobs, and enqueues due recurring schedules. Configure the worker with DATABASE_URL, model provider credentials and search provider credentials. Without a configured model provider, research jobs cannot execute.
