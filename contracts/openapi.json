@@ -811,8 +811,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Research run completed or partially completed"
+          "202": {
+            "description": "Research run queued for background execution"
           },
           "401": {
             "description": "Authentication required"
@@ -894,6 +894,134 @@
           },
           "404": {
             "description": "Run not found for this user"
+          }
+        }
+      }
+    },
+    "/v1/research/agents/schedules": {
+      "post": {
+        "tags": [
+          "research-agents"
+        ],
+        "summary": "Create a recurring research schedule",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "question"
+                ],
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 2000
+                  },
+                  "max_sources": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 30,
+                    "default": 12
+                  },
+                  "extract_graph_candidates": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "interval_minutes": {
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 43200,
+                    "default": 1440
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Schedule created"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "research-agents"
+        ],
+        "summary": "List the authenticated user's schedules",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schedule list"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/v1/research/agents/schedules/{schedule_id}": {
+      "patch": {
+        "tags": [
+          "research-agents"
+        ],
+        "summary": "Pause or resume a recurring schedule",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Schedule updated"
+          },
+          "404": {
+            "description": "Schedule not found for this user"
           }
         }
       }
