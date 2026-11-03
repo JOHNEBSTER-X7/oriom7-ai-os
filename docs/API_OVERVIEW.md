@@ -21,3 +21,12 @@ All endpoints require an authenticated context except a deliberately configured 
 The endpoint accepts optional temporary profile overrides. These are validated against the same profile contract and are not persisted. The adapter explicitly preserves citations, uncertainty and safety warnings.
 
 This endpoint does not generate an AI answer, translate content, call a model provider or synthesize speech. The assistant orchestration layer must consume these directives and connect the corresponding capabilities before those features can be advertised as operational.
+
+## Model orchestration
+
+- `GET /models` — authenticated catalogue of configured providers and their enabled capabilities.
+- `POST /assistant/responses` — authenticated model generation using the user's saved accessibility preferences.
+
+The initial provider adapters use the Responses API contract. Configure provider credentials and explicit model IDs in the deployment secret manager; see [Model Provider Configuration](MODEL_PROVIDER_CONFIGURATION.md). The primary provider is attempted before the configured fallback. Token usage and provider latency are logged without logging prompts; cost estimates are emitted only when token prices are configured.
+
+The first generation slice is non-streaming and text-only. Retrieval grounding, source validation, tool execution, streaming and durable conversation history are not yet connected. Responses explicitly report `grounding.status = not_connected`; the model is instructed not to invent citations.
