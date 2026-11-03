@@ -1,10 +1,12 @@
 import asyncio
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from assistant_generation import router
 from model_orchestration import ModelOrchestrator, ModelResult, ProviderUnavailable
+from retrieval import RetrievalService, SearchResult
 
 
 class StaticProfileStore:
@@ -31,7 +33,7 @@ class FakeProvider:
 
 
 def sample_result(provider="openai"):
-    return ModelResult(provider, provider + "-test-model", "A concise answer.", 12, 8, 20, None, "req_test")
+    return ModelResult(provider, provider + "-test-model", "A concise answer [S1].", 12, 8, 20, None, "req_test")
 
 
 def build_client(orchestrator=None):
@@ -39,6 +41,17 @@ def build_client(orchestrator=None):
     app.include_router(router)
     app.state.accessibility_profile_store = StaticProfileStore()
     app.state.model_orchestrator = orchestrator
+    class TestIndex:
+        async def search(self, query, limit, language=None):
+            return [SearchResult(
+                source_id="doc-1", title="Grid battery evidence",
+                canonical_url="https://example.org/battery",
+                snippet="A verified excerpt about grid batteries.",
+                provider="oriom7_index", source_type="oriom7_index",
+                fetched_at=datetime(2026, 11, 3, tzinfo=timezone.utc),
+                published_at=None, language="en", score=0.9,
+            )]
+    app.state.retrieval_service = RetrievalService(TestIndex())
 
     @app.middleware("http")
     async def test_identity(request, call_next):
@@ -69,7 +82,9 @@ def test_generation_applies_accessibility_preferences():
     assert data["usage"]["total_tokens"] == 20
     assert data["presentation"]["plain_language"] is True
     assert data["presentation"]["language"] == "en-GB"
-    assert data["grounding"]["status"] == "not_connected"
+    assert data["grounding"]["status"] == "grounded"
+    assert data["grounding"]["citations"][0]["id"] == "S1"
+    assert data["grounding"]["citation_validation"]["status"] == "valid"
     assert provider.calls == 1
 
 
