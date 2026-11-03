@@ -122,6 +122,12 @@ export default function AccessibilityProvider({ children }: { children: ReactNod
     setProfile(normalizeAccessibilityProfile(ACCESSIBLE_STARTER_PROFILE));
   }, []);
 
+  useEffect(() => {
+    const originalFontSize = document.documentElement.style.fontSize;
+    document.documentElement.style.fontSize = `${profile.display.textScale * 100}%`;
+    return () => { document.documentElement.style.fontSize = originalFontSize; };
+  }, [profile.display.textScale]);
+
   const style = useMemo(() => ({
     "--oriom7-text-scale": `${profile.display.textScale}rem`,
     "--oriom7-line-height": String(profile.display.lineHeight),
