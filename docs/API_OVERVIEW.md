@@ -81,8 +81,11 @@ The Next.js interface is available at `/research/review`; its same-origin proxy 
 
 ## Autonomous research agents
 
-- `POST /v1/research/agents/runs` starts a bounded research plan-and-retrieve run.
+- `POST /v1/research/agents/runs` enqueues a durable run (202).
 - `GET /v1/research/agents/runs` lists the authenticated user's run history.
-- `GET /v1/research/agents/runs/{run_id}` retrieves one owned run.
+- `GET /v1/research/agents/runs/{run_id}` retrieves status and result.
+- `POST /v1/research/agents/schedules` creates an opt-in recurring schedule.
+- `GET /v1/research/agents/schedules` lists the authenticated user's schedules.
+- `PATCH /v1/research/agents/schedules/{schedule_id}` pauses or resumes a schedule.
 
-Apply migration 009. The first implementation runs synchronously in the request and is not a scheduled or durable background agent. See [Autonomous Research Agents](AUTONOMOUS_RESEARCH_AGENTS.md).
+Apply migrations 001–010 and run the separate `python worker.py` process. Jobs are durable and lease-claimed from PostgreSQL. See [Autonomous Research Agents](AUTONOMOUS_RESEARCH_AGENTS.md).
