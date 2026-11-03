@@ -54,3 +54,5 @@ See [Hybrid Search and Grounding](HYBRID_SEARCH_AND_GROUNDING.md) for database s
 - `GET /knowledge/entities/{entity_id}` — read the entity's one-hop neighbourhood, returning accepted assertions only.
 
 Apply migration `006_knowledge_graph.sql` after migrations 001–005. Assertions retain evidence document IDs, excerpts, confidence and reviewer audit data. Review is a human approval gate, not automatic fact verification. See [Knowledge Graph Foundation](KNOWLEDGE_GRAPH_FOUNDATION.md) for schema, examples and limitations.
+
+- `POST /knowledge/documents/{document_id}/extract` — request model-assisted entity and relation extraction from one eligible indexed document. Candidate excerpts must match source text verbatim and all assertions remain unverified pending human review. Requires a configured model provider. Optional crawler-worker invocation is controlled by `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED` (default false).
