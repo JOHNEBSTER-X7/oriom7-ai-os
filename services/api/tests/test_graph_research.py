@@ -86,4 +86,4 @@ def test_graph_context_format_uses_separate_stable_citation_namespace():
     assert "[G1]" in block
     assert sources[0]["id"] == "G1"
     assert "[" not in sources[0]["id"]
-    assert "does not establish causation" in block
+    assert "not independent proof of causation" in block
