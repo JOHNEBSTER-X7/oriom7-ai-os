@@ -76,7 +76,7 @@ def test_generation_applies_accessibility_preferences():
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["output_text"] == "A concise answer."
+    assert data["output_text"] == "A concise answer [S1]."
     assert data["model"]["provider"] == "openai"
     assert data["model"]["fallback_used"] is False
     assert data["usage"]["total_tokens"] == 20
