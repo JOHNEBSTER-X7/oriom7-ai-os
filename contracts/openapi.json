@@ -24,8 +24,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string" },
-                    "version": { "type": "string" }
+                    "status": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -56,28 +60,53 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "query": { "type": "string", "minLength": 1 },
+                  "query": {
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "sources": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": ["oriom7_index", "external"]
+                      "enum": [
+                        "oriom7_index",
+                        "external"
+                      ]
                     }
                   },
-                  "limit": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 },
-                  "language": { "type": "string" },
-                  "region": { "type": "string" }
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "default": 10
+                  },
+                  "language": {
+                    "type": "string"
+                  },
+                  "region": {
+                    "type": "string"
+                  }
                 },
-                "required": ["query"]
+                "required": [
+                  "query"
+                ]
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Ranked search results" },
-          "400": { "description": "Invalid request" },
-          "401": { "description": "Unauthenticated" },
-          "429": { "description": "Rate limit or quota exceeded" }
+          "200": {
+            "description": "Ranked search results"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "429": {
+            "description": "Rate limit or quota exceeded"
+          }
         }
       }
     },
@@ -92,31 +121,65 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "input": { "type": "string", "minLength": 1 },
-                  "conversation_id": { "type": ["string", "null"] },
+                  "input": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "conversation_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "mode": {
                     "type": "string",
-                    "enum": ["chat", "research", "coding", "business", "education"]
+                    "enum": [
+                      "chat",
+                      "research",
+                      "coding",
+                      "business",
+                      "education"
+                    ]
                   },
-                  "stream": { "type": "boolean", "default": true },
+                  "stream": {
+                    "type": "boolean",
+                    "default": true
+                  },
                   "grounding": {
                     "type": "object",
                     "properties": {
-                      "search": { "type": "boolean", "default": true },
-                      "minimum_sources": { "type": "integer", "minimum": 0, "maximum": 20 }
+                      "search": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "minimum_sources": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 20
+                      }
                     }
                   }
                 },
-                "required": ["input"]
+                "required": [
+                  "input"
+                ]
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Assistant response or event stream" },
-          "400": { "description": "Invalid request" },
-          "401": { "description": "Unauthenticated" },
-          "429": { "description": "Rate limit or quota exceeded" }
+          "200": {
+            "description": "Assistant response or event stream"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "429": {
+            "description": "Rate limit or quota exceeded"
+          }
         }
       }
     },
@@ -125,7 +188,49 @@
         "operationId": "getUsage",
         "summary": "Get caller usage summary",
         "responses": {
-          "200": { "description": "Usage summary" }
+          "200": {
+            "description": "Usage summary"
+          }
+        }
+      }
+    },
+    "/assistant/presentation": {
+      "post": {
+        "operationId": "createAssistantPresentation",
+        "summary": "Resolve accessibility-aware assistant response directives",
+        "description": "Returns structured presentation directives derived from the authenticated user's saved profile and optional temporary overrides. This endpoint does not generate assistant content or invoke a model provider. Citations, uncertainty and safety warnings are always preserved.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "overrides": {
+                    "type": "object",
+                    "description": "Temporary, non-persisted accessibility profile overrides."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Presentation directives ready for the assistant orchestrator"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Invalid profile override"
+          }
         }
       }
     }
