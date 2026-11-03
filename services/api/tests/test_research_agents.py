@@ -42,7 +42,7 @@ def test_runtime_preserves_only_evidence_citation_mapping():
     # Citation validation is performed by mapping exact [S#] labels against the
     # source set. Semantic entailment remains a separately documented limitation.
     import re
-    labels = sorted({int(n) for n in re.findall(r"\\[S(\\d+)\\]", "Finding [S1], comparison [S3], invalid [S8]")})
+    labels = sorted({int(n) for n in re.findall(r"\[S(\d+)\]", "Finding [S1], comparison [S3], invalid [S8]")})
     evidence = [{"id": "S1"}, {"id": "S2"}, {"id": "S3"}]
     assert [evidence[n - 1]["id"] for n in labels if 1 <= n <= len(evidence)] == ["S1", "S3"]
     assert [f"S{n}" for n in labels if n < 1 or n > len(evidence)] == ["S8"]
