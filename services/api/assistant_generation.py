@@ -125,11 +125,13 @@ async def create_response(
     prompt = payload.input
     if evidence_block:
         prompt += "\n\nORIOM7 RETRIEVED EVIDENCE\n" + evidence_block
+    if graph_block:
+        prompt += "\n\nORIOM7 ACCEPTED KNOWLEDGE GRAPH CONTEXT\n" + graph_block
     instructions = build_instructions(payload.mode, presentation)
     if payload.grounding.search:
         instructions += (
             " Use only the supplied evidence for claims presented as search-supported. "
-            "Cite supporting excerpts using [S1], [S2] labels exactly. "
+            "Cite supporting excerpts using [S1], [S2] labels exactly and graph evidence using [G1], [G2] labels exactly. "
             "If evidence is insufficient or conflicting, say so explicitly. "
             "Graph relationships are evidence-linked assertions, not proof of causation or transitive truth. "
             "Do not infer an entity identity from name similarity alone. Distinguish source statements from graph-derived connections."
@@ -144,6 +146,7 @@ async def create_response(
         })
 
     cited_numbers = sorted({int(number) for number in re.findall(r"\[S(\d+)\]", result.text)})
+    graph_cited_numbers = sorted({int(number) for number in re.findall(r"\[G(\d+)\]", result.text)})
     invalid_citations = [f"S{number}" for number in cited_numbers if number < 1 or number > len(evidence)]
     valid_citations = [
         {
