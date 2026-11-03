@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -52,7 +52,7 @@ class ContentPreferences(BaseModel):
     reduceClutter: bool = False
     stepByStep: bool = False
     showShortAnswerFirst: bool = True
-    preserveCitations: bool = True
+    preserveCitations: Literal[True] = True
 
 
 class SensoryPreferences(BaseModel):
@@ -170,6 +170,7 @@ def merge_profile(base: dict[str, Any], overrides: dict[str, Any]) -> dict[str, 
         if section not in allowed or not isinstance(values, dict):
             raise HTTPException(status_code=422, detail=f"Invalid override section: {section}")
         merged[section].update(values)
+    merged["content"]["preserveCitations"] = True
     try:
         return AccessibilityProfile.model_validate(merged).model_dump(mode="json")
     except ValidationError as exc:
