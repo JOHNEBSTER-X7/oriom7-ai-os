@@ -8,7 +8,7 @@ from accessibility import MemoryProfileStore, PostgresProfileStore, router as ac
 from response_adaptation import router as assistant_accessibility_router
 from assistant_generation import router as generation_router, catalog_router as model_catalog_router
 from model_orchestration import build_orchestrator_from_env
-from retrieval import PostgresLexicalIndex, RetrievalService, router as search_router
+from retrieval import (PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env, router as search_router)
 
 
 @asynccontextmanager
@@ -25,12 +25,12 @@ async def lifespan(application: FastAPI):
             raise RuntimeError("Install asyncpg to use DATABASE_URL-backed profile storage.") from exc
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
         application.state.accessibility_profile_store = PostgresProfileStore(pool)
-        application.state.retrieval_service = RetrievalService(PostgresLexicalIndex(pool))
+        application.state.retrieval_service = RetrievalService(PostgresLexicalIndex(pool), build_external_search_providers_from_env())
     else:
         if environment == "production":
             raise RuntimeError("DATABASE_URL is required in production; refusing ephemeral profile storage.")
         application.state.accessibility_profile_store = MemoryProfileStore()
-        application.state.retrieval_service = None
+        application.state.retrieval_service = RetrievalService(None, build_external_search_providers_from_env())
 
     try:
         yield
