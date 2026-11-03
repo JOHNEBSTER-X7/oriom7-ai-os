@@ -12,10 +12,11 @@ from typing import Any
 
 
 def _query_terms(query: str) -> list[str]:
+    stop_words = {"how", "does", "what", "when", "where", "which", "who", "why", "the", "and", "for", "with", "from", "into", "about", "use", "uses", "used", "are", "was", "were", "has", "have", "had", "can", "could", "would", "should"}
     terms = []
     for term in re.findall(r"[\w'-]{3,}", query, flags=re.UNICODE):
         term = term.strip("'-").casefold()
-        if len(term) >= 3 and term not in terms:
+        if len(term) >= 3 and term not in stop_words and term not in terms:
             terms.append(term)
     return terms[:10]
 
