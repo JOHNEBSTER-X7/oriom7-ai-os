@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
 
 from accessibility import MemoryProfileStore, PostgresProfileStore, router as accessibility_router
 from response_adaptation import router as assistant_accessibility_router
@@ -46,5 +45,3 @@ app.include_router(generation_router)
 app.include_router(model_catalog_router)
 app.include_router(search_router)
 
-
-# Model orchestration router is registered in the service startup module.
