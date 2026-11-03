@@ -1,9 +1,15 @@
 """Permission-aware first-party lexical retrieval and search API."""
 from __future__ import annotations
 
+import hashlib
+import logging
+import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Protocol
+from urllib.parse import urlsplit
+
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -163,14 +169,6 @@ async def search(
         ],
         "external_search_configured": bool(service.external_providers),
     }
-
-import hashlib
-import logging
-import os
-from datetime import timezone
-from urllib.parse import urlsplit
-
-import httpx
 
 logger = logging.getLogger("oriom7.search")
 
