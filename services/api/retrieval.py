@@ -230,7 +230,8 @@ class SerpApiGoogleSearch:
             logger.warning("external_search_provider_failed", extra={"provider": self.name})
             raise ExternalSearchUnavailable(self.name) from exc
 
-        if data.get("error") or data.get("search_metadata", {}).get("status") not in (None, "Success"):
+        metadata = data.get("search_metadata") or {}
+        if not isinstance(metadata, dict) or data.get("error") or metadata.get("status") not in (None, "Success"):
             logger.warning("external_search_provider_failed", extra={"provider": self.name})
             raise ExternalSearchUnavailable(self.name)
 
