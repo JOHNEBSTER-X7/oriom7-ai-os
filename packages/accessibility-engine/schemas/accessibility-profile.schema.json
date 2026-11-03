@@ -39,6 +39,7 @@
       "additionalProperties": false,
       "properties": {
         "voiceInput": { "type": "boolean" },
+        "voiceNavigation": { "type": "boolean" },
         "largeTargets": { "type": "boolean" },
         "keyboardFirst": { "type": "boolean" },
         "showFocus": { "type": "boolean" },
