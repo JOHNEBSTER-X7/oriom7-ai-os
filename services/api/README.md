@@ -38,3 +38,15 @@ PYTHONPATH=. pytest -q
 ```
 
 Search and assistant orchestration remain separate product work. Do not run long crawling or indexing jobs in HTTP handlers; dispatch them to managed queues and workers.
+
+
+## Model providers and assistant generation
+
+The API loads configured model providers during startup. See [Model Provider Configuration](../../docs/MODEL_PROVIDER_CONFIGURATION.md) for environment variables, explicit model IDs, primary/fallback routing and pricing configuration.
+
+- `GET /v1/models` — authenticated catalogue of configured model IDs and enabled capabilities.
+- `POST /v1/assistant/responses` — authenticated non-streaming generation endpoint.
+
+Set provider secrets in the deployment secret manager. A provider is enabled only when both its API key and explicit model ID are configured. The initial adapters use the OpenAI Responses API-compatible contract, including DeepSeek's documented Responses endpoint.
+
+The assistant endpoint applies the saved accessibility profile. It returns token usage and provider metadata, with estimated cost only when configured rates are supplied. It does not yet connect to hybrid retrieval, citation verification, tool execution, streaming or durable conversation history; the response explicitly identifies grounding as not connected.
