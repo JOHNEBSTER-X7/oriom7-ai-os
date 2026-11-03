@@ -1,0 +1,22 @@
+flowchart TB
+  U[Users and Developers] --> WEB[Next.js Web App on Vercel]
+  U --> API[Versioned FastAPI API]
+  WEB --> API
+  API --> IAM[Identity, Tenant and Policy]
+  IAM --> ORCH[Query and Model Orchestrator]
+  ORCH --> PLAN[Hybrid Retrieval Planner]
+  PLAN --> OWN[ORIOM7 Owned Index]
+  PLAN --> EXT[External Search Adapters]
+  OWN --> RANK[Normalise, Deduplicate and Rank]
+  EXT --> RANK
+  RANK --> ORCH
+  ORCH --> MODELS[Multi-Model Provider Adapters]
+  MODELS --> HOSTED[Hosted Model Providers]
+  MODELS --> SELF[Future Self-hosted Models]
+  API --> PG[(PostgreSQL)]
+  API --> REDIS[(Redis)]
+  PLAN --> QUEUE[Managed Queue]
+  QUEUE --> WORKERS[Ingestion and Index Workers]
+  WORKERS --> OBJECT[(Object Storage)]
+  WORKERS --> OWN
+  ORCH --> OBS[Telemetry and Evaluation]
