@@ -158,7 +158,7 @@ async def extract_document_candidates(
                        ON CONFLICT DO NOTHING
                        RETURNING assertion_id""",
                     subject_id, relation.predicate, object_id, document["document_id"],
-                    relation.evidence_excerpt, relation.confidence, submitted_by,
+                    relation.evidence_excerpt, relation.confidence, relation.valid_from, relation.valid_to, submitted_by,
                 )
                 if row:
                     inserted += 1
