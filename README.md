@@ -63,3 +63,8 @@ The search API now supports optional pgvector semantic retrieval alongside Postg
 ## Knowledge graph and intelligence layer
 
 The graph now supports evidence-linked candidate extraction, temporal relationship validity, similarity-ranked entity resolution suggestions, potential-conflict triage for explicitly single-valued predicates, and bounded multi-hop paths through accepted assertions. Every traversed relationship retains its source evidence. Entity suggestions never auto-merge records; conflict reports are hypotheses for human review, not proof of contradiction. Apply migrations 006–008 after 001–005. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
+
+
+## Graph-aware research assistant
+
+The assistant can now use accepted, source-backed knowledge-graph assertions alongside hybrid search. It keeps graph citations separate from search citations and reports unresolved potential inconsistencies without presenting them as verified contradictions. This is a bounded first integration: entity matching is name/alias based, paths do not prove causation, and semantic claim verification remains future work. See [Graph-Aware Research Assistant](docs/GRAPH_AWARE_RESEARCH_ASSISTANT.md).

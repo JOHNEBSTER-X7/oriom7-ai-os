@@ -205,7 +205,78 @@
         },
         "responses": {
           "200": {
-            "description": "Assistant response or event stream"
+            "description": "Assistant response or event stream",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "output_text": {
+                      "type": "string"
+                    },
+                    "grounding": {
+                      "type": "object",
+                      "properties": {
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "citations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "knowledge_graph": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "retrieved",
+                                "no_matching_accepted_assertions"
+                              ]
+                            },
+                            "matched_entities": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            },
+                            "assertion_count": {
+                              "type": "integer"
+                            },
+                            "potential_inconsistencies": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            },
+                            "citations": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            },
+                            "invalid_references": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "interpretation": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request"
@@ -223,7 +294,7 @@
             "description": "Model provider or requested retrieval service is not configured or unavailable"
           }
         },
-        "description": "Generate a non-streaming response using configured model providers, retrieved ORIOM7 evidence and the caller's saved accessibility preferences. The response exposes source references and reports citation-label validation. External retrieval is used only when configured.",
+        "description": "Generate a non-streaming response using configured model providers, retrieved ORIOM7 evidence and the caller's saved accessibility preferences. The response exposes source references and reports citation-label validation. External retrieval is used only when configured. When a database-backed knowledge graph is configured, the assistant also retrieves bounded accepted assertions connected to explicit entity/alias matches. Graph citations use [G#] labels separately from search citations [S#]. Only accepted assertions with currently eligible source documents are included. Graph connections do not establish causation, entailment or transitive truth; possible inconsistencies remain subject to human assessment.",
         "security": [
           {
             "bearerAuth": []
