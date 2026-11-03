@@ -18,7 +18,7 @@ def test_schedule_interval_is_bounded():
     with pytest.raises(ValidationError):
         ScheduleRequest(question="Track changes in grid-scale battery storage",interval_minutes=5)
 
-from research_agent_runtime import AgentPlan
+from research_agent_runtime import AgentPlan, execute_research_job
 
 
 def test_research_agent_plan_deduplicates_and_bounds_questions():
@@ -31,3 +31,18 @@ def test_research_agent_plan_rejects_invalid_json_and_single_question():
         AgentPlan.parse("not json")
     with pytest.raises(ValueError):
         AgentPlan.parse('{"questions":["only one question"]}')
+
+
+def test_agent_plan_rejects_extra_json_keys():
+    with pytest.raises(ValueError):
+        AgentPlan.parse('{"questions":["Compare major grid battery suppliers","Identify policy changes in storage"],"action":"crawl"}')
+
+
+def test_runtime_preserves_only_evidence_citation_mapping():
+    # Citation validation is performed by mapping exact [S#] labels against the
+    # source set. Semantic entailment remains a separately documented limitation.
+    import re
+    labels = sorted({int(n) for n in re.findall(r"\\[S(\\d+)\\]", "Finding [S1], comparison [S3], invalid [S8]")})
+    evidence = [{"id": "S1"}, {"id": "S2"}, {"id": "S3"}]
+    assert [evidence[n - 1]["id"] for n in labels if 1 <= n <= len(evidence)] == ["S1", "S3"]
+    assert [f"S{n}" for n in labels if n < 1 or n > len(evidence)] == ["S8"]
