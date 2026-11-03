@@ -600,7 +600,8 @@
           "404": {
             "description": "Entity not found"
           }
-        }
+        },
+        "description": "Returns an accepted knowledge graph entity and its evidence-linked relationships. Each relationship includes the source document ID, excerpt, title, canonical URL, publication and retrieval timestamps, confidence, creation timestamp and temporal validity where available."
       }
     },
     "/knowledge/entities": {

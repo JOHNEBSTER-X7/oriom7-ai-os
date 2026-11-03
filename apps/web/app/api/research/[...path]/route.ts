@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from "next/server";
+
+type RouteContext = { params: Promise<{ path: string[] }> };
+
+function upstreamPath(segments: string[], search: string) {
+  const path = segments.join("/");
+  if (path === "search") return "/v1/search";
+  if (path === "assistant") return "/v1/assistant/responses";
+  if (path === "entities") return `/v1/knowledge/entities${search}`;
+  const entity = path.match(/^entities\/([0-9a-f-]{36})$/i);
+  if (entity) return `/v1/knowledge/entities/${entity[1]}${search}`;
+  const paths = path.match(/^entities\/([0-9a-f-]{36})\/paths$/i);
+  if (paths) return `/v1/knowledge/entities/${paths[1]}/paths${search}`;
+  return null;
+}
+
+async function forward(request: NextRequest, context: RouteContext, method: "GET" | "POST") {
+  const apiOrigin = process.env.ORIOM7_API_URL;
+  if (!apiOrigin) return NextResponse.json({ error: "ORIOM7_API_URL is not configured." }, { status: 503 });
+  const { path } = await context.params;
+  const target = upstreamPath(path, request.nextUrl.search);
+  if (!target) return NextResponse.json({ error: "Unknown research endpoint." }, { status: 404 });
+
+  const headers = new Headers({ Accept: "application/json" });
+  const cookie = request.headers.get("cookie");
+  const authorization = request.headers.get("authorization");
+  if (cookie) headers.set("cookie", cookie);
+  if (authorization) headers.set("authorization", authorization);
+  const body = method === "POST" ? await request.text() : undefined;
+  if (body !== undefined) headers.set("content-type", "application/json");
+
+  try {
+    const upstream = await fetch(new URL(target, apiOrigin), {
+      method, headers, body, cache: "no-store",
+    });
+    const payload = await upstream.json().catch(() => ({ error: "Invalid API response." }));
+    return NextResponse.json(payload, { status: upstream.status });
+  } catch {
+    return NextResponse.json({ error: "ORIOM7 API is unavailable." }, { status: 502 });
+  }
+}
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  return forward(request, context, "GET");
+}
+export async function POST(request: NextRequest, context: RouteContext) {
+  return forward(request, context, "POST");
+}

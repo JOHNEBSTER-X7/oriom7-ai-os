@@ -64,3 +64,8 @@ Apply migrations 006–008 after 001–005. Migration 008 adds optional `valid_f
 `POST /assistant/responses` now supplements hybrid search with bounded knowledge-graph context when the API has a database-backed graph. The service matches explicit names/aliases in the question, then retrieves only accepted assertions whose source documents remain indexed, non-deleted, rights-cleared and robots-eligible. It does not treat unverified graph candidates as facts.
 
 Search citations use `[S#]`; graph citations use a separate `[G#]` namespace. Both are mapped to retrieved source records. The response adds `grounding.knowledge_graph` with matched entities, assertion count, source citations and potential inconsistencies. Potential inconsistencies are unresolved review signals, not proven contradictions. Connected relationships do not establish causation or transitive truth. See [Graph-Aware Research Assistant](GRAPH_AWARE_RESEARCH_ASSISTANT.md).
+
+
+## Research intelligence workspace
+
+The web application provides a `/research` workspace that orchestrates the existing search, assistant and knowledge graph APIs. The entity detail response now includes source title, canonical URL and publication/retrieval timestamps alongside the evidence excerpt and temporal validity. The interface displays direct accepted relationships, bounded path summaries, a dated timeline and source comparison. See [Research Intelligence Workspace](RESEARCH_INTELLIGENCE_WORKSPACE.md).

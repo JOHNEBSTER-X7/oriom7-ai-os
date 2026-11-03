@@ -68,3 +68,8 @@ The graph now supports evidence-linked candidate extraction, temporal relationsh
 ## Graph-aware research assistant
 
 The assistant can now use accepted, source-backed knowledge-graph assertions alongside hybrid search. It keeps graph citations separate from search citations and reports unresolved potential inconsistencies without presenting them as verified contradictions. This is a bounded first integration: entity matching is name/alias based, paths do not prove causation, and semantic claim verification remains future work. See [Graph-Aware Research Assistant](docs/GRAPH_AWARE_RESEARCH_ASSISTANT.md).
+
+
+## Research intelligence workspace
+
+The Next.js app now includes a dedicated `/research` workspace for hybrid source search, graph entity exploration, source comparison, historical relationship timelines and Markdown research-report export. It uses a same-origin authenticated API proxy and keeps graph evidence provenance visible. See [Research Intelligence Workspace](docs/RESEARCH_INTELLIGENCE_WORKSPACE.md).

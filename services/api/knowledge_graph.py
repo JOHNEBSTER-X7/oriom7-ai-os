@@ -214,11 +214,13 @@ async def get_entity_graph(
             raise HTTPException(status_code=404, detail={"code": "knowledge_entity_not_found"})
         relations = await connection.fetch(
             """SELECT a.assertion_id::text, a.predicate, a.evidence_excerpt, a.confidence,
-                      a.evidence_document_id::text, a.created_at,
+                      a.evidence_document_id::text, a.created_at, a.valid_from, a.valid_to,
                       s.entity_id::text AS subject_id, s.canonical_name AS subject_name,
                       s.entity_type AS subject_type,
                       o.entity_id::text AS object_id, o.canonical_name AS object_name,
-                      o.entity_type AS object_type
+                      o.entity_type AS object_type,
+                      d.title AS evidence_title, d.canonical_url AS evidence_url,
+                      d.published_at AS evidence_published_at, d.fetched_at AS evidence_retrieved_at
                FROM knowledge_assertions a
                JOIN knowledge_entities s ON s.entity_id = a.subject_entity_id
                JOIN knowledge_entities o ON o.entity_id = a.object_entity_id
@@ -237,7 +239,12 @@ async def get_entity_graph(
             "id": row["assertion_id"], "subject": {"id": row["subject_id"], "name": row["subject_name"], "type": row["subject_type"]},
             "predicate": row["predicate"],
             "object": {"id": row["object_id"], "name": row["object_name"], "type": row["object_type"]},
-            "evidence": {"document_id": row["evidence_document_id"], "excerpt": row["evidence_excerpt"]},
+            "evidence": {
+                "document_id": row["evidence_document_id"], "excerpt": row["evidence_excerpt"],
+                "title": row["evidence_title"], "url": row["evidence_url"],
+                "published_at": row["evidence_published_at"].isoformat() if row["evidence_published_at"] else None,
+                "retrieved_at": row["evidence_retrieved_at"].isoformat(),
+            },
             "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),
             "valid_from": row["valid_from"].isoformat() if row["valid_from"] else None,
             "valid_to": row["valid_to"].isoformat() if row["valid_to"] else None,
