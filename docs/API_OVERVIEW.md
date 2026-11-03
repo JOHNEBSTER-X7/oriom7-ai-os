@@ -69,3 +69,11 @@ Search citations use `[S#]`; graph citations use a separate `[G#]` namespace. Bo
 ## Research intelligence workspace
 
 The web application provides a `/research` workspace that orchestrates the existing search, assistant and knowledge graph APIs. The entity detail response now includes source title, canonical URL and publication/retrieval timestamps alongside the evidence excerpt and temporal validity. The interface displays direct accepted relationships, bounded path summaries, a dated timeline and source comparison. See [Research Intelligence Workspace](RESEARCH_INTELLIGENCE_WORKSPACE.md).
+
+
+## Evidence verification centre
+
+- `GET /v1/knowledge/assertions/review-queue`: paginated unverified assertions with source provenance; reviewer allow-list required.
+- `POST /v1/knowledge/assertions/{assertion_id}/review`: accept/reject decision; authenticated reviewer allow-list and review token required.
+
+The Next.js interface is available at `/research/review`; its same-origin proxy keeps the review token server-side. See [Evidence Verification Centre](EVIDENCE_VERIFICATION_CENTRE.md).
