@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ORIOM7 API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Initial versioned contract for the ORIOM7 hybrid search and assistant platform."
   },
   "servers": [
@@ -812,13 +812,39 @@
         },
         "responses": {
           "202": {
-            "description": "Research run queued for background execution"
+            "description": "Research run queued for background execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "run_id",
+                    "status"
+                  ],
+                  "properties": {
+                    "run_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "queued"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required"
           },
           "503": {
-            "description": "Agent dependencies unavailable"
+            "description": "Database or durable queue unavailable"
           }
         }
       },
