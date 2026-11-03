@@ -1,6 +1,6 @@
 export type AssistantPresentation = {
   language: string;
-  language_source: "user_preference" | "automatic_detection";
+  language_source: "user_preference" | "unspecified";
   plain_language: boolean;
   detail_level: "concise" | "balanced" | "detailed";
   short_answer_first: boolean;
