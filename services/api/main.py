@@ -58,3 +58,5 @@ async def search(request: SearchRequest) -> dict:
         "results": [],
         "status": "not_implemented",
     }
+
+# Model orchestration router is registered in the service startup module.
