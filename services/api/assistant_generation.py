@@ -161,7 +161,7 @@ async def create_response(
     if not payload.grounding.search:
         grounding_status = "not_requested"
     elif not evidence:
-        grounding_status = "no_results"
+        grounding_status = "graph_only" if graph_context.get("assertions") else "no_results"
     elif len(evidence) < payload.grounding.minimum_sources:
         grounding_status = "insufficient_sources"
     else:
