@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from accessibility import MemoryProfileStore, PostgresProfileStore, router as accessibility_router
 from response_adaptation import router as assistant_accessibility_router
-from assistant_generation import router as generation_router
+from assistant_generation import router as generation_router, catalog_router as model_catalog_router
 from model_orchestration import build_orchestrator_from_env
 
 
@@ -40,6 +40,7 @@ app = FastAPI(title="ORIOM7 API", version="1.1.0", lifespan=lifespan)
 app.include_router(accessibility_router)
 app.include_router(assistant_accessibility_router)
 app.include_router(generation_router)
+app.include_router(model_catalog_router)
 
 
 class SearchRequest(BaseModel):
