@@ -197,6 +197,65 @@ class CrawlWorker:
         return True
 
 
+
+class ResearchAgentWorker:
+    """Lease-based worker for durable research jobs and recurring schedules."""
+    def __init__(self, pool, retrieval, orchestrator, worker_id=None):
+        self.pool=pool; self.retrieval=retrieval; self.orchestrator=orchestrator
+        self.worker_id=worker_id or socket.gethostname()+":research"
+
+    async def enqueue_due_schedules(self):
+        async with self.pool.acquire() as con:
+            async with con.transaction():
+                rows=await con.fetch("""SELECT * FROM research_agent_schedules
+                  WHERE enabled=TRUE AND next_run_at<=NOW()
+                  ORDER BY next_run_at FOR UPDATE SKIP LOCKED LIMIT 10""")
+                for row in rows:
+                    run_id=await con.fetchval("""INSERT INTO research_agent_runs
+                      (owner_subject,research_question,status)
+                      VALUES($1,$2,'queued') RETURNING run_id""",row["owner_subject"],row["research_question"])
+                    payload={"question":row["research_question"],"max_sources":row["max_sources"],
+                             "extract_graph_candidates":row["extract_graph_candidates"]}
+                    await con.execute("""INSERT INTO research_agent_jobs(run_id,owner_subject,payload)
+                      VALUES($1,$2,$3::jsonb)""",run_id,row["owner_subject"],json.dumps(payload))
+                    await con.execute("""UPDATE research_agent_schedules
+                      SET next_run_at=NOW()+(interval_minutes*INTERVAL '1 minute'),
+                          last_run_id=$2,updated_at=NOW() WHERE schedule_id=$1""",row["schedule_id"],run_id)
+
+    async def claim(self):
+        async with self.pool.acquire() as con:
+            async with con.transaction():
+                await con.execute("""UPDATE research_agent_jobs SET status='failed',locked_at=NULL,
+                  locked_by=NULL,last_error='worker lease expired; attempts exhausted',updated_at=NOW()
+                  WHERE status='running' AND attempts>=max_attempts
+                    AND locked_at<NOW()-INTERVAL '15 minutes'""")
+                row=await con.fetchrow("""SELECT job_id,run_id::text,owner_subject,payload,attempts,max_attempts
+                  FROM research_agent_jobs
+                  WHERE (status='pending' AND available_at<=NOW())
+                     OR (status='running' AND locked_at<NOW()-INTERVAL '15 minutes')
+                  ORDER BY available_at FOR UPDATE SKIP LOCKED LIMIT 1""")
+                if row is None: return None
+                await con.execute("""UPDATE research_agent_jobs SET status='running',attempts=attempts+1,
+                  locked_at=NOW(),locked_by=$2,updated_at=NOW() WHERE job_id=$1""",row["job_id"],self.worker_id)
+                await con.execute("UPDATE research_agent_runs SET status='running' WHERE run_id=$1::uuid",row["run_id"])
+                claimed=dict(row)
+                if isinstance(claimed.get("payload"),str): claimed["payload"]=json.loads(claimed["payload"])
+                return claimed
+
+    async def run_once(self):
+        await self.enqueue_due_schedules()
+        job=await self.claim()
+        if job is None: return False
+        try:
+            await execute_research_job(self.pool,job["run_id"],job["owner_subject"],
+                                       job["payload"],self.retrieval,self.orchestrator)
+        except Exception as exc:
+            logger.exception("research_agent_job_failed",extra={"run_id":job["run_id"]})
+            retry=job["attempts"]+1<job["max_attempts"]
+            await fail_research_job(self.pool,job["run_id"],job["owner_subject"],type(exc).__name__,retry)
+        return True
+
+
 async def serve():
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
@@ -213,11 +272,19 @@ async def serve():
         build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None,
         extraction_orchestrator,
     )
+    research_orchestrator=build_orchestrator_from_env()
+    research_worker=ResearchAgentWorker(
+        pool,
+        RetrievalService(PostgresLexicalIndex(pool),build_external_search_providers_from_env()),
+        research_orchestrator,
+        os.getenv("ORIOM7_RESEARCH_WORKER_ID"),
+    ) if research_orchestrator.providers else None
     idle_seconds = float(os.getenv("ORIOM7_CRAWL_IDLE_SECONDS", "3"))
     try:
         while True:
             worked = await worker.run_once()
-            if not worked:
+            research_worked = await research_worker.run_once() if research_worker else False
+            if not worked and not research_worked:
                 await asyncio.sleep(idle_seconds)
     finally:
         await pool.close()
