@@ -20,3 +20,6 @@
 
 ## ADR-007 — Accessibility and inclusive interaction by design
 **Status:** Accepted. ORIOM7 must support independent use by blind and low-vision users, people with hearing, motor or cognitive disabilities, and people using assistive technologies. Target WCAG 2.2 AA for the web experience; prioritise semantic HTML, screen-reader support, keyboard access, focus management, text alternatives, captions/transcripts and accessible streaming states. Validate with manual testing and disabled users, not automated scanners alone.
+
+## ADR-008 — User-controlled adaptive accessibility
+**Status:** Accepted. Provide combinable, optional accessibility preferences for visual, neurological, motor, cognitive, learning, mental-health-related and sensory access needs. Ask what accommodations help rather than requiring diagnostic disclosure. Do not infer diagnoses or emotional states from searches or behaviour. Preserve user control, privacy, source provenance, safety caveats and equivalent access to core functionality.
