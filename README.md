@@ -27,6 +27,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - `infra/` — deployment guidance.
 - `data/` — data and indexing design.
 - `research/hardware/` — exploratory hardware research.
+- `services/api/knowledge_graph.py` — evidence-linked entity and relationship API.
 
 ## Product specifications
 - [Software Architecture](docs/SOFTWARE_ARCHITECTURE_DOCUMENT.md)
@@ -57,3 +58,8 @@ The API now includes PostgreSQL lexical retrieval over a rights-basis-filtered f
 
 
 The search API now supports optional pgvector semantic retrieval alongside PostgreSQL lexical search, with reciprocal-rank fusion and cross-language vector matching when configured. Semantic indexing requires migration 005 and an explicitly configured embedding provider; see [Hybrid Search and Grounding](docs/HYBRID_SEARCH_AND_GROUNDING.md). Do not advertise broad language coverage until per-language retrieval quality has been benchmarked.
+
+
+## Knowledge graph foundation
+
+The API now includes a provenance-aware graph schema and endpoints for candidate entity/relation submission, token-protected human review, entity/alias lookup and accepted one-hop relationship reads. Candidate assertions remain hidden from graph reads until reviewed and accepted against eligible indexed evidence. This is a foundation, not yet an automated knowledge graph extraction or reasoning system. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
