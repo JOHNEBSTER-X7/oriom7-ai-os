@@ -34,7 +34,7 @@ def build_response_presentation(profile: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "language": reading.get("preferredLanguage") or "auto",
-        "language_source": "user_preference" if reading.get("preferredLanguage") else "automatic_detection",
+        "language_source": "user_preference" if reading.get("preferredLanguage") else "unspecified",
         "plain_language": reading["plainLanguage"],
         "detail_level": reading["detailLevel"],
         "short_answer_first": content["showShortAnswerFirst"],
