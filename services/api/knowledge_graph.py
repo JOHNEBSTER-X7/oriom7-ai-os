@@ -239,7 +239,6 @@ async def get_entity_graph(
 class AssertionReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     decision: str = Field(pattern="^(accepted|rejected)$")
-    reviewer: str = Field(min_length=2, max_length=120)
 
 
 @router.post("/assertions/{assertion_id}/review")
@@ -271,7 +270,7 @@ async def review_assertion(
                       AND d.robots_status IN ('allowed', 'not_applicable')
                  )
                RETURNING assertion_id::text, status, reviewed_at""",
-            assertion_id, payload.decision, payload.reviewer,
+            assertion_id, payload.decision, subject,
         )
     if row is None:
         raise HTTPException(status_code=404, detail={"code": "reviewable_assertion_not_found"})
