@@ -108,20 +108,17 @@ class RetrievalService:
             for provider in self.external_providers:
                 ranked_lists.append(await provider.search(query, limit, language))
 
-        # Reciprocal-rank fusion avoids comparing incomparable provider score scales.
-        fused: list[SearchResult] = []
+        # Reciprocal-rank fusion sums each source's contribution for a canonical URL.
+        scores: dict[str, float] = {}
+        representatives: dict[str, SearchResult] = {}
         for ranked in ranked_lists:
             ordered = sorted(ranked, key=lambda item: item.score, reverse=True)
-            fused.extend(
-                replace(item, score=1.0 / (60 + rank))
-                for rank, item in enumerate(ordered, start=1)
-            )
-
-        # Stable URL deduplication retains the best fused rank.
-        deduplicated: dict[str, SearchResult] = {}
-        for result in sorted(fused, key=lambda item: item.score, reverse=True):
-            deduplicated.setdefault(result.canonical_url, result)
-        return list(deduplicated.values())[:limit]
+            for rank, item in enumerate(ordered, start=1):
+                scores[item.canonical_url] = scores.get(item.canonical_url, 0.0) + 1.0 / (60 + rank)
+                if item.canonical_url not in representatives:
+                    representatives[item.canonical_url] = item
+        fused = [replace(item, score=scores[url]) for url, item in representatives.items()]
+        return sorted(fused, key=lambda item: item.score, reverse=True)[:limit]
 
 
 class SearchRequest(BaseModel):
