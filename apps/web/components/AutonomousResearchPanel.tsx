@@ -79,6 +79,6 @@ export default function AutonomousResearchPanel() {
       <button className="secondary-button" type="button" disabled={question.trim().length<8} onClick={()=>void createSchedule()}>Schedule this research objective</button>
       <ul>{schedules.map(item=><li key={item.schedule_id}><strong>{item.question}</strong><small>{item.enabled?"Enabled":"Paused"} · every {item.interval_minutes} minutes · next run {new Date(item.next_run_at).toLocaleString()}</small><button className="secondary-button" type="button" onClick={()=>void toggleSchedule(item)}>{item.enabled?"Pause":"Resume"}</button></li>)}</ul>
     </div>
-    <p className="research-disclaimer">Runs are initiated by you and bounded in scope. The current implementation executes synchronously within the API request; it is not yet a continuously running or scheduled agent service. Candidate graph assertions are never automatically accepted.</p>
+    <p className="research-disclaimer">Runs are initiated by you and bounded in scope. Research executes asynchronously through a separate worker. Recurring schedules are opt-in and execute only while the worker is running. Candidate graph assertions are never automatically accepted.</p>
   </section>;
 }
