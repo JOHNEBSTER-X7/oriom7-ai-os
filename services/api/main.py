@@ -1,7 +1,39 @@
+from contextlib import asynccontextmanager
+import os
+
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="ORIOM7 API", version="1.0.0")
+from accessibility import MemoryProfileStore, PostgresProfileStore, router as accessibility_router
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    database_url = os.getenv("DATABASE_URL")
+    environment = os.getenv("ORIOM7_ENV", "development").lower()
+    pool = None
+
+    if database_url:
+        try:
+            import asyncpg
+        except ImportError as exc:
+            raise RuntimeError("Install asyncpg to use DATABASE_URL-backed profile storage.") from exc
+        pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
+        application.state.accessibility_profile_store = PostgresProfileStore(pool)
+    else:
+        if environment == "production":
+            raise RuntimeError("DATABASE_URL is required in production; refusing ephemeral profile storage.")
+        application.state.accessibility_profile_store = MemoryProfileStore()
+
+    try:
+        yield
+    finally:
+        if pool is not None:
+            await pool.close()
+
+
+app = FastAPI(title="ORIOM7 API", version="1.1.0", lifespan=lifespan)
+app.include_router(accessibility_router)
 
 
 class SearchRequest(BaseModel):
