@@ -17,6 +17,7 @@ Apply migrations in order:
 psql "$DATABASE_URL" -f services/api/migrations/001_accessibility_profiles.sql
 psql "$DATABASE_URL" -f services/api/migrations/002_search_index.sql
 psql "$DATABASE_URL" -f services/api/migrations/003_search_ingestion.sql
+psql "$DATABASE_URL" -f services/api/migrations/004_distributed_crawl_queue.sql
 ```
 
 The index searches only records where:
@@ -143,3 +144,12 @@ The current worker:
 - Marks the previous version of a changed URL as deleted before indexing its replacement; unchanged pages update their fetch timestamp.
 
 This is a controlled ingestion primitive, not yet a general web crawler. DNS is validated before the HTTP request, but the HTTP client resolves the hostname separately; production deployment must add network-level egress controls or pinned-address transport to close DNS-rebinding risk. Robots.txt is a crawl-policy signal, not a copyright licence. Source approval and the rights basis remain the operator's responsibility.
+
+
+## Queue-backed distributed ingestion
+
+Migration 004 adds a durable `search_crawl_jobs` queue and per-source crawl controls. Submit approved URLs through `POST /v1/ingestion/queue` using the operator token. The API only validates and enqueues; it does not fetch pages.
+
+Run the independent worker process with `python worker.py` from `services/api`. Multiple workers can share the same PostgreSQL queue: claims use row locks with `SKIP LOCKED`, worker leases allow recovery after process crashes, and each source has a configurable minimum interval and rolling 24-hour page quota. Transient failures are retried with bounded exponential backoff; robots/policy and permanent content failures are not retried automatically. An operator can requeue a completed or terminal job by submitting the same URL again.
+
+The worker is a deployable process, not a hosted service provisioned by this code change. Production still requires a supervisor, database capacity planning, queue metrics/alerts, tested backup/recovery, and network-level egress restrictions. Scheduled periodic discovery of new URLs and recursive link crawling are not yet included; the queue can be used for operator-submitted pages and reprocessing.
