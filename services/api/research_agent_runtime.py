@@ -4,8 +4,8 @@ import json, re
 from typing import Any
 from knowledge_extraction import extract_document_candidates, ExtractionError
 from model_orchestration import ProviderUnavailable
-from research_agents import AgentPlan, PLAN_INSTRUCTIONS, SYNTHESIS_INSTRUCTIONS
-from retrieval import RetrievalService
+from research_agents import PLAN_INSTRUCTIONS, SYNTHESIS_INSTRUCTIONS
+from retrieval import RetrievalService\nfrom pydantic import BaseModel, ConfigDict, Field, ValidationError\n\nclass AgentPlan(BaseModel):\n    model_config=ConfigDict(extra="forbid")\n    questions:list[str]=Field(min_length=2,max_length=4)\n    @classmethod\n    def parse(cls,text:str):\n        try: value=cls.model_validate(json.loads(text))\n        except (json.JSONDecodeError,ValidationError,TypeError) as exc: raise ValueError("invalid_agent_plan") from exc\n        cleaned=list(dict.fromkeys(" ".join(q.split())[:500] for q in value.questions if len(" ".join(q.split()))>=8))\n        if len(cleaned)<2: raise ValueError("insufficient_agent_plan_questions")\n        return cleaned[:4]
 
 async def execute_research_job(pool, run_id: str, owner: str, payload: dict,
                                retrieval: RetrievalService, orchestrator) -> dict[str,Any]:
