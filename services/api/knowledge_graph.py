@@ -238,7 +238,9 @@ async def get_entity_graph(
             "predicate": row["predicate"],
             "object": {"id": row["object_id"], "name": row["object_name"], "type": row["object_type"]},
             "evidence": {"document_id": row["evidence_document_id"], "excerpt": row["evidence_excerpt"]},
-            "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),\n            "valid_from": row["valid_from"].isoformat() if row["valid_from"] else None,\n            "valid_to": row["valid_to"].isoformat() if row["valid_to"] else None,
+            "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),
+            "valid_from": row["valid_from"].isoformat() if row["valid_from"] else None,
+            "valid_to": row["valid_to"].isoformat() if row["valid_to"] else None,
         } for row in relations],
         "note": "Only reviewed, accepted assertions are returned.",
     }
