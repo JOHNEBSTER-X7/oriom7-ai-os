@@ -245,9 +245,9 @@ async def enqueue_page(
             """INSERT INTO search_crawl_jobs (source_id, url, language)
                VALUES ($1, $2, $3)
                ON CONFLICT (source_id, url) DO UPDATE SET
-                 status = CASE WHEN search_crawl_jobs.status IN ('failed', 'blocked', 'rejected')
+                 status = CASE WHEN search_crawl_jobs.status IN ('completed', 'failed', 'blocked', 'rejected')
                                THEN 'pending' ELSE search_crawl_jobs.status END,
-                 available_at = CASE WHEN search_crawl_jobs.status IN ('failed', 'blocked', 'rejected')
+                 available_at = CASE WHEN search_crawl_jobs.status IN ('completed', 'failed', 'blocked', 'rejected')
                                       THEN NOW() ELSE search_crawl_jobs.available_at END,
                  updated_at = NOW()
                RETURNING job_id::text, status, created_at""",
