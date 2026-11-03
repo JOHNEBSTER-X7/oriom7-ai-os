@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 type AgentRun = { run_id:string; question:string; status:string; started_at:string; completed_at:string|null };
-type AgentSchedule = {schedule_id:string;question:string;interval_minutes:number;enabled:boolean;next_run_at:string};\ntype AgentResult = { run_id:string; status:string; plan:string[]; summary?:string; sources?:Array<{id:string;title:string;url:string;provider:string;snippet:string}>; citations?:Array<{id:string;title:string;url:string}>; candidate_extraction?:{status:string;candidates_submitted:number;documents_considered:number}; invalid_citations?:string[]; limitations?:string[] };
+type AgentSchedule = {schedule_id:string;question:string;interval_minutes:number;enabled:boolean;next_run_at:string};
+type AgentResult = { run_id:string; status:string; plan:string[]; summary?:string; sources?:Array<{id:string;title:string;url:string;provider:string;snippet:string}>; citations?:Array<{id:string;title:string;url:string}>; candidate_extraction?:{status:string;candidates_submitted:number;documents_considered:number}; invalid_citations?:string[]; limitations?:string[] };
 
 export default function AutonomousResearchPanel() {
   const [question,setQuestion]=useState("");
@@ -11,7 +12,9 @@ export default function AutonomousResearchPanel() {
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("An agent can break a research question into focused searches, compare evidence and prepare a cited brief.");
   const [result,setResult]=useState<AgentResult|null>(null);
-  const [history,setHistory]=useState<AgentRun[]>([]);\n  const [schedules,setSchedules]=useState<AgentSchedule[]>([]);\n  const [interval,setInterval]=useState(1440);
+  const [history,setHistory]=useState<AgentRun[]>([]);
+  const [schedules,setSchedules]=useState<AgentSchedule[]>([]);
+  const [interval,setInterval]=useState(1440);
   async function start(event:React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if(question.trim().length<8)return;
     setBusy(true);setMessage("The agent is planning research questions and retrieving sources…");setResult(null);
@@ -40,7 +43,10 @@ export default function AutonomousResearchPanel() {
   async function loadHistory(){
     try{const response=await fetch("/api/research/agent-runs?limit=10",{credentials:"same-origin",cache:"no-store"});if(response.ok){const data=await response.json();setHistory(data.items||[]);}}catch{/* history remains optional */}
   }
-  async function loadSchedules(){try{const response=await fetch("/api/research/agent-schedules",{credentials:"same-origin",cache:"no-store"});if(response.ok){const data=await response.json();setSchedules(data.items||[]);}}catch{/* schedules are optional */}}\n  async function createSchedule(){if(question.trim().length<8)return;try{const response=await fetch("/api/research/agent-schedules",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:question.trim(),interval_minutes:interval,max_sources:12,extract_graph_candidates:extract})});const data=await response.json();if(!response.ok)throw new Error(data.detail?.code||"Unable to schedule research");setMessage("Recurring research schedule created.");await loadSchedules();}catch(error){setMessage(error instanceof Error?error.message:"Unable to schedule research");}}\n  async function toggleSchedule(item:AgentSchedule){try{const response=await fetch("/api/research/agent-schedules/"+item.schedule_id,{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!item.enabled})});if(!response.ok)throw new Error("Unable to update schedule");await loadSchedules();}catch(error){setMessage(error instanceof Error?error.message:"Unable to update schedule");}}\n  async function openRun(id:string){
+  async function loadSchedules(){try{const response=await fetch("/api/research/agent-schedules",{credentials:"same-origin",cache:"no-store"});if(response.ok){const data=await response.json();setSchedules(data.items||[]);}}catch{/* schedules are optional */}}
+  async function createSchedule(){if(question.trim().length<8)return;try{const response=await fetch("/api/research/agent-schedules",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:question.trim(),interval_minutes:interval,max_sources:12,extract_graph_candidates:extract})});const data=await response.json();if(!response.ok)throw new Error(data.detail?.code||"Unable to schedule research");setMessage("Recurring research schedule created.");await loadSchedules();}catch(error){setMessage(error instanceof Error?error.message:"Unable to schedule research");}}
+  async function toggleSchedule(item:AgentSchedule){try{const response=await fetch("/api/research/agent-schedules/"+item.schedule_id,{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!item.enabled})});if(!response.ok)throw new Error("Unable to update schedule");await loadSchedules();}catch(error){setMessage(error instanceof Error?error.message:"Unable to update schedule");}}
+  async function openRun(id:string){
     try{const response=await fetch("/api/research/agent-runs/"+id,{credentials:"same-origin",cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail?.code||"Unable to load run");setResult({run_id:data.run_id,status:data.status,...(data.result||{}),plan:data.plan||[]});setMessage("Loaded saved research run.");}catch(error){setMessage(error instanceof Error?error.message:"Unable to load run");}
   }
   return <section className="agent-research-panel" aria-labelledby="agent-research-title">
