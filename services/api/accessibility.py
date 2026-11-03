@@ -40,6 +40,7 @@ class ReadingPreferences(BaseModel):
 class InteractionPreferences(BaseModel):
     model_config = ConfigDict(extra="forbid")
     voiceInput: bool = False
+    voiceNavigation: bool = False
     largeTargets: bool = False
     keyboardFirst: bool = False
     showFocus: bool = True
