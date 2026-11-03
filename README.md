@@ -20,6 +20,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 
 ## Repository map
 - `docs/` — architecture, specifications, implementation plan, universal language/voice access, accessibility/inclusion and adaptive accessibility.
+- `packages/accessibility-engine/` — typed preference model, JSON Schema, resolver and contract test cases.
 - `contracts/` — machine-readable API contract.
 - `apps/web/` — frontend implementation notes.
 - `services/api/` — FastAPI service scaffold.
@@ -32,6 +33,8 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - [Universal Language and Voice Access](docs/UNIVERSAL_LANGUAGE_AND_VOICE_ACCESS.md)
 - [Universal Accessibility and Inclusion](docs/UNIVERSAL_ACCESSIBILITY_AND_INCLUSION.md)
 - [Adaptive Accessibility System](docs/ADAPTIVE_ACCESSIBILITY_SYSTEM.md)
+- [Adaptive Accessibility Engine — Technical Design](docs/ADAPTIVE_ACCESSIBILITY_ENGINE.md)
+- [Adaptive Accessibility Engine package](packages/accessibility-engine/README.md)
 - [Technical Specifications](docs/TECHNICAL_SPECIFICATIONS.md)
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
 - [Architecture Decisions](docs/architecture/ADRS.md)
@@ -39,6 +42,8 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 
 ## Status and scope
 This repository establishes the architecture baseline; it does not claim that a global search index, agent catalogue, proprietary models, cloud or silicon already exist. Targets such as 195+ countries/languages, 120+ agents and 300+ tools are ambitions, not current capabilities. Language support must be evaluated per language, dialect and task before it is advertised. Accessibility must be tested with assistive technologies and disabled users; automated scans alone are insufficient.
+
+The Adaptive Accessibility Engine now has a committed TypeScript profile resolver, JSON Schema and contract test cases. Its FastAPI persistence routes, web settings interface and product integrations remain to be implemented and tested.
 
 ORIOM7 does not diagnose or treat medical or mental health conditions. Accessibility settings are user-selected accommodations, not diagnostic labels or inferred health profiles.
 
