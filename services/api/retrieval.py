@@ -92,33 +92,33 @@ class PostgresLexicalIndex:
 
 
 class RetrievalService:
-    def __init__(self, owned_index: SearchIndex | None, external_providers: list[ExternalSearchProvider] | None = None):
+    def __init__(self, owned_index: SearchIndex | None, external_providers: list[ExternalSearchProvider] | None = None, semantic_index: SearchIndex | None = None):
         self.owned_index = owned_index
         self.external_providers = external_providers or []
+        self.semantic_index = semantic_index
 
     async def search(self, query: str, limit: int, language: str | None = None,
                      include_owned: bool = True, include_external: bool = False) -> list[SearchResult]:
         ranked_lists: list[list[SearchResult]] = []
         if include_owned and self.owned_index is not None:
             ranked_lists.append(await self.owned_index.search(query, limit, language))
+        if include_owned and self.semantic_index is not None:
+            ranked_lists.append(await self.semantic_index.search(query, limit, language))
         if include_external:
             for provider in self.external_providers:
                 ranked_lists.append(await provider.search(query, limit, language))
 
-        # Reciprocal-rank fusion avoids comparing incomparable provider score scales.
-        fused: list[SearchResult] = []
+        # Reciprocal-rank fusion sums each source's contribution for a canonical URL.
+        scores: dict[str, float] = {}
+        representatives: dict[str, SearchResult] = {}
         for ranked in ranked_lists:
             ordered = sorted(ranked, key=lambda item: item.score, reverse=True)
-            fused.extend(
-                replace(item, score=1.0 / (60 + rank))
-                for rank, item in enumerate(ordered, start=1)
-            )
-
-        # Stable URL deduplication retains the best fused rank.
-        deduplicated: dict[str, SearchResult] = {}
-        for result in sorted(fused, key=lambda item: item.score, reverse=True):
-            deduplicated.setdefault(result.canonical_url, result)
-        return list(deduplicated.values())[:limit]
+            for rank, item in enumerate(ordered, start=1):
+                scores[item.canonical_url] = scores.get(item.canonical_url, 0.0) + 1.0 / (60 + rank)
+                if item.canonical_url not in representatives:
+                    representatives[item.canonical_url] = item
+        fused = [replace(item, score=scores[url]) for url, item in representatives.items()]
+        return sorted(fused, key=lambda item: item.score, reverse=True)[:limit]
 
 
 class SearchRequest(BaseModel):

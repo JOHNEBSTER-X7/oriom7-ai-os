@@ -15,6 +15,7 @@ import asyncpg
 from fastapi import HTTPException
 
 from ingestion import fetch_allowed_page, normalise_page_url
+from semantic_index import build_embedding_provider_from_env
 
 logger = logging.getLogger("oriom7.crawl_worker")
 
@@ -29,9 +30,10 @@ def permanent_failure(status_code: int) -> bool:
 
 
 class CrawlWorker:
-    def __init__(self, pool, worker_id: str | None = None):
+    def __init__(self, pool, worker_id: str | None = None, embedder=None):
         self.pool = pool
         self.worker_id = worker_id or socket.gethostname()
+        self.embedder = embedder
 
     async def claim(self):
         async with self.pool.acquire() as connection:
@@ -96,6 +98,7 @@ class CrawlWorker:
                        WHERE canonical_url = $1 AND content_hash = $2 AND deleted_at IS NULL""",
                     job["url"], digest,
                 )
+                outcome = "unchanged" if existing else "indexed"
                 if existing:
                     document_id = existing["document_id"]
                     await connection.execute(
@@ -121,8 +124,8 @@ class CrawlWorker:
                 await connection.execute(
                     """INSERT INTO search_ingestion_runs
                        (source_id, requested_url, final_url, outcome, detail, document_id, completed_at)
-                       VALUES ($1, $2, $2, 'indexed', $3, $4::uuid, NOW())""",
-                    job["source_id"], job["url"], content_type, document_id,
+                       VALUES ($1, $2, $2, $3, $4, $5::uuid, NOW())""",
+                    job["source_id"], job["url"], outcome, content_type, document_id,
                 )
                 await connection.execute(
                     """UPDATE search_crawl_jobs
@@ -131,6 +134,11 @@ class CrawlWorker:
                        WHERE job_id = $1""",
                     job["job_id"], document_id,
                 )
+        if self.embedder is not None:
+            try:
+                await self.embedder.index_document(self.pool, document_id, title + chr(10) + body, digest)
+            except Exception:
+                logger.exception("document_embedding_failed", extra={"document_id": document_id})
 
     async def record_failure(self, job: dict, error: str, status_code: int | None = None):
         now = datetime.now(timezone.utc)
@@ -178,7 +186,7 @@ async def serve():
     if not database_url:
         raise RuntimeError("DATABASE_URL is required for the crawler worker")
     pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
-    worker = CrawlWorker(pool, os.getenv("ORIOM7_CRAWL_WORKER_ID"))
+    worker = CrawlWorker(pool, os.getenv("ORIOM7_CRAWL_WORKER_ID"), build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None)
     idle_seconds = float(os.getenv("ORIOM7_CRAWL_IDLE_SECONDS", "3"))
     try:
         while True:

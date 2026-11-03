@@ -9,6 +9,7 @@ from assistant_generation import router as generation_router, catalog_router as 
 from model_orchestration import build_orchestrator_from_env
 from retrieval import (PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env, router as search_router)
 from ingestion import router as ingestion_router
+from semantic_index import PostgresVectorIndex, build_embedding_provider_from_env
 
 
 @asynccontextmanager
@@ -26,11 +27,17 @@ async def lifespan(application: FastAPI):
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
         application.state.database_pool = pool
         application.state.accessibility_profile_store = PostgresProfileStore(pool)
-        application.state.retrieval_service = RetrievalService(PostgresLexicalIndex(pool), build_external_search_providers_from_env())
+        embedding_provider = build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None
+        semantic_index = PostgresVectorIndex(pool, embedding_provider) if embedding_provider else None
+        application.state.embedding_provider = embedding_provider
+        application.state.retrieval_service = RetrievalService(
+            PostgresLexicalIndex(pool), build_external_search_providers_from_env(), semantic_index
+        )
     else:
         if environment == "production":
             raise RuntimeError("DATABASE_URL is required in production; refusing ephemeral profile storage.")
         application.state.accessibility_profile_store = MemoryProfileStore()
+        application.state.embedding_provider = None
         application.state.retrieval_service = RetrievalService(None, build_external_search_providers_from_env())
 
     try:
