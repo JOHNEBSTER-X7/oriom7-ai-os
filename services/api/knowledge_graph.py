@@ -253,6 +253,16 @@ async def get_entity_graph(
     }
 
 
+def require_graph_reviewer(subject: str) -> None:
+    """Require an explicit server-side reviewer subject allow-list."""
+    configured = os.getenv("ORIOM7_GRAPH_REVIEWER_SUBJECTS", "")
+    reviewers = {item.strip() for item in configured.split(",") if item.strip()}
+    if not reviewers:
+        raise HTTPException(status_code=503, detail={"code": "graph_reviewers_not_configured"})
+    if subject not in reviewers:
+        raise HTTPException(status_code=403, detail={"code": "graph_reviewer_forbidden"})
+
+
 @router.get("/assertions/review-queue")
 async def list_assertion_review_queue(
     request: Request,
@@ -262,6 +272,7 @@ async def list_assertion_review_queue(
     subject: str = Depends(authenticated_subject),
 ):
     """List pending assertions with complete source provenance for human review."""
+    require_graph_reviewer(subject)
     pool = getattr(request.app.state, "database_pool", None)
     if pool is None:
         raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
@@ -338,6 +349,7 @@ async def review_assertion(
     review_token: str | None = Header(default=None, alias="X-ORIOM7-GRAPH-REVIEW-TOKEN"),
     subject: str = Depends(authenticated_subject),
 ):
+    require_graph_reviewer(subject)
     configured = os.getenv("ORIOM7_GRAPH_REVIEW_TOKEN")
     if not configured:
         raise HTTPException(status_code=503, detail={"code": "graph_review_not_configured"})
