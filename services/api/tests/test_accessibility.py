@@ -61,9 +61,10 @@ def test_resolve_does_not_persist_temporary_override():
     response = client.post(
         "/v1/accessibility/resolve",
         headers=headers,
-        json={"overrides": {"display": {"textScale": 1.8}}},
+        json={"overrides": {"display": {"textScale": 1.8}, "content": {"preserveCitations": False}}},
     )
     assert response.status_code == 200
     assert response.json()["profile"]["display"]["textScale"] == 1.8
+    assert response.json()["profile"]["content"]["preserveCitations"] is True
     saved = client.get("/v1/accessibility/profile", headers=headers)
     assert saved.json()["profile"]["display"]["textScale"] == 1
