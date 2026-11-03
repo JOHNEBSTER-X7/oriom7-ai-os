@@ -15,6 +15,7 @@ import asyncpg
 from fastapi import HTTPException
 
 from ingestion import fetch_allowed_page, normalise_page_url
+from semantic_index import build_embedding_provider_from_env
 
 logger = logging.getLogger("oriom7.crawl_worker")
 
@@ -29,9 +30,10 @@ def permanent_failure(status_code: int) -> bool:
 
 
 class CrawlWorker:
-    def __init__(self, pool, worker_id: str | None = None):
+    def __init__(self, pool, worker_id: str | None = None, embedder=None):
         self.pool = pool
         self.worker_id = worker_id or socket.gethostname()
+        self.embedder = embedder
 
     async def claim(self):
         async with self.pool.acquire() as connection:
