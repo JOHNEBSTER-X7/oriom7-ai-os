@@ -331,7 +331,7 @@
       "get": {
         "operationId": "listPotentialAssertionConflicts",
         "summary": "Find potentially inconsistent accepted claims",
-        "description": "Caller must confirm predicate is single-valued. Results are potential inconsistencies, not proven contradictions.",
+        "description": "Only use for predicates that should be single-valued. Reports overlapping accepted claims with different objects for human assessment, not verified contradictions.",
         "security": [
           {
             "bearerAuth": []
@@ -362,7 +362,6 @@
           {
             "name": "limit",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -373,7 +372,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Potential inconsistencies with source evidence"
+            "description": "Potential inconsistencies and evidence"
           },
           "400": {
             "description": "Single-valued predicate confirmation required"
@@ -571,6 +570,74 @@
           },
           "401": {
             "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/knowledge/observations": {
+      "post": {
+        "operationId": "submitKnowledgeObservations",
+        "summary": "Submit evidence-linked graph assertions",
+        "description": "Creates unverified candidates. Optional validity dates must be supported by source evidence.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Assertions submitted for human review"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Invalid request or ineligible evidence"
+          }
+        }
+      }
+    },
+    "/knowledge/assertions/{assertion_id}/review": {
+      "post": {
+        "operationId": "reviewKnowledgeAssertion",
+        "summary": "Accept or reject a graph candidate",
+        "description": "Requires authenticated identity and the separate graph review token.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assertion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-ORIOM7-GRAPH-REVIEW-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review recorded"
+          },
+          "401": {
+            "description": "Invalid reviewer token or unauthenticated"
+          },
+          "404": {
+            "description": "Assertion not reviewable"
+          },
+          "503": {
+            "description": "Review not configured"
           }
         }
       }
