@@ -8,6 +8,7 @@ from response_adaptation import router as assistant_accessibility_router
 from assistant_generation import router as generation_router, catalog_router as model_catalog_router
 from model_orchestration import build_orchestrator_from_env
 from retrieval import (PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env, router as search_router)
+from ingestion import router as ingestion_router
 
 
 @asynccontextmanager
@@ -23,6 +24,7 @@ async def lifespan(application: FastAPI):
         except ImportError as exc:
             raise RuntimeError("Install asyncpg to use DATABASE_URL-backed profile storage.") from exc
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
+        application.state.database_pool = pool
         application.state.accessibility_profile_store = PostgresProfileStore(pool)
         application.state.retrieval_service = RetrievalService(PostgresLexicalIndex(pool), build_external_search_providers_from_env())
     else:
@@ -44,6 +46,7 @@ app.include_router(assistant_accessibility_router)
 app.include_router(generation_router)
 app.include_router(model_catalog_router)
 app.include_router(search_router)
+app.include_router(ingestion_router)
 
 
 @app.get("/v1/status", tags=["system"])
