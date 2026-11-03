@@ -1,6 +1,7 @@
 name: ORIOM7 accessibility integration checks
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
