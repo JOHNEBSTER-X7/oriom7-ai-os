@@ -45,3 +45,9 @@ app.include_router(generation_router)
 app.include_router(model_catalog_router)
 app.include_router(search_router)
 
+
+@app.get("/v1/status", tags=["system"])
+async def status() -> dict[str, str]:
+    """Return a minimal liveness response without exposing infrastructure details."""
+    return {"status": "ok"}
+
