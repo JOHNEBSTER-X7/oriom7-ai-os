@@ -10,6 +10,7 @@ from model_orchestration import build_orchestrator_from_env
 from retrieval import (PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env, router as search_router)
 from ingestion import router as ingestion_router
 from semantic_index import PostgresVectorIndex, build_embedding_provider_from_env
+from knowledge_graph import router as knowledge_graph_router
 
 
 @asynccontextmanager
@@ -54,6 +55,7 @@ app.include_router(generation_router)
 app.include_router(model_catalog_router)
 app.include_router(search_router)
 app.include_router(ingestion_router)
+app.include_router(knowledge_graph_router)
 
 
 @app.get("/v1/status", tags=["system"])
