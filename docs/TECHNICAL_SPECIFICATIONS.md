@@ -67,7 +67,7 @@ Example:
 }
 ```
 
-The response stream should expose typed events such as response start, text delta, source reference, usage and completion. Define a stable event schema before shipping streaming clients.
+The response stream should expose typed events such as response start, text delta, source reference, usage and completion. Define a stable event schema before shipping streaming clients. Streaming status, source announcements and errors must be exposed accessibly to screen readers without excessive repeated announcements.
 
 ## 5. Model registry
 
@@ -96,7 +96,21 @@ Core relational entities: tenants, users, memberships, API keys (hashed); conver
 
 Use migrations, foreign keys and tenant-aware query patterns. Store API-key hashes, not plaintext keys.
 
-## 8. Initial quality gates
+## 8. Accessibility requirements
+
+- Target WCAG 2.2 Level AA for the web experience.
+- Prefer semantic HTML; use ARIA only to supplement native semantics.
+- Every interactive control has an accessible name, role, state and keyboard operation.
+- Maintain logical focus order, visible focus, skip navigation and no keyboard traps.
+- Announce asynchronous search results, streaming states and errors to assistive technology.
+- Provide text alternatives for informative images, charts, maps and spoken output.
+- Support text resizing, zoom, contrast preferences and reduced motion.
+- Captions/transcripts accompany relevant audio/video; no essential alert is sound-only.
+- Test manually with screen readers, keyboard-only use and disabled participants. Automated scanners alone are not sufficient.
+
+See `UNIVERSAL_ACCESSIBILITY_AND_INCLUSION.md` for the full product requirements.
+
+## 9. Initial quality gates
 
 - Unit tests for policy, adapters and normalisation.
 - Contract tests against OpenAPI.
@@ -105,3 +119,4 @@ Use migrations, foreign keys and tenant-aware query patterns. Store API-key hash
 - Load tests for concurrent search and streaming.
 - Dependency, secret and static-analysis scans.
 - Privacy and tenant-isolation tests.
+- Keyboard, screen-reader and automated accessibility checks.
