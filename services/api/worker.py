@@ -16,6 +16,7 @@ from fastapi import HTTPException
 
 from ingestion import fetch_allowed_page, normalise_page_url
 from semantic_index import build_embedding_provider_from_env
+from model_orchestration import build_orchestrator_from_env
 
 logger = logging.getLogger("oriom7.crawl_worker")
 
@@ -30,10 +31,11 @@ def permanent_failure(status_code: int) -> bool:
 
 
 class CrawlWorker:
-    def __init__(self, pool, worker_id: str | None = None, embedder=None):
+    def __init__(self, pool, worker_id: str | None = None, embedder=None, extraction_orchestrator=None):
         self.pool = pool
         self.worker_id = worker_id or socket.gethostname()
         self.embedder = embedder
+        self.extraction_orchestrator = extraction_orchestrator
 
     async def claim(self):
         async with self.pool.acquire() as connection:
@@ -139,6 +141,17 @@ class CrawlWorker:
                 await self.embedder.index_document(self.pool, document_id, title + chr(10) + body, digest)
             except Exception:
                 logger.exception("document_embedding_failed", extra={"document_id": document_id})
+        if self.extraction_orchestrator is not None:
+            try:
+                from knowledge_extraction import extract_document_candidates
+                await extract_document_candidates(
+                    self.pool, self.extraction_orchestrator, document_id,
+                    submitted_by="worker:" + self.worker_id,
+                )
+            except Exception as exc:
+                logger.warning("knowledge_extraction_skipped", extra={
+                    "document_id": document_id, "reason": type(exc).__name__,
+                })
 
     async def record_failure(self, job: dict, error: str, status_code: int | None = None):
         now = datetime.now(timezone.utc)
@@ -186,7 +199,17 @@ async def serve():
     if not database_url:
         raise RuntimeError("DATABASE_URL is required for the crawler worker")
     pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
-    worker = CrawlWorker(pool, os.getenv("ORIOM7_CRAWL_WORKER_ID"), build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None)
+    extraction_enabled = os.getenv("ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED", "false").lower() == "true"
+    extraction_orchestrator = build_orchestrator_from_env() if extraction_enabled else None
+    if extraction_orchestrator is not None and not extraction_orchestrator.providers:
+        logger.warning("knowledge_extraction_enabled_without_model_provider")
+        extraction_orchestrator = None
+    worker = CrawlWorker(
+        pool,
+        os.getenv("ORIOM7_CRAWL_WORKER_ID"),
+        build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None,
+        extraction_orchestrator,
+    )
     idle_seconds = float(os.getenv("ORIOM7_CRAWL_IDLE_SECONDS", "3"))
     try:
         while True:
