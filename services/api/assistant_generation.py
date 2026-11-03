@@ -70,7 +70,7 @@ async def create_response(
     retrieval_status = "not_requested"
     if payload.grounding.search:
         retrieval: RetrievalService | None = getattr(request.app.state, "retrieval_service", None)
-        if retrieval is None:
+        if retrieval is None or (retrieval.owned_index is None and not retrieval.external_providers):
             raise HTTPException(status_code=503, detail={
                 "code": "retrieval_not_configured",
                 "message": "Grounded responses require the ORIOM7 search index, which is not configured.",
@@ -79,7 +79,7 @@ async def create_response(
             evidence = await retrieval.search(
                 payload.input, min(max(payload.grounding.minimum_sources, 5), 20),
                 presentation.get("language") if presentation.get("language") != "auto" else None,
-                include_owned=True, include_external=False,
+                include_owned=retrieval.owned_index is not None, include_external=True,
             )
             retrieval_status = "retrieved" if evidence else "no_results"
         except Exception:
