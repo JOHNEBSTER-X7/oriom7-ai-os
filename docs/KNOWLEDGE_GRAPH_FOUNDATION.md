@@ -195,3 +195,8 @@ Paths are navigational connections, not proof of causation or transitive truth. 
 ### Migration order
 
 Apply migrations 001 through 008 in numerical order. Migration 008 is additive and leaves existing assertion validity dates null.
+
+
+## Human review interface
+
+The `/research/review` interface exposes a provenance-rich queue for eligible unverified assertions. Access requires both normal authentication and an explicit `ORIOM7_GRAPH_REVIEWER_SUBJECTS` allow-list; decisions additionally require the server-held graph review token. See [Evidence Verification Centre](EVIDENCE_VERIFICATION_CENTRE.md).
