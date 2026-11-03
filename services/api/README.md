@@ -37,7 +37,7 @@ pip install -r requirements-dev.txt
 PYTHONPATH=. pytest -q
 ```
 
-Search and assistant orchestration remain separate product work. Do not run long crawling or indexing jobs in HTTP handlers; dispatch them to managed queues and workers.
+Search now uses the PostgreSQL lexical index and optional external search adapters; see [Hybrid Search and Grounding](../../docs/HYBRID_SEARCH_AND_GROUNDING.md). A production crawler, ingestion pipeline and indexing workers remain separate work. Do not run long crawling or indexing jobs in HTTP handlers; dispatch them to managed queues and workers.
 
 
 ## Model providers and assistant generation
