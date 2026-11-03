@@ -32,7 +32,7 @@ Apply migrations 001 through 010 in order. Run the API and a separate worker pro
 python worker.py
 ```
 
-Configure `DATABASE_URL`, at least one model provider and the desired search provider on the worker. The worker uses PostgreSQL lexical search and configured external search; configure the same database and model/search secrets in the worker environment. The worker also continues to process the existing approved-source crawl queue.
+Configure `DATABASE_URL`, at least one model provider and the desired search provider on the worker. The worker uses PostgreSQL lexical search, optional pgvector semantic retrieval, and configured external search; configure the same database and model/search secrets in the worker environment. The worker also continues to process the existing approved-source crawl queue.
 
 ## Trust and safety
 
