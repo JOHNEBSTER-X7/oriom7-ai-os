@@ -152,9 +152,9 @@ async def extract_document_candidates(
                 row = await connection.fetchrow(
                     """INSERT INTO knowledge_assertions
                        (subject_entity_id, predicate, object_entity_id, evidence_document_id,
-                        evidence_excerpt, confidence, extraction_method, submitted_by, status)
-                       VALUES ($1::uuid, $2, $3::uuid, $4::uuid, $5, $6,
-                               'model_candidate_exact_excerpt', $7, 'unverified')
+                        evidence_excerpt, confidence, valid_from, valid_to, extraction_method, submitted_by, status)
+                       VALUES ($1::uuid, $2, $3::uuid, $4::uuid, $5, $6, $7, $8,
+                               'model_candidate_exact_excerpt', $9, 'unverified')
                        ON CONFLICT DO NOTHING
                        RETURNING assertion_id""",
                     subject_id, relation.predicate, object_id, document["document_id"],
