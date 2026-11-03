@@ -209,7 +209,7 @@ class ResearchAgentWorker:
             async with con.transaction():
                 rows=await con.fetch("""SELECT * FROM research_agent_schedules
                   WHERE enabled=TRUE AND next_run_at<=NOW()
-                  ORDER BY next_run_at FOR UPDATE SKIP LOCKED LIMIT 10""")
+                  ORDER BY next_run_at LIMIT 10 FOR UPDATE SKIP LOCKED""")
                 for row in rows:
                     run_id=await con.fetchval("""INSERT INTO research_agent_runs
                       (owner_subject,research_question,status)
@@ -229,11 +229,15 @@ class ResearchAgentWorker:
                   locked_by=NULL,last_error='worker lease expired; attempts exhausted',updated_at=NOW()
                   WHERE status='running' AND attempts>=max_attempts
                     AND locked_at<NOW()-INTERVAL '15 minutes'""")
+                await con.execute("""UPDATE research_agent_runs r SET status='failed',
+                  error_code='worker_lease_exhausted',completed_at=NOW()
+                  FROM research_agent_jobs j WHERE j.run_id=r.run_id AND j.status='failed'
+                    AND r.status='running' AND j.last_error='worker lease expired; attempts exhausted'""")
                 row=await con.fetchrow("""SELECT job_id,run_id::text,owner_subject,payload,attempts,max_attempts
                   FROM research_agent_jobs
                   WHERE (status='pending' AND available_at<=NOW())
                      OR (status='running' AND locked_at<NOW()-INTERVAL '15 minutes')
-                  ORDER BY available_at FOR UPDATE SKIP LOCKED LIMIT 1""")
+                  ORDER BY available_at LIMIT 1 FOR UPDATE SKIP LOCKED""")
                 if row is None: return None
                 await con.execute("""UPDATE research_agent_jobs SET status='running',attempts=attempts+1,
                   locked_at=NOW(),locked_by=$2,updated_at=NOW() WHERE job_id=$1""",row["job_id"],self.worker_id)
