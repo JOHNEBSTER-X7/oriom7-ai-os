@@ -132,3 +132,14 @@ See `UNIVERSAL_ACCESSIBILITY_AND_INCLUSION.md` for the full product requirements
 - Avoid forced audio, autoplay, flashing, strobing and uncontrolled motion.
 
 Full product requirements: `ADAPTIVE_ACCESSIBILITY_SYSTEM.md`.
+
+## 11. Adaptive Accessibility Engine package
+
+The reference package is at `packages/accessibility-engine/` and currently contains:
+- Typed TypeScript profile interfaces and safe defaults.
+- Allow-listed profile normalisation and bounded numeric settings.
+- Session-only override resolution.
+- JSON Schema contract for profile validation.
+- Framework-neutral contract test cases.
+
+The package is not yet connected to the FastAPI persistence layer or Next.js design system. Integration routes and UI work are tracked in `docs/ADAPTIVE_ACCESSIBILITY_ENGINE.md`.
