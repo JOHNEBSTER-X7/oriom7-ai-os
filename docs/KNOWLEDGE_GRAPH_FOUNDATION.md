@@ -8,7 +8,7 @@ Initial entity types are intentionally extensible: people, organisations, locati
 
 ## Data model
 
-Migration `006_knowledge_graph.sql` adds:
+Migration `006_knowledge_graph.sql` adds the graph schema; migration `007_knowledge_assertion_dedup.sql` adds an idempotency index for repeated extraction runs.
 
 - `knowledge_entities`: canonical name, entity type and Unicode-normalised lookup key.
 - `knowledge_entity_aliases`: alternative names and normalised alias lookup.
@@ -95,3 +95,32 @@ Returns only accepted relationships, with source document IDs, evidence excerpts
 ## Deployment
 
 Apply migrations 001 through 006 in order. Set `ORIOM7_GRAPH_REVIEW_TOKEN` only in the API secret manager. Do not put it in frontend configuration. Before production, integrate reviewer roles, audit monitoring, rate limits and source-deletion propagation tests.
+
+## Model-assisted candidate extraction
+
+The extraction service uses the configured ORIOM7 model orchestrator to propose entities and relationships from one eligible indexed document. It treats document content as untrusted input and instructs the model to return a strict JSON object, not executable instructions or prose.
+
+### Request extraction
+
+`POST /v1/knowledge/documents/{document_id}/extract`
+
+The route requires normal user authentication and an available configured model provider. It loads only documents that are indexed, non-deleted, have a non-empty rights basis and an allowed/not-applicable robots status. The model receives the title and a bounded 12,000-character source excerpt.
+
+The application then:
+- Validates the JSON shape and Pydantic constraints.
+- Requires relation endpoints to exist in the submitted entity list.
+- Rejects self-relations and excessive entity/relation counts.
+- Retains a proposed relation only when its evidence excerpt is an exact verbatim substring of the supplied source text.
+- Deduplicates repeated assertions for the same entity pair, predicate, evidence document and excerpt.
+- Persists every candidate as `unverified`; it never accepts model output automatically.
+
+If a model produces no exact excerpt, no assertion is created. Model confidence is only a triage signal, not a probability guarantee. The extraction response reports provider/model metadata and whether fallback routing was used, but does not expose secrets.
+
+### Optional worker integration
+
+Set `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true` in the crawler worker environment to run extraction after a page has been indexed. This is disabled by default and requires configured model provider credentials and an explicit model ID. Extraction failure is logged without undoing successful lexical ingestion. Existing indexed documents can be processed by calling the authenticated extraction endpoint individually; a bulk backfill scheduler is not yet included.
+
+### Deployment migrations
+
+Apply migrations 001 through 007 in numerical order. Keep `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED` disabled until provider spend limits, privacy review and human-review operations are ready. The model receives source text, so confirm provider data-processing, retention and residency terms before enabling it on licensed or sensitive content.
+
