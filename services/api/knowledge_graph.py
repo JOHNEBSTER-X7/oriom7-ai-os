@@ -5,11 +5,12 @@ them. Only accepted assertions are returned by graph read endpoints.
 """
 from __future__ import annotations
 
-import re
+import hmac
+import os
 import unicodedata
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from accessibility import authenticated_subject
@@ -226,4 +227,50 @@ async def get_entity_graph(
             "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),
         } for row in relations],
         "note": "Only reviewed, accepted assertions are returned.",
+    }
+
+
+class AssertionReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    decision: str = Field(pattern="^(accepted|rejected)$")
+    reviewer: str = Field(min_length=2, max_length=120)
+
+
+@router.post("/assertions/{assertion_id}/review")
+async def review_assertion(
+    assertion_id: UUID,
+    payload: AssertionReviewRequest,
+    request: Request,
+    review_token: str | None = Header(default=None, alias="X-ORIOM7-GRAPH-REVIEW-TOKEN"),
+    subject: str = Depends(authenticated_subject),
+):
+    configured = os.getenv("ORIOM7_GRAPH_REVIEW_TOKEN")
+    if not configured:
+        raise HTTPException(status_code=503, detail={"code": "graph_review_not_configured"})
+    if not review_token or not hmac.compare_digest(review_token, configured):
+        raise HTTPException(status_code=401, detail={"code": "invalid_graph_review_token"})
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
+    async with pool.acquire() as connection:
+        row = await connection.fetchrow(
+            """UPDATE knowledge_assertions a
+               SET status = $2, reviewed_by = $3, reviewed_at = NOW()
+               WHERE a.assertion_id = $1 AND a.status = 'unverified'
+                 AND EXISTS (
+                    SELECT 1 FROM search_documents d
+                    WHERE d.document_id = a.evidence_document_id
+                      AND d.deleted_at IS NULL AND d.index_status = 'indexed'
+                      AND d.rights_basis IS NOT NULL AND btrim(d.rights_basis) <> ''
+                      AND d.robots_status IN ('allowed', 'not_applicable')
+                 )
+               RETURNING assertion_id::text, status, reviewed_at""",
+            assertion_id, payload.decision, payload.reviewer,
+        )
+    if row is None:
+        raise HTTPException(status_code=404, detail={"code": "reviewable_assertion_not_found"})
+    return {
+        "assertion_id": row["assertion_id"],
+        "status": row["status"],
+        "reviewed_at": row["reviewed_at"].isoformat(),
     }
