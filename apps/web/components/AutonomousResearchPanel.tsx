@@ -17,8 +17,21 @@ export default function AutonomousResearchPanel() {
     setBusy(true);setMessage("The agent is planning research questions and retrieving sources…");setResult(null);
     try {
       const response=await fetch("/api/research/agent-runs",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({question:question.trim(),max_sources:12,extract_graph_candidates:extract})});
-      const data=await response.json();
-      if(!response.ok)throw new Error(data.detail?.code||data.error||"Research agent request failed");
+      const queued=await response.json();
+      if(!response.ok)throw new Error(queued.detail?.code||queued.error||"Research agent request failed");
+      setMessage("Research queued. Waiting for a background worker…");
+      let completed:any=null;
+      for(let attempt=0;attempt<90;attempt++){
+        await new Promise(resolve=>setTimeout(resolve,2000));
+        const poll=await fetch("/api/research/agent-runs/"+queued.run_id,{credentials:"same-origin",cache:"no-store"});
+        if(!poll.ok)continue;
+        const current=await poll.json();
+        if(["completed","partial","failed","cancelled"].includes(current.status)){completed=current;break;}
+        setMessage("Research agent running · "+current.status+" · "+(attempt+1)*2+" seconds elapsed");
+      }
+      if(!completed)throw new Error("Research is still running. Its run ID is "+queued.run_id+"; check previous runs shortly.");
+      if(completed.status==="failed")throw new Error(completed.error_code||"Research run failed");
+      const data={run_id:completed.run_id,status:completed.status,...(completed.result||{}),plan:completed.plan||[]};
       setResult(data);setMessage(data.status==="completed"?"Research run completed. Review the evidence and citations below.":"Research run completed with limitations. Inspect the output carefully.");
       await loadHistory();
     } catch(error){setMessage(error instanceof Error?error.message:"Research agent unavailable");}
