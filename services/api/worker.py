@@ -36,6 +36,13 @@ class CrawlWorker:
     async def claim(self):
         async with self.pool.acquire() as connection:
             async with connection.transaction():
+                await connection.execute(
+                    """UPDATE search_crawl_jobs
+                       SET status = 'failed', locked_at = NULL, locked_by = NULL,
+                           last_error = 'worker lease expired after maximum attempts', updated_at = NOW()
+                       WHERE status = 'running' AND attempts >= max_attempts
+                         AND locked_at < NOW() - INTERVAL '10 minutes'"""
+                )
                 row = await connection.fetchrow(
                     """
                     SELECT j.job_id, j.source_id, j.url, j.language, j.attempts,
