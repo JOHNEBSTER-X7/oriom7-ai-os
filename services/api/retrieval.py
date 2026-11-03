@@ -137,9 +137,15 @@ async def search(
         include_owned="oriom7_index" in payload.sources,
         include_external="external" in payload.sources,
     )
+    unavailable_sources = []
+    if "external" in payload.sources and not service.external_providers:
+        unavailable_sources.append("external")
+    if "oriom7_index" in payload.sources and service.owned_index is None:
+        unavailable_sources.append("oriom7_index")
     return {
         "query": payload.query,
-        "status": "completed",
+        "status": "partial" if unavailable_sources else "completed",
+        "unavailable_sources": unavailable_sources,
         "results": [
             {
                 "id": result.source_id,
