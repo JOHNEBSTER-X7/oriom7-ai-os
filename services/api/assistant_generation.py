@@ -79,3 +79,30 @@ async def create_response(
         "presentation": presentation,
         "provider_request_id": result.provider_request_id,
     }
+
+catalog_router = APIRouter(prefix="/v1", tags=["models"])
+
+
+@catalog_router.get("/models")
+async def list_models(
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+) -> dict[str, Any]:
+    """List only configured models; never expose credentials or provider settings."""
+    orchestrator: ModelOrchestrator | None = getattr(request.app.state, "model_orchestrator", None)
+    providers = orchestrator.providers if orchestrator else []
+    return {
+        "models": [
+            {
+                "provider": provider.name,
+                "id": provider.model,
+                "capabilities": {
+                    "text_generation": True,
+                    "streaming": False,
+                    "tool_execution": False,
+                    "vision": False,
+                },
+            }
+            for provider in providers
+        ]
+    }
