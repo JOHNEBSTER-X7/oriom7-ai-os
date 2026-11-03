@@ -7,7 +7,9 @@ function upstreamPath(segments: string[], search: string) {
   if (path === "search") return "/v1/search";
   if (path === "assistant") return "/v1/assistant/responses";
   if (path === "agent-runs") return `/v1/research/agents/runs${search}`;
-  if (path === "agent-schedules") return `/v1/research/agents/schedules${search}`;\n  const schedule = path.match(/^agent-schedules\/([0-9a-f-]{36})$/i);\n  if (schedule) return `/v1/research/agents/schedules/${schedule[1]}${search}`;
+  if (path === "agent-schedules") return `/v1/research/agents/schedules${search}`;
+  const schedule = path.match(/^agent-schedules\/([0-9a-f-]{36})$/i);
+  if (schedule) return `/v1/research/agents/schedules/${schedule[1]}${search}`;
   const agentRun = path.match(/^agent-runs\/([0-9a-f-]{36})$/i);
   if (agentRun) return `/v1/research/agents/runs/${agentRun[1]}${search}`;
   if (path === "entities") return `/v1/knowledge/entities${search}`;
@@ -58,4 +60,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function POST(request: NextRequest, context: RouteContext) {
   return forward(request, context, "POST");
 }
-\nexport async function PATCH(request: NextRequest, context: RouteContext) {\n  return forward(request, context, "PATCH");\n}\n
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return forward(request, context, "PATCH");
+}
