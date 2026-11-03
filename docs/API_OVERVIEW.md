@@ -77,3 +77,12 @@ The web application provides a `/research` workspace that orchestrates the exist
 - `POST /v1/knowledge/assertions/{assertion_id}/review`: accept/reject decision; authenticated reviewer allow-list and review token required.
 
 The Next.js interface is available at `/research/review`; its same-origin proxy keeps the review token server-side. See [Evidence Verification Centre](EVIDENCE_VERIFICATION_CENTRE.md).
+
+
+## Autonomous research agents
+
+- `POST /v1/research/agents/runs` starts a bounded research plan-and-retrieve run.
+- `GET /v1/research/agents/runs` lists the authenticated user's run history.
+- `GET /v1/research/agents/runs/{run_id}` retrieves one owned run.
+
+Apply migration 009. The first implementation runs synchronously in the request and is not a scheduled or durable background agent. See [Autonomous Research Agents](AUTONOMOUS_RESEARCH_AGENTS.md).
