@@ -279,3 +279,28 @@ async def review_assertion(
         "status": row["status"],
         "reviewed_at": row["reviewed_at"].isoformat(),
     }
+
+
+@router.post("/documents/{document_id}/extract", status_code=202)
+async def extract_document_graph_candidates(
+    document_id: UUID,
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    """Request model-assisted extraction; results remain unverified for review."""
+    orchestrator = getattr(request.app.state, "model_orchestrator", None)
+    if orchestrator is None or not orchestrator.providers:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_extraction_model_unavailable"})
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
+    from knowledge_extraction import ExtractionError, extract_document_candidates
+    try:
+        result = await extract_document_candidates(
+            pool, orchestrator, document_id, submitted_by=subject
+        )
+    except ExtractionError as exc:
+        code = str(exc)
+        status_code = 422 if code == "ineligible_evidence_document" else 502
+        raise HTTPException(status_code=status_code, detail={"code": code}) from exc
+    return result
