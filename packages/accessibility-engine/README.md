@@ -8,9 +8,16 @@ A shared, user-controlled preference engine for Search, the AI Assistant and Dev
 
 ## Package contents
 
-- `src/profile.ts`: typed profile model, safe defaults, validation and temporary override resolution.
+- `src/profile.ts`: typed profile model, safe defaults, normalisation and temporary override resolution.
+- `src/profile.ts`: optional `ACCESSIBLE_STARTER_PROFILE` preset covering larger text and controls, high contrast, read-aloud, plain language, Calm Mode, voice-navigation preference, reading assistance and saved progress.
 - `schemas/accessibility-profile.schema.json`: JSON Schema contract for API and persistence validation.
 - `tests/profile.test.ts`: framework-neutral test cases to port into the repository's configured test runner.
+
+## Starter preset behaviour
+
+The preset is opt-in; it does not change defaults for every ORIOM7 user. It selects a 1.25 text scale, larger targets, high contrast, speech output, plain-language answers, a reading guide, spoken-text highlighting, Calm Mode, reduced motion, step-by-step presentation and save-progress preference.
+
+Voice navigation is a preference only. The preset deliberately leaves microphone input disabled. The application must obtain explicit microphone permission separately, show when listening is active, and provide cancel and non-voice alternatives.
 
 ## Integration sequence
 
