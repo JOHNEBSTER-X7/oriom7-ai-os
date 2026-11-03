@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from research_agents import AgentRunRequest, ScheduleRequest
+from research_agents import AgentRunRequest, ScheduleRequest, ScheduleUpdate
 
 
 def test_agent_request_is_bounded_and_rejects_unknown_fields():
@@ -18,7 +18,7 @@ def test_schedule_interval_is_bounded():
     with pytest.raises(ValidationError):
         ScheduleRequest(question="Track changes in grid-scale battery storage",interval_minutes=5)
 
-from research_agent_runtime import AgentPlan, execute_research_job
+from research_agent_runtime import AgentPlan
 
 
 def test_research_agent_plan_deduplicates_and_bounds_questions():
@@ -46,3 +46,8 @@ def test_runtime_preserves_only_evidence_citation_mapping():
     evidence = [{"id": "S1"}, {"id": "S2"}, {"id": "S3"}]
     assert [evidence[n - 1]["id"] for n in labels if 1 <= n <= len(evidence)] == ["S1", "S3"]
     assert [f"S{n}" for n in labels if n < 1 or n > len(evidence)] == ["S8"]
+
+
+def test_schedule_update_rejects_extra_fields():
+    with pytest.raises(ValidationError):
+        ScheduleUpdate(enabled=True, owner_subject="attacker")
