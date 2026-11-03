@@ -57,3 +57,10 @@ See [Hybrid Search and Grounding](HYBRID_SEARCH_AND_GROUNDING.md) for database s
 - `POST /knowledge/documents/{document_id}/extract` — model-assisted candidate extraction. Verbatim excerpt validation is required and all output remains unverified.
 
 Apply migrations 006–008 after 001–005. Migration 008 adds optional `valid_from` and `valid_to` dates. Temporal dates are recorded only when supported by source material; null means unknown. Multi-hop traversal is limited to three edges. Neither entity resolution nor conflict triage performs automatic merging, fact acceptance or contradiction resolution. See [Knowledge Graph Foundation](KNOWLEDGE_GRAPH_FOUNDATION.md).
+
+
+## Graph-aware research assistant
+
+`POST /assistant/responses` now supplements hybrid search with bounded knowledge-graph context when the API has a database-backed graph. The service matches explicit names/aliases in the question, then retrieves only accepted assertions whose source documents remain indexed, non-deleted, rights-cleared and robots-eligible. It does not treat unverified graph candidates as facts.
+
+Search citations use `[S#]`; graph citations use a separate `[G#]` namespace. Both are mapped to retrieved source records. The response adds `grounding.knowledge_graph` with matched entities, assertion count, source citations and potential inconsistencies. Potential inconsistencies are unresolved review signals, not proven contradictions. Connected relationships do not establish causation or transitive truth. See [Graph-Aware Research Assistant](GRAPH_AWARE_RESEARCH_ASSISTANT.md).
