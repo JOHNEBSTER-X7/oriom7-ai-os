@@ -221,6 +221,40 @@ async def register_source(
     return dict(row)
 
 
+@router.post("/queue", status_code=202)
+async def enqueue_page(
+    payload: CrawlRequest,
+    request: Request,
+    ingestion_token: str | None = Header(default=None, alias="X-ORIOM7-INGESTION-TOKEN"),
+):
+    """Queue one approved page for a separate worker; never fetch in the API process."""
+    require_ingestion_token(request, ingestion_token)
+    pool = get_pool(request)
+    parsed = urlsplit(payload.url)
+    if not parsed.hostname:
+        raise HTTPException(status_code=422, detail={"code": "invalid_page_url"})
+    async with pool.acquire() as connection:
+        source = await connection.fetchrow(
+            "SELECT source_id, host FROM search_sources WHERE host = $1 AND status = 'approved'",
+            parsed.hostname.lower(),
+        )
+        if source is None:
+            raise HTTPException(status_code=403, detail={"code": "source_not_approved"})
+        url = normalise_page_url(payload.url, source["host"])
+        row = await connection.fetchrow(
+            """INSERT INTO search_crawl_jobs (source_id, url, language)
+               VALUES ($1, $2, $3)
+               ON CONFLICT (source_id, url) DO UPDATE SET
+                 status = CASE WHEN search_crawl_jobs.status IN ('failed', 'blocked', 'rejected')
+                               THEN 'pending' ELSE search_crawl_jobs.status END,
+                 available_at = CASE WHEN search_crawl_jobs.status IN ('failed', 'blocked', 'rejected')
+                                      THEN NOW() ELSE search_crawl_jobs.available_at END,
+                 updated_at = NOW()
+               RETURNING job_id::text, status, created_at""",
+            source["source_id"], url, payload.language,
+        )
+    return {"job_id": row["job_id"], "status": row["status"], "url": url}
+
 @router.post("/crawl", status_code=202)
 async def crawl_one_page(
     payload: CrawlRequest,
