@@ -25,7 +25,8 @@ organisation, location, product, technology, concept, event, publication), alias
 (array of strings, optional).
 Each relation: subject_name, subject_type, predicate (lowercase snake_case),
 object_name, object_type, evidence_excerpt (an exact verbatim substring copied from
-the supplied document, 20-2000 characters), confidence (0..1).
+the supplied document, 20-2000 characters), confidence (0..1), and optional
+valid_from / valid_to dates (YYYY-MM-DD) only when explicit in the document.
 Only extract explicit relationships stated in the document. Do not infer causation,
 ownership, identity, dates or relationships from general knowledge. Preserve
 negation and qualification in the excerpt; do not convert a disputed claim into fact.
