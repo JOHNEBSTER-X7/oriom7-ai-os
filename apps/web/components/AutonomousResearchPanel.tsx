@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 type AgentRun = { run_id:string; question:string; status:string; started_at:string; completed_at:string|null };
-type AgentResult = { run_id:string; status:string; plan:string[]; summary?:string; sources?:Array<{id:string;title:string;url:string;provider:string;snippet:string}>; citations?:Array<{id:string;title:string;url:string}>; candidate_extraction?:{status:string;candidates_submitted:number;documents_considered:number}; invalid_citations?:string[]; limitations?:string[] };
+type AgentSchedule = {schedule_id:string;question:string;interval_minutes:number;enabled:boolean;next_run_at:string};\ntype AgentResult = { run_id:string; status:string; plan:string[]; summary?:string; sources?:Array<{id:string;title:string;url:string;provider:string;snippet:string}>; citations?:Array<{id:string;title:string;url:string}>; candidate_extraction?:{status:string;candidates_submitted:number;documents_considered:number}; invalid_citations?:string[]; limitations?:string[] };
 
 export default function AutonomousResearchPanel() {
   const [question,setQuestion]=useState("");
@@ -11,7 +11,7 @@ export default function AutonomousResearchPanel() {
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("An agent can break a research question into focused searches, compare evidence and prepare a cited brief.");
   const [result,setResult]=useState<AgentResult|null>(null);
-  const [history,setHistory]=useState<AgentRun[]>([]);
+  const [history,setHistory]=useState<AgentRun[]>([]);\n  const [schedules,setSchedules]=useState<AgentSchedule[]>([]);\n  const [interval,setInterval]=useState(1440);
   async function start(event:React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if(question.trim().length<8)return;
     setBusy(true);setMessage("The agent is planning research questions and retrieving sources…");setResult(null);
@@ -40,7 +40,7 @@ export default function AutonomousResearchPanel() {
   async function loadHistory(){
     try{const response=await fetch("/api/research/agent-runs?limit=10",{credentials:"same-origin",cache:"no-store"});if(response.ok){const data=await response.json();setHistory(data.items||[]);}}catch{/* history remains optional */}
   }
-  async function openRun(id:string){
+  async function loadSchedules(){try{const response=await fetch("/api/research/agent-schedules",{credentials:"same-origin",cache:"no-store"});if(response.ok){const data=await response.json();setSchedules(data.items||[]);}}catch{/* schedules are optional */}}\n  async function createSchedule(){if(question.trim().length<8)return;try{const response=await fetch("/api/research/agent-schedules",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:question.trim(),interval_minutes:interval,max_sources:12,extract_graph_candidates:extract})});const data=await response.json();if(!response.ok)throw new Error(data.detail?.code||"Unable to schedule research");setMessage("Recurring research schedule created.");await loadSchedules();}catch(error){setMessage(error instanceof Error?error.message:"Unable to schedule research");}}\n  async function toggleSchedule(item:AgentSchedule){try{const response=await fetch("/api/research/agent-schedules/"+item.schedule_id,{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!item.enabled})});if(!response.ok)throw new Error("Unable to update schedule");await loadSchedules();}catch(error){setMessage(error instanceof Error?error.message:"Unable to update schedule");}}\n  async function openRun(id:string){
     try{const response=await fetch("/api/research/agent-runs/"+id,{credentials:"same-origin",cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail?.code||"Unable to load run");setResult({run_id:data.run_id,status:data.status,...(data.result||{}),plan:data.plan||[]});setMessage("Loaded saved research run.");}catch(error){setMessage(error instanceof Error?error.message:"Unable to load run");}
   }
   return <section className="agent-research-panel" aria-labelledby="agent-research-title">
@@ -65,6 +65,13 @@ export default function AutonomousResearchPanel() {
     </div>}
     <div className="agent-history"><div className="workspace-section-heading"><h3>Previous runs</h3><button className="secondary-button" type="button" onClick={()=>void loadHistory()}>Refresh history</button></div>
       {history.length===0?<p className="muted">Run history appears here after you load it or complete an investigation.</p>:<ul>{history.map(item=><li key={item.run_id}><button type="button" onClick={()=>void openRun(item.run_id)}>{item.question}</button><small>{item.status} · {new Date(item.started_at).toLocaleString()}</small></li>)}</ul>}
+    </div>
+    <div className="agent-history">
+      <div className="workspace-section-heading"><h3>Recurring research</h3><button className="secondary-button" type="button" onClick={()=>void loadSchedules()}>Refresh schedules</button></div>
+      <label htmlFor="agent-interval">Repeat interval</label>
+      <select id="agent-interval" value={interval} onChange={e=>setInterval(Number(e.target.value))}><option value={60}>Every hour</option><option value={360}>Every 6 hours</option><option value={1440}>Daily</option><option value={10080}>Weekly</option><option value={43200}>Every 30 days</option></select>
+      <button className="secondary-button" type="button" disabled={question.trim().length<8} onClick={()=>void createSchedule()}>Schedule this research objective</button>
+      <ul>{schedules.map(item=><li key={item.schedule_id}><strong>{item.question}</strong><small>{item.enabled?"Enabled":"Paused"} · every {item.interval_minutes} minutes · next run {new Date(item.next_run_at).toLocaleString()}</small><button className="secondary-button" type="button" onClick={()=>void toggleSchedule(item)}>{item.enabled?"Pause":"Resume"}</button></li>)}</ul>
     </div>
     <p className="research-disclaimer">Runs are initiated by you and bounded in scope. The current implementation executes synchronously within the API request; it is not yet a continuously running or scheduled agent service. Candidate graph assertions are never automatically accepted.</p>
   </section>;
