@@ -68,6 +68,12 @@ class GraphRelationInput(BaseModel):
         return value.strip()
 
 
+    @model_validator(mode="after")
+    def reject_self_relation(self):
+        if (self.subject_type, normalise_name(self.subject_name)) == (self.object_type, normalise_name(self.object_name)):
+            raise ValueError("self-relations are not allowed")
+        return self
+
 class KnowledgeObservationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     evidence_document_id: UUID
