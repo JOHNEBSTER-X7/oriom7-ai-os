@@ -1,6 +1,5 @@
+import asyncio
 from datetime import datetime, timezone
-
-import pytest
 
 from graph_research import format_graph_context, retrieve_graph_context
 
@@ -50,19 +49,17 @@ class FakePool:
         return FakeAcquire(self.connection)
 
 
-@pytest.mark.asyncio
-async def test_graph_context_uses_only_accepted_evidence_and_returns_provenance():
+def test_graph_context_uses_only_accepted_evidence_and_returns_provenance():
     pool = FakePool()
-    result = await retrieve_graph_context(pool, "How does Acme Energy use Grid Storage?")
+    result = asyncio.run(retrieve_graph_context(pool, "How does Acme Energy use Grid Storage?"))
     assert [item["name"] for item in result["entities"]] == ["Acme Energy", "Grid Storage"]
     assert result["assertions"][0]["predicate"] == "develops"
     assert result["assertions"][0]["evidence"]["url"] == "https://example.org/report"
     assert result["potential_inconsistencies"] == []
 
 
-@pytest.mark.asyncio
-async def test_graph_context_skips_database_for_queries_without_entity_terms():
-    result = await retrieve_graph_context(None, "!!!")
+def test_graph_context_skips_database_for_queries_without_entity_terms():
+    result = asyncio.run(retrieve_graph_context(None, "!!!"))
     assert result == {"entities": [], "assertions": [], "potential_inconsistencies": []}
 
 
@@ -89,4 +86,4 @@ def test_graph_context_format_uses_separate_stable_citation_namespace():
     assert "[G1]" in block
     assert "[G1]" not in str(sources)
     assert sources[0]["id"] == "G1"
-    assert "does not prove causation" in block
+    assert "does not establish causation" in block
