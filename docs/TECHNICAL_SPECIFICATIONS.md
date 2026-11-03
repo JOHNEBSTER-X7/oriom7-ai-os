@@ -1,0 +1,107 @@
+# ORIOM7 Technical Specifications
+
+**Version:** 1.0 — 3 November 2026
+
+## 1. Reference stack
+
+| Area | Initial choice / approach |
+|---|---|
+| Web | Next.js, React, TypeScript |
+| Hosting | Vercel |
+| API | Python, FastAPI, OpenAPI 3.1 |
+| Primary data | Managed PostgreSQL |
+| Cache / rate limits | Managed Redis |
+| Search | Managed OpenSearch/Elasticsearch-compatible service or equivalent |
+| Vector retrieval | Qdrant or equivalent, subject to evaluation |
+| Object storage | S3-compatible managed object storage |
+| Queue | Managed queue first; Kafka only when justified |
+| Identity | OIDC provider; hashed API keys for developer access |
+| CI/CD | GitHub Actions |
+| Runtime | Managed API runtime plus separate background workers |
+
+These services are candidates, not locked vendors. Benchmark against security, region, cost, operations and workload.
+
+## 2. API conventions
+
+- Base path: `/v1`.
+- JSON request and response bodies.
+- UTC ISO-8601 timestamps.
+- Correlation header: `X-Request-ID`.
+- Authentication: end-user OIDC session or developer API key.
+- Pagination: opaque cursor for large collections.
+- Errors: stable machine-readable code, human-readable message and request ID.
+- Rate-limit responses use HTTP 429 and a retry hint where appropriate.
+
+## 3. Search request
+
+`POST /v1/search`
+
+Example:
+```json
+{
+  "query": "renewable energy storage policy",
+  "sources": ["oriom7_index", "external"],
+  "limit": 10,
+  "language": "en",
+  "region": "GB"
+}
+```
+
+Each result includes a stable ID, title, canonical URL, snippet, source type, provider, retrieval timestamp and optional publication timestamp. Do not invent publication dates or source metadata.
+
+## 4. Assistant request
+
+`POST /v1/assistant/responses`
+
+Example:
+```json
+{
+  "input": "Compare the latest evidence on grid-scale batteries",
+  "conversation_id": null,
+  "mode": "research",
+  "stream": true,
+  "grounding": {
+    "search": true,
+    "minimum_sources": 3
+  }
+}
+```
+
+The response stream should expose typed events such as response start, text delta, source reference, usage and completion. Define a stable event schema before shipping streaming clients.
+
+## 5. Model registry
+
+Each model entry should include provider and model identifier; capability tags; supported regions and data-handling constraints; context/output limits; indicative cost metadata and effective date; availability/health state; and routing eligibility.
+
+Model metadata and price data must be verified from providers and kept current; never hard-code unverified prices into user-facing estimates.
+
+## 6. Search indexing pipeline
+
+1. Source discovery from approved sources.
+2. Fetch with rate limits, robots/terms and source-specific policies.
+3. Parse and extract text and metadata.
+4. Canonicalise URL and normalise content.
+5. Deduplicate using URL and content fingerprints.
+6. Apply safety, copyright, privacy and retention checks.
+7. Split into passages with stable document and passage IDs.
+8. Generate embeddings if enabled.
+9. Index lexical fields and vectors.
+10. Track freshness, errors and re-crawl schedule.
+
+Suggested document fields: `document_id`, `canonical_url`, `title`, `body_ref`, `language`, `region`, `publisher`, `published_at`, `fetched_at`, `content_hash`, `rights_basis`, `robots_status`, `index_status`, `deleted_at`.
+
+## 7. Data model domains
+
+Core relational entities: tenants, users, memberships, API keys (hashed); conversations, messages, response runs; search requests/results and source records; model providers, registry and routing policies; usage events, quotas and plans; crawl sources/jobs, documents and index jobs; audit events and deletion requests.
+
+Use migrations, foreign keys and tenant-aware query patterns. Store API-key hashes, not plaintext keys.
+
+## 8. Initial quality gates
+
+- Unit tests for policy, adapters and normalisation.
+- Contract tests against OpenAPI.
+- Integration tests for PostgreSQL, cache, queue and provider mocks.
+- Search relevance and citation-grounding evaluation.
+- Load tests for concurrent search and streaming.
+- Dependency, secret and static-analysis scans.
+- Privacy and tenant-isolation tests.
