@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 from accessibility import MemoryProfileStore, PostgresProfileStore, router as accessibility_router
+from response_adaptation import router as assistant_accessibility_router
 
 
 @asynccontextmanager
@@ -34,6 +35,7 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(title="ORIOM7 API", version="1.1.0", lifespan=lifespan)
 app.include_router(accessibility_router)
+app.include_router(assistant_accessibility_router)
 
 
 class SearchRequest(BaseModel):
