@@ -73,3 +73,8 @@ The assistant can now use accepted, source-backed knowledge-graph assertions alo
 ## Research intelligence workspace
 
 The Next.js app now includes a dedicated `/research` workspace for hybrid source search, graph entity exploration, source comparison, historical relationship timelines and Markdown research-report export. It uses a same-origin authenticated API proxy and keeps graph evidence provenance visible. See [Research Intelligence Workspace](docs/RESEARCH_INTELLIGENCE_WORKSPACE.md).
+
+
+## Evidence verification centre
+
+The `/research/review` workspace lets explicitly authorised human reviewers inspect pending graph assertions, open their source, and accept or reject claims. The API restricts access to an explicit authenticated-subject allow-list and a server-held review token. See [Evidence Verification Centre](docs/EVIDENCE_VERIFICATION_CENTRE.md).
