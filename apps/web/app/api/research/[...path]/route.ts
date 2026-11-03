@@ -6,6 +6,9 @@ function upstreamPath(segments: string[], search: string) {
   const path = segments.join("/");
   if (path === "search") return "/v1/search";
   if (path === "assistant") return "/v1/assistant/responses";
+  if (path === "agent-runs") return `/v1/research/agents/runs${search}`;
+  const agentRun = path.match(/^agent-runs\/([0-9a-f-]{36})$/i);
+  if (agentRun) return `/v1/research/agents/runs/${agentRun[1]}${search}`;
   if (path === "entities") return `/v1/knowledge/entities${search}`;
   if (path === "review-queue") return `/v1/knowledge/assertions/review-queue${search}`;
   const entity = path.match(/^entities\/([0-9a-f-]{36})$/i);
