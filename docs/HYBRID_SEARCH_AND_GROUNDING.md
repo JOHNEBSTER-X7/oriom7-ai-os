@@ -16,6 +16,7 @@ Apply migrations in order:
 ```bash
 psql "$DATABASE_URL" -f services/api/migrations/001_accessibility_profiles.sql
 psql "$DATABASE_URL" -f services/api/migrations/002_search_index.sql
+psql "$DATABASE_URL" -f services/api/migrations/003_search_ingestion.sql
 ```
 
 The index searches only records where:
@@ -26,7 +27,7 @@ The index searches only records where:
 
 This is a query-time eligibility filter, not a substitute for a documented source approval process. A source must be reviewed for terms, rights, privacy, retention and deletion obligations before indexing.
 
-The repository does not yet include a production crawler, ingestion UI or source-approval workflow. Populate the table only through a controlled, permission-aware ingestion process.
+The API includes a controlled single-page ingestion endpoint and operator-managed source registry. Source registration requires a documented rights basis, approval reference and operator identity. This is an operator attestation, not an independent legal approval system; the organisation must verify source terms, licences, privacy, retention and deletion rights before registration.
 
 ## External search configuration
 
@@ -88,7 +89,7 @@ A valid label only proves that the label maps to a retrieved result. It does not
 - PostgreSQL lexical retrieval only; semantic/vector retrieval and semantic reranking are not yet implemented.
 - External provider support currently includes the optional SerpApi Google adapter only.
 - The external adapter returns search snippets, not full page contents.
-- No crawler, ingestion worker, content parser, source approval console or rights-review automation is included.
+- Ingestion is single-page and operator-triggered; recursive crawling, queue-backed workers, scheduled refresh, source approval console and automated rights review are not included.
 - No publication date is invented; missing dates remain null.
 - No independent semantic entailment check is performed on citations.
 - The assistant remains non-streaming.
@@ -103,3 +104,42 @@ A valid label only proves that the label maps to a retrieved result. It does not
 - Add claim-to-passage citation evaluation and adversarial citation tests.
 - Add per-tenant quotas, search-provider spend controls, timeout budgets and audit records.
 - Benchmark latency and retrieval relevance before adding vector search.
+
+
+## Controlled single-page ingestion
+
+Set `ORIOM7_INGESTION_TOKEN` in the API secret manager. Use a long random secret and never expose it to the web client. Requests must send it in `X-ORIOM7-INGESTION-TOKEN`.
+
+### Register an approved source
+
+`POST /v1/ingestion/sources`
+
+```json
+{
+  "base_url": "https://publisher.example",
+  "rights_basis": "Written licence permitting indexing and snippet display",
+  "approval_reference": "LICENCE-2026-001",
+  "approved_by": "content-operations"
+}
+```
+
+### Ingest one page
+
+`POST /v1/ingestion/crawl`
+
+```json
+{
+  "url": "https://publisher.example/research/battery-storage",
+  "language": "en"
+}
+```
+
+The current worker:
+- Requires an operator-registered HTTPS host and matches the requested host exactly.
+- Checks DNS results are globally routable, checks the site's robots.txt for ORIOM7Bot, and refuses redirects.
+- Accepts only HTML and plain text, with a 2 MB response cap and a 100,000-character extracted-text cap.
+- Removes script/style and other non-content HTML elements before indexing.
+- Stores a SHA-256 content hash, rights basis, robots decision, retrieval timestamp and ingestion-run outcome.
+- Marks the previous version of a changed URL as deleted before indexing its replacement; unchanged pages update their fetch timestamp.
+
+This is a controlled ingestion primitive, not yet a general web crawler. DNS is validated before the HTTP request, but the HTTP client resolves the hostname separately; production deployment must add network-level egress controls or pinned-address transport to close DNS-rebinding risk. Robots.txt is a crawl-policy signal, not a copyright licence. Source approval and the rights basis remain the operator's responsibility.
