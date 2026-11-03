@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Protocol
 from urllib.parse import urlsplit
@@ -97,15 +97,25 @@ class RetrievalService:
 
     async def search(self, query: str, limit: int, language: str | None = None,
                      include_owned: bool = True, include_external: bool = False) -> list[SearchResult]:
-        results: list[SearchResult] = []
+        ranked_lists: list[list[SearchResult]] = []
         if include_owned and self.owned_index is not None:
-            results.extend(await self.owned_index.search(query, limit, language))
+            ranked_lists.append(await self.owned_index.search(query, limit, language))
         if include_external:
             for provider in self.external_providers:
-                results.extend(await provider.search(query, limit, language))
-        # Stable URL deduplication, preferring the higher-scoring candidate.
+                ranked_lists.append(await provider.search(query, limit, language))
+
+        # Reciprocal-rank fusion avoids comparing incomparable provider score scales.
+        fused: list[SearchResult] = []
+        for ranked in ranked_lists:
+            ordered = sorted(ranked, key=lambda item: item.score, reverse=True)
+            fused.extend(
+                replace(item, score=1.0 / (60 + rank))
+                for rank, item in enumerate(ordered, start=1)
+            )
+
+        # Stable URL deduplication retains the best fused rank.
         deduplicated: dict[str, SearchResult] = {}
-        for result in sorted(results, key=lambda item: item.score, reverse=True):
+        for result in sorted(fused, key=lambda item: item.score, reverse=True):
             deduplicated.setdefault(result.canonical_url, result)
         return list(deduplicated.values())[:limit]
 
@@ -217,7 +227,7 @@ class SerpApiGoogleSearch:
 
         fetched_at = datetime.now(timezone.utc)
         results = []
-        for position, item in enumerate(data.get("organic_results", [])[:limit], start=1):
+        for position, item in enumerate((data.get("organic_results") or [])[:limit], start=1):
             title = item.get("title")
             url = item.get("link")
             if not isinstance(title, str) or not title.strip() or not isinstance(url, str):
