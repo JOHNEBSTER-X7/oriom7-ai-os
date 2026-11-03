@@ -82,4 +82,4 @@ The `/research/review` workspace lets explicitly authorised human reviewers insp
 
 ## Autonomous research agents
 
-The first supervised research agent can plan focused sub-questions, search configured ORIOM7 sources, synthesise cited findings, persist run history and optionally submit evidence-checked graph candidates for human review. It never automatically accepts graph assertions. See [Autonomous Research Agents](docs/AUTONOMOUS_RESEARCH_AGENTS.md).
+ORIOM7 now queues user-initiated research for a separate PostgreSQL-backed worker. It uses specialist planning, evidence-retrieval and synthesis stages, stores run history, retries bounded failures and supports opt-in recurring schedules. Candidate graph assertions still require human review. Apply migration 010 and run `python worker.py` alongside the API. See [Autonomous Research Agents](docs/AUTONOMOUS_RESEARCH_AGENTS.md).
