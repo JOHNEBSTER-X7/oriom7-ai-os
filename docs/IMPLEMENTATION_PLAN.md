@@ -2,7 +2,7 @@
 
 ## Delivery principle
 
-Build one complete user-facing vertical slice before expanding subsystem count. Search, assistant and developer API are first-release priorities, delivered through shared infrastructure and a small number of deployable units. Universal language, voice-first and low-literacy access must shape the initial design and API boundaries from the beginning.
+Build one complete user-facing vertical slice before expanding subsystem count. Search, assistant and developer API are first-release priorities, delivered through shared infrastructure and a small number of deployable units. Universal language, voice-first, low-literacy and disability access must shape the initial design and API boundaries from the beginning.
 
 ## Phase 0 — readiness (indicative 1–2 weeks)
 
@@ -12,6 +12,7 @@ Deliverables:
 - Select first external search provider and first model providers.
 - Define representative search, assistant and multilingual/voice evaluation sets.
 - Define locale preferences, audio consent, retention and deletion requirements.
+- Audit initial design components against WCAG 2.2 AA; plan keyboard and screen-reader test coverage.
 - Establish dev/staging/prod environments, CI and secret management.
 
 Exit criteria: architecture decisions recorded; provider/data boundaries agreed; security baseline and deployment pipeline operational; language and accessibility pilot criteria agreed.
@@ -28,10 +29,12 @@ Deliverables:
 - Basic locale preference and language-selection foundations.
 - Voice input and spoken answer playback through provider-neutral adapters, initially for a carefully evaluated pilot language set where feasible.
 - Plain-language answer option, replay and correction controls.
+- Semantic HTML, keyboard-complete navigation, screen-reader labels and announcements for search, assistant streaming, sources and errors.
+- Text alternatives for spoken output and accessible controls for audio playback.
 - Background worker and queue for ingestion.
 - Automated tests and basic observability.
 
-Exit criteria: search returns normalised first-party and external results; assistant uses retrieved evidence and exposes references; developer API contract is tested; failure and degraded-mode behaviour is demonstrated; pilot users can ask and hear answers in their chosen supported language.
+Exit criteria: search returns normalised first-party and external results; assistant uses retrieved evidence and exposes references; developer API contract is tested; failure and degraded-mode behaviour is demonstrated; pilot users can ask and hear answers in their chosen supported language; core journeys pass manual keyboard and screen-reader testing.
 
 ## Phase 2 — search quality and cross-language retrieval (indicative 4–8 weeks)
 
@@ -43,7 +46,7 @@ API key lifecycle, usage dashboard and quota management; SDK and quick starts; v
 
 ## Phase 4 — multilingual and regional expansion
 
-Expand language and dialect coverage only after evaluation and community testing. Add locale-aware ranking, transliteration where needed, regional privacy and data-residency controls, voice options and language feedback/correction workflows. Publish limitations and measured quality by language.
+Expand language and dialect coverage only after evaluation and community testing. Add locale-aware ranking, transliteration where needed, regional privacy and data-residency controls, voice options and language feedback/correction workflows. Publish limitations and measured quality by language. Expand low-vision, high-contrast, reduced-motion and alternative input support based on user testing.
 
 ## Phase 5 — agents and scale
 
@@ -64,4 +67,5 @@ Measure workloads and inference bottlenecks; benchmark open/self-hosted models a
 | Provider outages | Timeouts, retries, circuit breakers and fallback |
 | Speech/translation errors | Language-specific evaluation, confirmation and clear uncertainty |
 | Audio privacy | Explicit consent, minimal retention and deletion controls |
+| Accessibility regressions | WCAG-oriented checks, assistive-technology tests and disabled-user research |
 | Operational overload | Managed infrastructure and modular architecture |
