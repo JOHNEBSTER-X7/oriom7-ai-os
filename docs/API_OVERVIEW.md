@@ -39,3 +39,8 @@ The first generation slice is non-streaming and text-only. Retrieval grounding, 
 `POST /assistant/responses` now accepts a `grounding` object with `search` and `minimum_sources`. When enabled, the API retrieves evidence before model invocation, supplies numbered source labels, and maps labels in the model output back to retrieved records. Unknown source labels are reported as invalid references. This is reference validation, not semantic proof that a source supports a claim.
 
 See [Hybrid Search and Grounding](HYBRID_SEARCH_AND_GROUNDING.md) for database setup, external provider configuration, API examples and remaining limitations.
+
+
+## Multilingual semantic retrieval
+
+`POST /search` can combine the first-party PostgreSQL lexical index with an optional pgvector semantic index. When enabled, query and document embeddings are generated through the configured embeddings provider, and lexical/vector result lists are fused using reciprocal-rank fusion. Semantic matching is cross-language by default; strict language filtering is opt-in. Semantic retrieval requires pgvector migration 005 and backend embedding credentials. See [Hybrid Search and Grounding](HYBRID_SEARCH_AND_GROUNDING.md) for configuration, privacy, backfill and limitations. Similarity scores are relevance signals, not evidence of factual entailment.
