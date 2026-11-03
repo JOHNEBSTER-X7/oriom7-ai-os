@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oriom7.ai/schemas/accessibility-profile.schema.json",
+  "title": "ORIOM7 Accessibility Profile",
+  "description": "User-selected functional preferences. This schema intentionally contains no diagnosis or inferred health fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "display", "reading", "interaction", "content", "sensory"],
+  "properties": {
+    "version": { "const": 1 },
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "textScale": { "type": "number", "minimum": 0.8, "maximum": 2.5 },
+        "fontFamily": { "enum": ["system", "sans", "serif", "dyslexia_friendly"] },
+        "fontWeight": { "enum": ["normal", "medium", "bold"] },
+        "lineHeight": { "type": "number", "minimum": 1.2, "maximum": 2.2 },
+        "letterSpacing": { "type": "number", "minimum": 0, "maximum": 0.12 },
+        "contrast": { "enum": ["system", "standard", "high", "more"] },
+        "theme": { "enum": ["system", "light", "dark", "warm"] },
+        "readingGuide": { "type": "boolean" }
+      }
+    },
+    "reading": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "speechOutput": { "type": "boolean" },
+        "speechRate": { "type": "number", "minimum": 0.6, "maximum": 1.8 },
+        "highlightSpokenText": { "type": "boolean" },
+        "plainLanguage": { "type": "boolean" },
+        "detailLevel": { "enum": ["concise", "balanced", "detailed"] },
+        "preferredLanguage": { "type": "string", "minLength": 2, "maxLength": 35 }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "voiceInput": { "type": "boolean" },
+        "largeTargets": { "type": "boolean" },
+        "keyboardFirst": { "type": "boolean" },
+        "showFocus": { "type": "boolean" },
+        "confirmDestructiveActions": { "type": "boolean" },
+        "saveProgress": { "type": "boolean" }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reduceClutter": { "type": "boolean" },
+        "stepByStep": { "type": "boolean" },
+        "showShortAnswerFirst": { "type": "boolean" },
+        "preserveCitations": { "const": true }
+      }
+    },
+    "sensory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reduceMotion": { "type": "boolean" },
+        "disableAutoplay": { "type": "boolean" },
+        "muteNonessentialAudio": { "type": "boolean" },
+        "calmPresentation": { "type": "boolean" }
+      }
+    }
+  }
+}
