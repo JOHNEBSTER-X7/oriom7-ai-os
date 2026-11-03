@@ -92,15 +92,18 @@ class PostgresLexicalIndex:
 
 
 class RetrievalService:
-    def __init__(self, owned_index: SearchIndex | None, external_providers: list[ExternalSearchProvider] | None = None):
+    def __init__(self, owned_index: SearchIndex | None, external_providers: list[ExternalSearchProvider] | None = None, semantic_index: SearchIndex | None = None):
         self.owned_index = owned_index
         self.external_providers = external_providers or []
+        self.semantic_index = semantic_index
 
     async def search(self, query: str, limit: int, language: str | None = None,
                      include_owned: bool = True, include_external: bool = False) -> list[SearchResult]:
         ranked_lists: list[list[SearchResult]] = []
         if include_owned and self.owned_index is not None:
             ranked_lists.append(await self.owned_index.search(query, limit, language))
+        if include_owned and self.semantic_index is not None:
+            ranked_lists.append(await self.semantic_index.search(query, limit, language))
         if include_external:
             for provider in self.external_providers:
                 ranked_lists.append(await provider.search(query, limit, language))
