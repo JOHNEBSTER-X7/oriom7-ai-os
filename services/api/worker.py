@@ -16,7 +16,7 @@ from fastapi import HTTPException
 
 from ingestion import fetch_allowed_page, normalise_page_url
 from semantic_index import build_embedding_provider_from_env
-from model_orchestration import build_orchestrator_from_env
+from model_orchestration import build_orchestrator_from_env\nfrom retrieval import PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env\nfrom research_agent_runtime import execute_research_job, fail_research_job
 
 logger = logging.getLogger("oriom7.crawl_worker")
 
