@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from accessibility import MemoryProfileStore
-from assistant_generation import router
+from assistant_generation import catalog_router, router
 from model_orchestration import ModelOrchestrator, ModelResult, ProviderUnavailable
 
 
