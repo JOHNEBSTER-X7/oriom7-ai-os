@@ -136,10 +136,17 @@ async def create_response(
     ]
     if not payload.grounding.search:
         grounding_status = "not_requested"
+    elif not evidence:
+        grounding_status = "no_results"
     elif len(evidence) < payload.grounding.minimum_sources:
-        grounding_status = "insufficient_sources" if evidence else "no_results"
+        grounding_status = "insufficient_sources"
     else:
         grounding_status = "grounded"
+    citation_status = (
+        "invalid_references" if invalid_citations
+        else "no_citations" if evidence and not cited_numbers
+        else "valid"
+    )
     return {
         "id": str(uuid.uuid4()),
         "status": "completed",
@@ -164,7 +171,7 @@ async def create_response(
             ],
             "citations": valid_citations,
             "citation_validation": {
-                "status": "invalid_references" if invalid_citations else "valid",
+                "status": citation_status,
                 "invalid_references": invalid_citations,
             },
             "minimum_sources": payload.grounding.minimum_sources,
