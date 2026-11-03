@@ -19,6 +19,7 @@ from ingestion import fetch_allowed_page, normalise_page_url
 from semantic_index import build_embedding_provider_from_env
 from model_orchestration import build_orchestrator_from_env
 from retrieval import PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env
+from semantic_index import PostgresVectorIndex
 from research_agent_runtime import execute_research_job, fail_research_job
 
 logger = logging.getLogger("oriom7.crawl_worker")
@@ -277,9 +278,11 @@ async def serve():
         extraction_orchestrator,
     )
     research_orchestrator=build_orchestrator_from_env()
+    research_embedding_provider = build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None
+    research_semantic_index = PostgresVectorIndex(pool, research_embedding_provider) if research_embedding_provider is not None else None
     research_worker=ResearchAgentWorker(
         pool,
-        RetrievalService(PostgresLexicalIndex(pool),build_external_search_providers_from_env()),
+        RetrievalService(PostgresLexicalIndex(pool), build_external_search_providers_from_env(), research_semantic_index),
         research_orchestrator,
         os.getenv("ORIOM7_RESEARCH_WORKER_ID"),
     ) if research_orchestrator.providers else None
