@@ -21,6 +21,7 @@ psql "$DATABASE_URL" -f services/api/migrations/004_distributed_crawl_queue.sql
 psql "$DATABASE_URL" -f services/api/migrations/005_semantic_search.sql
 psql "$DATABASE_URL" -f services/api/migrations/006_knowledge_graph.sql
 psql "$DATABASE_URL" -f services/api/migrations/007_knowledge_assertion_dedup.sql
+psql "$DATABASE_URL" -f services/api/migrations/008_knowledge_graph_temporal_intelligence.sql
 ```
 
 The index searches only records where:

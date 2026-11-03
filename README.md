@@ -60,9 +60,6 @@ The API now includes PostgreSQL lexical retrieval over a rights-basis-filtered f
 The search API now supports optional pgvector semantic retrieval alongside PostgreSQL lexical search, with reciprocal-rank fusion and cross-language vector matching when configured. Semantic indexing requires migration 005 and an explicitly configured embedding provider; see [Hybrid Search and Grounding](docs/HYBRID_SEARCH_AND_GROUNDING.md). Do not advertise broad language coverage until per-language retrieval quality has been benchmarked.
 
 
-## Knowledge graph foundation
+## Knowledge graph and intelligence layer
 
-The API now includes a provenance-aware graph schema and endpoints for candidate entity/relation submission, token-protected human review, entity/alias lookup and accepted one-hop relationship reads. Candidate assertions remain hidden from graph reads until reviewed and accepted against eligible indexed evidence. This is a foundation, not yet an automated knowledge graph extraction or reasoning system. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
-
-
-The graph foundation now includes an optional model-assisted extraction endpoint and worker hook. Extracted relationships are retained only when their evidence excerpt is an exact substring of the indexed source, and they remain unverified until human review. Enable worker-side extraction only after configuring model credentials, reviewing provider data-processing terms and setting `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true`. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
+The graph now supports evidence-linked candidate extraction, temporal relationship validity, similarity-ranked entity resolution suggestions, potential-conflict triage for explicitly single-valued predicates, and bounded multi-hop paths through accepted assertions. Every traversed relationship retains its source evidence. Entity suggestions never auto-merge records; conflict reports are hypotheses for human review, not proof of contradiction. Apply migrations 006–008 after 001–005. See [Knowledge Graph Foundation](docs/KNOWLEDGE_GRAPH_FOUNDATION.md).

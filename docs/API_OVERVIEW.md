@@ -48,11 +48,12 @@ See [Hybrid Search and Grounding](HYBRID_SEARCH_AND_GROUNDING.md) for database s
 
 ## Evidence-linked knowledge graph
 
-- `POST /knowledge/observations` — submit entities and provenance-bearing relationship candidates against an eligible indexed document. Candidates begin as `unverified`.
-- `POST /knowledge/assertions/{assertion_id}/review` — token-protected review action; only an authenticated reviewer can accept or reject a candidate. Configure `ORIOM7_GRAPH_REVIEW_TOKEN` in backend secrets.
-- `GET /knowledge/entities?q=...` — find canonical entities and aliases.
-- `GET /knowledge/entities/{entity_id}` — read the entity's one-hop neighbourhood, returning accepted assertions only.
+- `POST /knowledge/observations` — submit entities and evidence-linked relationship candidates; candidates begin unverified.
+- `POST /knowledge/assertions/{assertion_id}/review` — protected human review action.
+- `GET /knowledge/entities?q=...` and `GET /knowledge/entities/{entity_id}` — entity lookup and accepted one-hop relationships.
+- `GET /knowledge/entities/{entity_id}/resolution-candidates` — similarity-ranked possible duplicate identities; suggestions do not merge records.
+- `GET /knowledge/assertions/potential-conflicts?predicate=...&single_valued=true` — find overlapping accepted claims with different objects for a caller-designated single-valued predicate. Results are potential inconsistencies for human assessment.
+- `GET /knowledge/entities/{entity_id}/paths?max_depth=2&as_of=YYYY-MM-DD` — bounded multi-hop paths through accepted, currently eligible evidence; each edge retains provenance.
+- `POST /knowledge/documents/{document_id}/extract` — model-assisted candidate extraction. Verbatim excerpt validation is required and all output remains unverified.
 
-Apply migration `006_knowledge_graph.sql` after migrations 001–005. Assertions retain evidence document IDs, excerpts, confidence and reviewer audit data. Review is a human approval gate, not automatic fact verification. See [Knowledge Graph Foundation](KNOWLEDGE_GRAPH_FOUNDATION.md) for schema, examples and limitations.
-
-- `POST /knowledge/documents/{document_id}/extract` — request model-assisted entity and relation extraction from one eligible indexed document. Candidate excerpts must match source text verbatim and all assertions remain unverified pending human review. Requires a configured model provider. Optional crawler-worker invocation is controlled by `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED` (default false).
+Apply migrations 006–008 after 001–005. Migration 008 adds optional `valid_from` and `valid_to` dates. Temporal dates are recorded only when supported by source material; null means unknown. Multi-hop traversal is limited to three edges. Neither entity resolution nor conflict triage performs automatic merging, fact acceptance or contradiction resolution. See [Knowledge Graph Foundation](KNOWLEDGE_GRAPH_FOUNDATION.md).

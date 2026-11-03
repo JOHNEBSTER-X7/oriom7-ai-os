@@ -8,6 +8,8 @@ from __future__ import annotations
 import hmac
 import os
 import unicodedata
+from datetime import date
+from difflib import SequenceMatcher
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
@@ -55,6 +57,8 @@ class GraphRelationInput(BaseModel):
     object_type: str = Field(pattern=r"^[a-z][a-z0-9_]{1,39}$")
     evidence_excerpt: str = Field(min_length=20, max_length=2000)
     confidence: float = Field(ge=0, le=1)
+    valid_from: date | None = None
+    valid_to: date | None = None
     extraction_method: str = Field(default="human_or_model_candidate", max_length=80)
 
     @field_validator("subject_name", "object_name")
@@ -70,6 +74,8 @@ class GraphRelationInput(BaseModel):
 
     @model_validator(mode="after")
     def reject_self_relation(self):
+        if self.valid_from and self.valid_to and self.valid_from > self.valid_to:
+            raise ValueError("valid_from must not be later than valid_to")
         if (self.subject_type, normalise_name(self.subject_name)) == (self.object_type, normalise_name(self.object_name)):
             raise ValueError("self-relations are not allowed")
         return self
@@ -143,11 +149,11 @@ async def submit_observations(
                 row = await connection.fetchrow(
                     """INSERT INTO knowledge_assertions
                        (subject_entity_id, predicate, object_entity_id, evidence_document_id,
-                        evidence_excerpt, confidence, extraction_method, submitted_by, status)
-                       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, 'unverified')
+                        evidence_excerpt, confidence, valid_from, valid_to, extraction_method, submitted_by, status)
+                       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, 'unverified')
                        RETURNING assertion_id::text""",
                     subject_id, relation.predicate, object_id, payload.evidence_document_id,
-                    relation.evidence_excerpt, relation.confidence,
+                    relation.evidence_excerpt, relation.confidence, relation.valid_from, relation.valid_to,
                     relation.extraction_method, subject,
                 )
                 assertion_ids.append(row["assertion_id"])
@@ -233,6 +239,8 @@ async def get_entity_graph(
             "object": {"id": row["object_id"], "name": row["object_name"], "type": row["object_type"]},
             "evidence": {"document_id": row["evidence_document_id"], "excerpt": row["evidence_excerpt"]},
             "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),
+            "valid_from": row["valid_from"].isoformat() if row["valid_from"] else None,
+            "valid_to": row["valid_to"].isoformat() if row["valid_to"] else None,
         } for row in relations],
         "note": "Only reviewed, accepted assertions are returned.",
     }
@@ -306,3 +314,223 @@ async def extract_document_graph_candidates(
         status_code = 422 if code == "ineligible_evidence_document" else 502
         raise HTTPException(status_code=status_code, detail={"code": code}) from exc
     return result
+
+
+
+def rank_entity_match_candidates(target_name: str, candidates: list[dict], limit: int = 10):
+    """Rank possible duplicate entities; suggestions never merge or rewrite identities."""
+    target = normalise_name(target_name)
+    ranked = []
+    for candidate in candidates:
+        names = [candidate["canonical_name"], *candidate.get("aliases", [])]
+        score = max(
+            (SequenceMatcher(None, target, normalise_name(name)).ratio() for name in names),
+            default=0.0,
+        )
+        if score >= 0.65:
+            ranked.append({
+                "id": candidate["entity_id"],
+                "type": candidate["entity_type"],
+                "name": candidate["canonical_name"],
+                "similarity": round(score, 4),
+                "matched_aliases": [
+                    alias for alias in candidate.get("aliases", [])
+                    if normalise_name(alias) == target
+                ],
+            })
+    return sorted(ranked, key=lambda item: (-item["similarity"], item["name"]))[:limit]
+
+
+def temporal_ranges_overlap(a_from: date | None, a_to: date | None,
+                            b_from: date | None, b_to: date | None) -> bool:
+    """Unknown bounds are treated as open intervals for conflict triage."""
+    return (a_to is None or b_from is None or a_to >= b_from) and (
+        b_to is None or a_from is None or b_to >= a_from
+    )
+
+
+@router.get("/entities/{entity_id}/resolution-candidates")
+async def entity_resolution_candidates(
+    entity_id: UUID,
+    request: Request,
+    limit: int = Query(default=10, ge=1, le=25),
+    subject: str = Depends(authenticated_subject),
+):
+    """Suggest possible duplicate identities without automatically merging them."""
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
+    async with pool.acquire() as connection:
+        target = await connection.fetchrow(
+            "SELECT entity_id::text, entity_type, canonical_name FROM knowledge_entities WHERE entity_id=$1",
+            entity_id,
+        )
+        if target is None:
+            raise HTTPException(status_code=404, detail={"code": "knowledge_entity_not_found"})
+        rows = await connection.fetch(
+            """SELECT e.entity_id::text, e.entity_type, e.canonical_name,
+                      COALESCE(array_agg(a.alias) FILTER (WHERE a.alias IS NOT NULL), ARRAY[]::text[]) AS aliases
+               FROM knowledge_entities e
+               LEFT JOIN knowledge_entity_aliases a ON a.entity_id=e.entity_id
+               WHERE e.entity_type=$1 AND e.entity_id<>$2
+               GROUP BY e.entity_id
+               ORDER BY e.updated_at DESC LIMIT 500""",
+            target["entity_type"], entity_id,
+        )
+    candidates = rank_entity_match_candidates(
+        target["canonical_name"], [dict(row) for row in rows], limit
+    )
+    return {
+        "entity": {"id": target["entity_id"], "type": target["entity_type"], "name": target["canonical_name"]},
+        "candidates": candidates,
+        "automatic_merge": False,
+        "note": "Similarity is a review aid, not proof that two records identify the same real-world entity.",
+    }
+
+
+@router.get("/assertions/potential-conflicts")
+async def potential_assertion_conflicts(
+    request: Request,
+    predicate: str = Query(min_length=2, max_length=80),
+    single_valued: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    subject: str = Depends(authenticated_subject),
+):
+    """Find overlapping accepted claims with different objects for a caller-designated single-valued predicate."""
+    if not single_valued:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "single_valued_predicate_confirmation_required",
+                    "message": "Set single_valued=true only when this predicate should have one object per subject at a time."},
+        )
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
+    async with pool.acquire() as connection:
+        rows = await connection.fetch(
+            """SELECT a.assertion_id::text AS assertion_a, b.assertion_id::text AS assertion_b,
+                      s.entity_id::text AS subject_id, s.canonical_name AS subject_name,
+                      a.predicate,
+                      oa.canonical_name AS object_a, ob.canonical_name AS object_b,
+                      a.evidence_document_id::text AS evidence_a,
+                      b.evidence_document_id::text AS evidence_b,
+                      a.evidence_excerpt AS excerpt_a, b.evidence_excerpt AS excerpt_b,
+                      a.valid_from AS a_from, a.valid_to AS a_to,
+                      b.valid_from AS b_from, b.valid_to AS b_to
+               FROM knowledge_assertions a
+               JOIN knowledge_assertions b
+                 ON b.subject_entity_id=a.subject_entity_id
+                AND b.predicate=a.predicate
+                AND b.object_entity_id<>a.object_entity_id
+                AND b.assertion_id>a.assertion_id
+               JOIN knowledge_entities s ON s.entity_id=a.subject_entity_id
+               JOIN knowledge_entities oa ON oa.entity_id=a.object_entity_id
+               JOIN knowledge_entities ob ON ob.entity_id=b.object_entity_id
+               JOIN search_documents da ON da.document_id=a.evidence_document_id
+               JOIN search_documents db ON db.document_id=b.evidence_document_id
+               WHERE a.status='accepted' AND b.status='accepted'
+                 AND a.predicate=$1
+                 AND (a.valid_to IS NULL OR b.valid_from IS NULL OR a.valid_to>=b.valid_from)
+                 AND (b.valid_to IS NULL OR a.valid_from IS NULL OR b.valid_to>=a.valid_from)
+                 AND da.deleted_at IS NULL AND da.index_status='indexed'
+                 AND da.rights_basis IS NOT NULL AND btrim(da.rights_basis)<>''
+                 AND da.robots_status IN ('allowed','not_applicable')
+                 AND db.deleted_at IS NULL AND db.index_status='indexed'
+                 AND db.rights_basis IS NOT NULL AND btrim(db.rights_basis)<>''
+                 AND db.robots_status IN ('allowed','not_applicable')
+               ORDER BY s.canonical_name LIMIT $2""",
+            predicate, limit,
+        )
+    return {
+        "status": "potential_conflicts",
+        "predicate": predicate,
+        "count": len(rows),
+        "conflicts": [{
+            "subject": {"id": row["subject_id"], "name": row["subject_name"]},
+            "claim_a": {"assertion_id": row["assertion_a"], "object": row["object_a"],
+                        "evidence_document_id": row["evidence_a"], "excerpt": row["excerpt_a"],
+                        "valid_from": row["a_from"].isoformat() if row["a_from"] else None,
+                        "valid_to": row["a_to"].isoformat() if row["a_to"] else None},
+            "claim_b": {"assertion_id": row["assertion_b"], "object": row["object_b"],
+                        "evidence_document_id": row["evidence_b"], "excerpt": row["excerpt_b"],
+                        "valid_from": row["b_from"].isoformat() if row["b_from"] else None,
+                        "valid_to": row["b_to"].isoformat() if row["b_to"] else None},
+            "classification": "overlapping_different_objects_requires_human_assessment",
+        } for row in rows],
+        "note": "These are potential inconsistencies, not proven contradictions. Check source dates, context, scope and predicate semantics.",
+    }
+
+
+@router.get("/entities/{entity_id}/paths")
+async def get_entity_paths(
+    entity_id: UUID,
+    request: Request,
+    max_depth: int = Query(default=2, ge=1, le=3),
+    as_of: date | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    subject: str = Depends(authenticated_subject),
+):
+    """Return bounded multi-hop paths made only from accepted, currently eligible evidence."""
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail={"code": "knowledge_graph_database_unavailable"})
+    async with pool.acquire() as connection:
+        entity = await connection.fetchrow(
+            "SELECT entity_id::text, entity_type, canonical_name FROM knowledge_entities WHERE entity_id=$1",
+            entity_id,
+        )
+        if entity is None:
+            raise HTTPException(status_code=404, detail={"code": "knowledge_entity_not_found"})
+        rows = await connection.fetch(
+            """WITH RECURSIVE walk(current_entity_id, depth, path_ids, edges) AS (
+                 SELECT $1::uuid, 0, ARRAY[$1::uuid], '[]'::jsonb
+                 UNION ALL
+                 SELECT
+                   CASE WHEN a.subject_entity_id=w.current_entity_id
+                        THEN a.object_entity_id ELSE a.subject_entity_id END,
+                   w.depth+1,
+                   w.path_ids || CASE WHEN a.subject_entity_id=w.current_entity_id
+                        THEN a.object_entity_id ELSE a.subject_entity_id END,
+                   w.edges || jsonb_build_array(jsonb_build_object(
+                     'assertion_id', a.assertion_id,
+                     'subject_id', a.subject_entity_id,
+                     'predicate', a.predicate,
+                     'object_id', a.object_entity_id,
+                     'evidence_document_id', a.evidence_document_id,
+                     'evidence_excerpt', a.evidence_excerpt,
+                     'valid_from', a.valid_from,
+                     'valid_to', a.valid_to
+                   ))
+                 FROM walk w
+                 JOIN knowledge_assertions a
+                   ON a.subject_entity_id=w.current_entity_id
+                   OR a.object_entity_id=w.current_entity_id
+                 JOIN search_documents d ON d.document_id=a.evidence_document_id
+                 WHERE w.depth<$2 AND a.status='accepted'
+                   AND d.deleted_at IS NULL AND d.index_status='indexed'
+                   AND d.rights_basis IS NOT NULL AND btrim(d.rights_basis)<>''
+                   AND d.robots_status IN ('allowed','not_applicable')
+                   AND NOT (
+                     CASE WHEN a.subject_entity_id=w.current_entity_id
+                          THEN a.object_entity_id ELSE a.subject_entity_id END = ANY(w.path_ids)
+                   )
+                   AND ($3::date IS NULL OR a.valid_from IS NULL OR a.valid_from<=$3)
+                   AND ($3::date IS NULL OR a.valid_to IS NULL OR a.valid_to>=$3)
+               )
+               SELECT depth, path_ids::text[], edges
+               FROM walk WHERE depth>0
+               ORDER BY depth, path_ids::text
+               LIMIT $4""",
+            entity_id, max_depth, as_of, limit,
+        )
+    return {
+        "start": {"id": entity["entity_id"], "type": entity["entity_type"], "name": entity["canonical_name"]},
+        "max_depth": max_depth,
+        "as_of": as_of.isoformat() if as_of else None,
+        "paths": [{
+            "depth": row["depth"],
+            "entity_ids": row["path_ids"],
+            "edges": row["edges"],
+        } for row in rows],
+        "note": "Paths contain accepted assertions only. Every edge carries its source evidence; traversal is bounded and is not proof of causation.",
+    }

@@ -109,13 +109,19 @@ Vectors are document-level, fixed at 1,536 dimensions and do not establish factu
 
 ## Evidence-linked knowledge graph
 
-Apply `migrations/006_knowledge_graph.sql` after migrations 001–005. The API provides candidate observation submission, token-protected human review, entity/alias lookup and one-hop graph reads:
+Apply migrations 006–008 after migrations 001–005. Migration 008 adds optional temporal validity dates to assertions. The API provides candidate submission, token-protected human review, entity/alias lookup, one-hop graph reads, duplicate-identity suggestions, potential-conflict triage and bounded multi-hop paths:
 
 - `POST /v1/knowledge/observations`
 - `POST /v1/knowledge/assertions/{assertion_id}/review`
 - `GET /v1/knowledge/entities?q=...`
 - `GET /v1/knowledge/entities/{entity_id}`
+- `GET /v1/knowledge/entities/{entity_id}/resolution-candidates`
+- `GET /v1/knowledge/assertions/potential-conflicts?predicate=...&single_valued=true`
+- `GET /v1/knowledge/entities/{entity_id}/paths?max_depth=2&as_of=YYYY-MM-DD`
+- `POST /v1/knowledge/documents/{document_id}/extract`
 
-Every assertion must reference an eligible indexed evidence document and includes an excerpt, confidence and extraction method. Submitted assertions remain `unverified`; graph reads return accepted assertions only. Set `ORIOM7_GRAPH_REVIEW_TOKEN` in the backend secret manager to enable the review endpoint. Reviewer identity is taken from the authenticated request context. Do not expose this token to the browser.
+Assertions may include `valid_from` and `valid_to` when dates are explicitly supported by source evidence. Unknown bounds remain null. Multi-hop traversal is limited to depth 1–3 and includes evidence for every edge. Optional `as_of` filters relationships by their recorded validity window.
 
-The authenticated `POST /v1/knowledge/documents/{document_id}/extract` endpoint uses a configured model to propose structured entities and relations. It validates schema and endpoint references, requires each excerpt to match the indexed source text verbatim, and persists only `unverified` assertions. The queue worker can run this after indexing when `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true`; it is disabled by default. Configure model credentials and an explicit model ID before enabling it. Repeated candidates are deduplicated by migration 007. This is not automated fact verification: reviewers must verify context, negation, dates and source meaning. Entity disambiguation, contradiction resolution, multi-hop reasoning, bulk extraction scheduling and graph visualisation remain outstanding. See [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
+Resolution candidates are similarity-ranked suggestions only; ORIOM7 does not merge entities automatically. Potential conflicts are returned only when the caller explicitly confirms the predicate should be single-valued; overlapping accepted claims with different objects are flagged for human assessment, not automatically labelled false. Multi-valued relationships must not be analysed as single-valued.
+
+Every assertion must reference eligible indexed evidence. Submitted and extracted assertions remain `unverified`; graph reads return accepted assertions only. Set `ORIOM7_GRAPH_REVIEW_TOKEN` in backend secrets to enable review. The model extraction endpoint requires a configured provider and the optional worker hook remains disabled by default. These capabilities are research and review aids, not automated fact verification. See [Knowledge Graph Foundation](../../docs/KNOWLEDGE_GRAPH_FOUNDATION.md).
