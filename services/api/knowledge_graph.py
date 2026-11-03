@@ -8,6 +8,8 @@ from __future__ import annotations
 import hmac
 import os
 import unicodedata
+from datetime import date
+from difflib import SequenceMatcher
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
@@ -55,6 +57,8 @@ class GraphRelationInput(BaseModel):
     object_type: str = Field(pattern=r"^[a-z][a-z0-9_]{1,39}$")
     evidence_excerpt: str = Field(min_length=20, max_length=2000)
     confidence: float = Field(ge=0, le=1)
+    valid_from: date | None = None
+    valid_to: date | None = None
     extraction_method: str = Field(default="human_or_model_candidate", max_length=80)
 
     @field_validator("subject_name", "object_name")
@@ -70,6 +74,8 @@ class GraphRelationInput(BaseModel):
 
     @model_validator(mode="after")
     def reject_self_relation(self):
+        if self.valid_from and self.valid_to and self.valid_from > self.valid_to:
+            raise ValueError("valid_from must not be later than valid_to")
         if (self.subject_type, normalise_name(self.subject_name)) == (self.object_type, normalise_name(self.object_name)):
             raise ValueError("self-relations are not allowed")
         return self
@@ -232,7 +238,7 @@ async def get_entity_graph(
             "predicate": row["predicate"],
             "object": {"id": row["object_id"], "name": row["object_name"], "type": row["object_type"]},
             "evidence": {"document_id": row["evidence_document_id"], "excerpt": row["evidence_excerpt"]},
-            "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),
+            "confidence": row["confidence"], "created_at": row["created_at"].isoformat(),\n            "valid_from": row["valid_from"].isoformat() if row["valid_from"] else None,\n            "valid_to": row["valid_to"].isoformat() if row["valid_to"] else None,
         } for row in relations],
         "note": "Only reviewed, accepted assertions are returned.",
     }
