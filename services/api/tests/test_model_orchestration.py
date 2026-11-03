@@ -23,10 +23,11 @@ class FakeProvider:
     def __init__(self, name, result=None, fail=False):
         self.name, self.model, self.result, self.fail = name, name + "-test-model", result, fail
         self.calls = 0
+        self.instructions = []
 
     async def generate(self, prompt, instructions, max_output_tokens):
         self.calls += 1
-        assert "Preserve uncertainty" in instructions
+        self.instructions.append(instructions)
         if self.fail:
             raise ProviderUnavailable(self.name)
         return self.result
@@ -86,6 +87,7 @@ def test_generation_applies_accessibility_preferences():
     assert data["grounding"]["citations"][0]["id"] == "S1"
     assert data["grounding"]["citation_validation"]["status"] == "valid"
     assert provider.calls == 1
+    assert "Preserve uncertainty" in provider.instructions[0]
 
 
 def test_orchestrator_uses_fallback_after_primary_failure():
