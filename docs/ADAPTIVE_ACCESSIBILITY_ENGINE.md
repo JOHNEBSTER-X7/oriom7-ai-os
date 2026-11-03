@@ -153,14 +153,17 @@ Target WCAG 2.2 Level AA for the web experience. WCAG 2.2 is the W3C Recommendat
 
 Committed to the repository:
 - TypeScript profile model, defaults, normalisation and temporary override resolver.
-- JSON Schema for the profile contract.
-- Framework-neutral contract test cases.
-- This technical design and integration contract.
+- JSON Schema for the profile contract and framework-neutral resolver test cases.
+- FastAPI GET, PUT, DELETE and temporary-resolve endpoints.
+- In-memory development/test store and PostgreSQL storage adapter.
+- PostgreSQL migration for per-subject JSONB profiles.
+- Next.js settings page, accessible form controls and same-origin API proxy routes.
+- GitHub Actions workflow for API tests and web type checking.
 
-Not yet implemented or verified:
-- FastAPI routes and database persistence.
-- Next.js settings interface and design-system wiring.
-- Search/assistant response adapters.
-- Speech, transcription and translation provider integrations.
-- CI execution of the test cases.
-- Independent accessibility audit or WCAG conformance assessment.
+Integration requirements and limitations:
+- Production authentication middleware must verify the OIDC/session identity and set `request.state.user_id`; the API does not yet include a complete identity-provider integration.
+- Apply the SQL migration and configure `DATABASE_URL` for durable storage. Production startup refuses to use the in-memory store.
+- The development user header is disabled by default and must never be enabled on a public or production deployment.
+- The settings page configures preferences; global design-system application, speech synthesis, microphone capture, switch-device adapters and Search/Assistant content adapters are not yet connected.
+- CI has been configured, but a passing workflow result has not yet been observed in this work session.
+- Independent accessibility audit or WCAG conformance assessment has not been performed.
