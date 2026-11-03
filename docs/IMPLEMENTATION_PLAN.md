@@ -2,7 +2,7 @@
 
 ## Delivery principle
 
-Build one complete user-facing vertical slice before expanding subsystem count. Search, assistant and developer API are first-release priorities, delivered through shared infrastructure and a small number of deployable units. Universal language, voice-first, low-literacy and disability access must shape the initial design and API boundaries from the beginning.
+Build one complete user-facing vertical slice before expanding subsystem count. Search, assistant and developer API are first-release priorities, delivered through shared infrastructure and a small number of deployable units. Universal language, voice-first, low-literacy and adaptive disability access must shape the initial design and API boundaries from the beginning.
 
 ## Phase 0 — readiness (indicative 1–2 weeks)
 
@@ -13,6 +13,7 @@ Deliverables:
 - Define representative search, assistant and multilingual/voice evaluation sets.
 - Define locale preferences, audio consent, retention and deletion requirements.
 - Audit initial design components against WCAG 2.2 AA; plan keyboard and screen-reader test coverage.
+- Define user-controlled accessibility preferences without requiring diagnosis disclosure.
 - Establish dev/staging/prod environments, CI and secret management.
 
 Exit criteria: architecture decisions recorded; provider/data boundaries agreed; security baseline and deployment pipeline operational; language and accessibility pilot criteria agreed.
@@ -31,6 +32,8 @@ Deliverables:
 - Plain-language answer option, replay and correction controls.
 - Semantic HTML, keyboard-complete navigation, screen-reader labels and announcements for search, assistant streaming, sources and errors.
 - Text alternatives for spoken output and accessible controls for audio playback.
+- Foundational visual settings: text resizing, contrast, focus indicators and reduced motion.
+- Save/resume, clear error recovery and large touch targets.
 - Background worker and queue for ingestion.
 - Automated tests and basic observability.
 
@@ -42,11 +45,11 @@ Expand approved source ingestion; improve parsing, canonicalisation, deduplicati
 
 ## Phase 3 — developer platform (indicative 3–6 weeks)
 
-API key lifecycle, usage dashboard and quota management; SDK and quick starts; versioning and change policy; billing integration only after pricing and unit economics are validated; developer support and operations documentation. Expose documented language, locale and speech options through stable API contracts, subject to consent and provider capability.
+API key lifecycle, usage dashboard and quota management; SDK and quick starts; versioning and change policy; billing integration only after pricing and unit economics are validated; developer support and operations documentation. Expose documented language, locale, speech and accessibility preferences through stable API contracts, subject to consent and provider capability.
 
-## Phase 4 — multilingual and regional expansion
+## Phase 4 — adaptive and regional accessibility expansion
 
-Expand language and dialect coverage only after evaluation and community testing. Add locale-aware ranking, transliteration where needed, regional privacy and data-residency controls, voice options and language feedback/correction workflows. Publish limitations and measured quality by language. Expand low-vision, high-contrast, reduced-motion and alternative input support based on user testing.
+Add user-selectable combinations of visual, motor, cognitive, sensory and low-stimulation preferences; reading ruler and synchronised text highlighting; switch and alternative input support; accessible OCR/image descriptions; language and voice expansion. Conduct usability research with disabled users and people with lived experience. Publish limitations and measured quality.
 
 ## Phase 5 — agents and scale
 
@@ -68,4 +71,5 @@ Measure workloads and inference bottlenecks; benchmark open/self-hosted models a
 | Speech/translation errors | Language-specific evaluation, confirmation and clear uncertainty |
 | Audio privacy | Explicit consent, minimal retention and deletion controls |
 | Accessibility regressions | WCAG-oriented checks, assistive-technology tests and disabled-user research |
+| Sensitive health inference | No diagnosis inference, minimal preference data and user control |
 | Operational overload | Managed infrastructure and modular architecture |
