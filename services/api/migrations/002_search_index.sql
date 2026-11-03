@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS search_documents (
     fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     content_hash TEXT NOT NULL,
     rights_basis TEXT,
-    robots_status TEXT NOT NULL DEFAULT 'not_checked',
+    robots_status TEXT NOT NULL DEFAULT 'not_checked'
+        CHECK (robots_status IN ('allowed', 'blocked', 'not_checked', 'not_applicable')),
     index_status TEXT NOT NULL DEFAULT 'pending'
         CHECK (index_status IN ('pending', 'indexed', 'rejected', 'failed')),
     search_vector TSVECTOR GENERATED ALWAYS AS (
