@@ -67,7 +67,7 @@ class PostgresLexicalIndex:
               AND index_status = 'indexed'
               AND rights_basis IS NOT NULL AND btrim(rights_basis) <> ''
               AND search_vector @@ websearch_to_tsquery('simple', $1)
-              AND ($3::text IS NULL OR language = $3)
+              AND ($3::text IS NULL OR language = $3 OR split_part(language, '-', 1) = split_part($3, '-', 1))
             ORDER BY score DESC, fetched_at DESC
             LIMIT $2
         """
@@ -217,7 +217,7 @@ class SerpApiGoogleSearch:
             "output": "json",
         }
         if language:
-            params["hl"] = language.split("-")[0].lower()
+            params["hl"] = language.lower()
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 response = await client.get("https://serpapi.com/search.json", params=params)
