@@ -272,3 +272,26 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .queue-pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px; padding-top: 22px; }
 @media (max-width: 700px) { .assertion-metadata, .source-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); } .verification-nav { margin-left: 0; } }
 @media (max-width: 460px) { .verification-shell { width: calc(100% - 24px); } .assertion-metadata, .source-metadata { grid-template-columns: 1fr; } .workspace-section-heading { align-items: flex-start; } }
+
+
+/* ORIOM7 supervised autonomous research agent */
+.agent-research-panel { margin: 24px 0; padding: clamp(18px,3vw,28px); border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); }
+.agent-research-panel > p { color: var(--muted); }
+.agent-research-form { display: grid; gap: 12px; margin-top: 16px; }
+.agent-research-form > label:first-child { font-weight: 700; }
+.agent-research-form textarea { width: 100%; min-height: 96px; border: 1px solid #777; border-radius: 9px; padding: 12px; background: var(--surface); color: var(--text); resize: vertical; }
+.agent-extraction-option { display: flex; align-items: flex-start; gap: 10px; font-weight: 600; }
+.agent-extraction-option input { width: 22px; height: 22px; min-height: 22px; flex: 0 0 auto; accent-color: var(--accent); }
+.agent-result { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 18px; }
+.agent-result h3 { margin-bottom: 8px; }
+.agent-result h4 { margin: 20px 0 8px; }
+.agent-source-list { display: grid; gap: 12px; padding-left: 24px; }
+.agent-source-list li { padding: 10px; border: 1px solid var(--border); border-radius: 9px; overflow-wrap: anywhere; }
+.agent-source-list a { color: var(--accent); }
+.agent-source-list small, .agent-history small { display: block; color: var(--muted); margin-top: 5px; }
+.agent-source-list p { margin-bottom: 0; }
+.agent-warning { border-left: 4px solid #a66a28; padding: 10px 12px; }
+.agent-history { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 18px; }
+.agent-history ul { list-style: none; padding: 0; display: grid; gap: 8px; }
+.agent-history li { display: grid; gap: 4px; border-bottom: 1px solid var(--border); padding: 9px 0; }
+.agent-history li button { justify-self: start; text-align: left; color: var(--accent); background: transparent; border: 0; padding: 5px 0; font: inherit; font-weight: 700; cursor: pointer; }
