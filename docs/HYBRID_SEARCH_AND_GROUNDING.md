@@ -18,6 +18,7 @@ psql "$DATABASE_URL" -f services/api/migrations/001_accessibility_profiles.sql
 psql "$DATABASE_URL" -f services/api/migrations/002_search_index.sql
 psql "$DATABASE_URL" -f services/api/migrations/003_search_ingestion.sql
 psql "$DATABASE_URL" -f services/api/migrations/004_distributed_crawl_queue.sql
+psql "$DATABASE_URL" -f services/api/migrations/005_semantic_search.sql
 ```
 
 The index searches only records where:
@@ -87,7 +88,7 @@ A valid label only proves that the label maps to a retrieved result. It does not
 
 ## Current limitations
 
-- PostgreSQL lexical retrieval only; semantic/vector retrieval and semantic reranking are not yet implemented.
+- Semantic retrieval is optional and requires pgvector migration 005 plus an explicitly configured embedding provider. Lexical search remains available when it is disabled.
 - External provider support currently includes the optional SerpApi Google adapter only.
 - The external adapter returns search snippets, not full page contents.
 - Ingestion is single-page and operator-triggered; recursive crawling, queue-backed workers, scheduled refresh, source approval console and automated rights review are not included.
@@ -153,3 +154,43 @@ Migration 004 adds a durable `search_crawl_jobs` queue and per-source crawl cont
 Run the independent worker process with `python worker.py` from `services/api`. Multiple workers can share the same PostgreSQL queue: claims use row locks with `SKIP LOCKED`, worker leases allow recovery after process crashes, and each source has a configurable minimum interval and rolling 24-hour page quota. Transient failures are retried with bounded exponential backoff; robots/policy and permanent content failures are not retried automatically. An operator can requeue a completed or terminal job by submitting the same URL again.
 
 The worker is a deployable process, not a hosted service provisioned by this code change. Production still requires a supervisor, database capacity planning, queue metrics/alerts, tested backup/recovery, and network-level egress restrictions. Scheduled periodic discovery of new URLs and recursive link crawling are not yet included; the queue can be used for operator-submitted pages and reprocessing.
+
+
+## Multilingual semantic retrieval
+
+ORIOM7 now supports an optional pgvector semantic index alongside PostgreSQL lexical search. Both result lists are combined with reciprocal-rank fusion (RRF), which adds ranking contributions when the same canonical URL appears in multiple retrieval paths. Semantic matching is cross-language by default: the embedding model can retrieve a document in a different language from the query. Set `ORIOM7_SEMANTIC_LANGUAGE_FILTER=true` only when strict language filtering is required.
+
+### Enable it
+
+1. Confirm the managed PostgreSQL service supports the pgvector extension.
+2. Apply `services/api/migrations/005_semantic_search.sql` after migrations 001–004.
+3. Set these backend environment variables in the API and worker secret managers:
+
+```bash
+ORIOM7_SEMANTIC_SEARCH_ENABLED=true
+ORIOM7_EMBEDDING_API_KEY=...
+ORIOM7_EMBEDDING_BASE_URL=https://api.openai.com/v1
+ORIOM7_EMBEDDING_MODEL=text-embedding-3-small
+ORIOM7_SEMANTIC_LANGUAGE_FILTER=false
+```
+
+The initial adapter expects an OpenAI-compatible `POST /embeddings` endpoint returning 1,536-dimensional vectors. The default model is `text-embedding-3-small`. The adapter sends document text to the configured embedding provider; disclose this processing and confirm applicable data-processing, residency and retention terms before indexing private or licensed material. API keys are backend-only and are never returned to clients.
+
+New pages processed by the queue worker receive embeddings when semantic search is enabled. Embedding failures do not discard the lexical document; they are logged and can be repaired by running the bounded backfill command:
+
+```bash
+cd services/api
+python semantic_index.py
+```
+
+The backfill selects only eligible, non-deleted documents with an explicit rights basis and allowed/not-applicable robots status. It processes bounded batches and updates vectors when the content hash or embedding model changes. Backfill incurs provider usage/cost; estimate corpus size and enforce provider budgets before running it.
+
+### Retrieval behaviour and limits
+
+- The semantic index stores one vector per document and uses cosine-distance HNSW indexing.
+- Lexical and semantic results are fused with RRF; external web results can also contribute.
+- Semantic retrieval defaults to cross-language matching. This is model-dependent and must be benchmarked for each language and script before claiming language coverage.
+- The current vector schema is fixed at 1,536 dimensions. A different embedding dimension requires a deliberate schema migration.
+- This is document-level retrieval, not passage-level chunking. Long documents are embedded using the first 12,000 characters; passage chunking and citation-to-passage grounding remain future work.
+- A vector similarity score measures embedding proximity, not factual correctness or source entailment.
+- Search quality must be evaluated on representative multilingual query/document pairs, including dialects, transliteration, mixed-language queries and low-resource languages.
