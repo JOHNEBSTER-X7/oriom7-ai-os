@@ -28,7 +28,7 @@ class FakeIndex:
 
     async def search(self, query, limit, language=None):
         self.calls.append((query, limit, language))
-        return self.results[:limit]
+        return sorted(self.results, key=lambda result: result.score, reverse=True)[:limit]
 
 
 class FakeExternal:
