@@ -100,7 +100,8 @@ class PostgresVectorIndex:
                           OR split_part(d.language, '-', 1) = split_part($4, '-', 1))
                    ORDER BY e.embedding <=> $1::vector
                    LIMIT $3""",
-                literal, self.embedder.model, limit, language,
+                literal, self.embedder.model, limit,
+                language if os.getenv('ORIOM7_SEMANTIC_LANGUAGE_FILTER', 'false').lower() == 'true' else None,
             )
         return [
             SearchResult(
