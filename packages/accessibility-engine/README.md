@@ -1,6 +1,6 @@
 # ORIOM7 Adaptive Accessibility Engine
 
-**Status:** Reference implementation foundation. This package is not yet wired into the production web or API applications.
+**Status:** Shared profile resolver is integrated into the Next.js accessibility provider and settings interface. The FastAPI profile API and PostgreSQL adapter support persistence; production authentication integration and end-to-end validation remain deployment tasks.
 
 ## Purpose
 
@@ -9,7 +9,7 @@ A shared, user-controlled preference engine for Search, the AI Assistant and Dev
 ## Package contents
 
 - `src/profile.ts`: typed profile model, safe defaults, normalisation and temporary override resolution.
-- `src/profile.ts`: optional `ACCESSIBLE_STARTER_PROFILE` preset covering larger text and controls, high contrast, read-aloud, plain language, Calm Mode, voice-navigation preference, reading assistance and saved progress.
+- `src/profile.ts`: optional `ACCESSIBLE_STARTER_PROFILE` preset covering larger text and controls, high contrast, read-aloud, plain language, Calm Mode, voice-navigation preference, reading assistance and saved progress.\n- `apps/web/components/AccessibilityProvider.tsx`: global preference context, local-only storage, optional account sync and design-token application.
 - `schemas/accessibility-profile.schema.json`: JSON Schema contract for API and persistence validation.
 - `tests/profile.test.ts`: framework-neutral test cases to port into the repository's configured test runner.
 
@@ -60,4 +60,4 @@ ORIOM7 targets WCAG 2.2 Level AA for web experiences. WCAG 2.2 is the W3C Recomm
 
 ## Current limitation
 
-This is a package foundation and contract, not a claim that the ORIOM7 interface, persistence layer, voice services or API routes have already been integrated or audited.
+The shared profile resolver, Next.js provider and preference interface are integrated. This does not mean ORIOM7 has completed production authentication, full voice services, switch-device support or an independent accessibility audit.
