@@ -52,6 +52,10 @@ class CrawlWorker:
                         SELECT COUNT(*) FROM search_ingestion_runs r
                         WHERE r.source_id = s.source_id
                           AND r.started_at >= NOW() - INTERVAL '24 hours'
+                      ) + (
+                        SELECT COUNT(*) FROM search_crawl_jobs active
+                        WHERE active.source_id = s.source_id AND active.status = 'running'
+                          AND active.locked_at >= NOW() - INTERVAL '24 hours'
                       ) < s.max_pages_per_day
                     ORDER BY j.available_at, j.created_at
                     FOR UPDATE OF j, s SKIP LOCKED
