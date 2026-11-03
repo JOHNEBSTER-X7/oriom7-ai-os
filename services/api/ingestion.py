@@ -39,10 +39,12 @@ class SourceRegistration(BaseModel):
     def validate_base_url(cls, value: str) -> str:
         parsed = urlsplit(value)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-            raise ValueError("Approved source base_url must be an HTTPS origin or path without credentials")
+            raise ValueError("Approved source base_url must be an HTTPS origin without credentials")
+        if parsed.path not in ("", "/") or parsed.query or parsed.fragment:
+            raise ValueError("Register an HTTPS origin only; path-scoped sources are not yet supported")
         if parsed.port not in (None, 443):
             raise ValueError("Only standard HTTPS port 443 is allowed")
-        return urlunsplit(("https", parsed.netloc.lower(), parsed.path.rstrip("/"), "", ""))
+        return urlunsplit(("https", parsed.netloc.lower(), "", "", ""))
 
 
 class CrawlRequest(BaseModel):
