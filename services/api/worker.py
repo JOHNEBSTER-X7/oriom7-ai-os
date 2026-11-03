@@ -16,10 +16,9 @@ import asyncpg
 from fastapi import HTTPException
 
 from ingestion import fetch_allowed_page, normalise_page_url
-from semantic_index import build_embedding_provider_from_env
+from semantic_index import build_embedding_provider_from_env, PostgresVectorIndex
 from model_orchestration import build_orchestrator_from_env
 from retrieval import PostgresLexicalIndex, RetrievalService, build_external_search_providers_from_env
-from semantic_index import PostgresVectorIndex
 from research_agent_runtime import execute_research_job, fail_research_job
 
 logger = logging.getLogger("oriom7.crawl_worker")
@@ -210,7 +209,7 @@ class ResearchAgentWorker:
             async with con.transaction():
                 rows=await con.fetch("""SELECT * FROM research_agent_schedules
                   WHERE enabled=TRUE AND next_run_at<=NOW()
-                  ORDER BY next_run_at LIMIT 10 FOR UPDATE SKIP LOCKED""")
+                  ORDER BY next_run_at FOR UPDATE SKIP LOCKED LIMIT 10""")
                 for row in rows:
                     run_id=await con.fetchval("""INSERT INTO research_agent_runs
                       (owner_subject,research_question,status)
@@ -238,7 +237,7 @@ class ResearchAgentWorker:
                   FROM research_agent_jobs
                   WHERE (status='pending' AND available_at<=NOW())
                      OR (status='running' AND locked_at<NOW()-INTERVAL '15 minutes')
-                  ORDER BY available_at LIMIT 1 FOR UPDATE SKIP LOCKED""")
+                  ORDER BY available_at FOR UPDATE SKIP LOCKED LIMIT 1""")
                 if row is None: return None
                 await con.execute("""UPDATE research_agent_jobs SET status='running',attempts=attempts+1,
                   locked_at=NOW(),locked_by=$2,updated_at=NOW() WHERE job_id=$1""",row["job_id"],self.worker_id)
