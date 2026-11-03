@@ -152,3 +152,43 @@ Set `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED=true` in the crawler worker environment
 ### Deployment migrations
 
 Apply migrations 001 through 007 in numerical order. Keep `ORIOM7_KNOWLEDGE_EXTRACTION_ENABLED` disabled until provider spend limits, privacy review and human-review operations are ready. The model receives source text, so confirm provider data-processing, retention and residency terms before enabling it on licensed or sensitive content.
+
+
+## Graph intelligence: identity suggestions, time and paths
+
+Migration `008_knowledge_graph_temporal_intelligence.sql` adds nullable `valid_from` and `valid_to` dates to relationship assertions. These dates describe when a sourced relationship is stated to be valid, not when ORIOM7 first learned it. They must be left null when the source does not provide reliable dates. The database rejects reversed ranges.
+
+### Possible duplicate identities
+
+`GET /v1/knowledge/entities/{entity_id}/resolution-candidates`
+
+ORIOM7 compares the entity's canonical name with up to 500 recent entities of the same type and their aliases, then returns the strongest name-similarity candidates. The response includes similarity scores and exact alias matches. It does not merge entities, rewrite assertions or claim that two names refer to the same real-world subject. A future merge workflow needs a separately audited, reversible human decision and reference migration.
+
+### Potentially conflicting claims
+
+`GET /v1/knowledge/assertions/potential-conflicts?predicate=headquartered_in&single_valued=true`
+
+This endpoint compares accepted assertions for the same subject and predicate where the objects differ and their recorded validity windows overlap. The caller must explicitly confirm that the predicate is single-valued. Do not use this option for multi-valued relationships such as `owns`, `operates`, `partners_with` or `sells_in`.
+
+A returned pair is a *potential inconsistency*, not a proven contradiction. Different sources may refer to different scopes, subsidiaries, dates, roles or definitions. Every result includes both evidence excerpts and document IDs for human review. The system does not automatically reject, supersede or resolve either claim. This initial detector does not yet reason over negation, numerical disagreement, paraphrase, causal claims or complex natural-language contradictions.
+
+### Bounded multi-hop paths
+
+`GET /v1/knowledge/entities/{entity_id}/paths?max_depth=2&as_of=2026-01-01`
+
+The recursive query follows accepted relationships in either direction, excludes cycles within a path, rechecks source eligibility at query time and limits traversal to one through three edges. Every edge includes the assertion ID, predicate, endpoints, source document ID, verbatim excerpt and temporal bounds. An optional `as_of` date filters out relationships whose recorded validity window does not include that date. Unknown bounds are treated as open; this is a data limitation, not evidence that a relationship existed indefinitely.
+
+Paths are navigational connections, not proof of causation or transitive truth. For example, a path from a company to a technology through a supplier does not prove that the company uses that technology. The API returns provenance so the assistant can explain the chain and its limitations.
+
+### Current boundaries
+
+- Entity similarity uses string matching, not vector or contextual identity resolution.
+- No automatic entity merges or canonical identity changes.
+- Conflict detection is scoped to the exact same subject and predicate, different objects, and overlapping dates; it is not a general contradiction engine.
+- Temporal values depend on explicit source evidence and may be unknown.
+- Multi-hop paths are bounded and do not imply causal or transitive relationships.
+- Human review, source deletion handling, reviewer permissions and audit monitoring remain operational responsibilities.
+
+### Migration order
+
+Apply migrations 001 through 008 in numerical order. Migration 008 is additive and leaves existing assertion validity dates null.
