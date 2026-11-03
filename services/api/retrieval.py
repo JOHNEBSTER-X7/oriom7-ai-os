@@ -224,6 +224,8 @@ class SerpApiGoogleSearch:
                 response = await client.get("https://serpapi.com/search.json", params=params)
             response.raise_for_status()
             data = response.json()
+            if not isinstance(data, dict):
+                raise ValueError("External search response must be a JSON object")
         except (httpx.HTTPError, ValueError) as exc:
             logger.warning("external_search_provider_failed", extra={"provider": self.name})
             raise ExternalSearchUnavailable(self.name) from exc
@@ -232,9 +234,14 @@ class SerpApiGoogleSearch:
             logger.warning("external_search_provider_failed", extra={"provider": self.name})
             raise ExternalSearchUnavailable(self.name)
 
+        organic_results = data.get("organic_results") or []
+        if not isinstance(organic_results, list):
+            raise ExternalSearchUnavailable(self.name)
         fetched_at = datetime.now(timezone.utc)
         results = []
-        for position, item in enumerate((data.get("organic_results") or [])[:limit], start=1):
+        for position, item in enumerate(organic_results[:limit], start=1):
+            if not isinstance(item, dict):
+                continue
             title = item.get("title")
             url = item.get("link")
             if not isinstance(title, str) or not title.strip() or not isinstance(url, str):
