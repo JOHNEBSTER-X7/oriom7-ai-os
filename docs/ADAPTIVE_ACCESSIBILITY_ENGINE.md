@@ -164,7 +164,8 @@ Integration requirements and limitations:
 - Production authentication middleware must verify the OIDC/session identity and set `request.state.user_id`; the API does not yet include a complete identity-provider integration.
 - Apply the SQL migration and configure `DATABASE_URL` for durable storage. Production startup refuses to use the in-memory store.
 - The development user header is disabled by default and must never be enabled on a public or production deployment.
-- The global Next.js provider now applies text scaling, typography, themes, contrast, larger targets and reduced-motion settings across the application. Local-only browser storage is available, with optional account synchronisation.
-- Speech synthesis, microphone capture, reading-guide rendering, switch-device adapters and Search/Assistant content adapters are not yet connected.
+- The global Next.js provider applies text scaling, typography, themes, contrast, larger targets and reduced-motion settings across the application. Local-only browser storage is available, with optional account synchronisation.
+- A FastAPI assistant presentation endpoint converts saved or temporary preferences into structured response-format directives, including language, plain-language preference, detail level, short-answer-first, step-by-step structure and speech preferences. Citations, uncertainty and safety warnings are always preserved.
+- The presentation endpoint does not generate answers or invoke model providers. Actual assistant orchestration, translation, speech synthesis, microphone capture, reading-guide rendering and switch-device adapters remain outstanding.
 - CI has been configured, but a passing workflow result has not yet been observed in this work session.
 - Independent accessibility audit or WCAG conformance assessment has not been performed.
