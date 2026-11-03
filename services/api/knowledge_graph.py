@@ -153,7 +153,7 @@ async def submit_observations(
                        VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, 'unverified')
                        RETURNING assertion_id::text""",
                     subject_id, relation.predicate, object_id, payload.evidence_document_id,
-                    relation.evidence_excerpt, relation.confidence,
+                    relation.evidence_excerpt, relation.confidence, relation.valid_from, relation.valid_to,
                     relation.extraction_method, subject,
                 )
                 assertion_ids.append(row["assertion_id"])
