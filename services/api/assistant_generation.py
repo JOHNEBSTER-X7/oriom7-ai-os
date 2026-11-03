@@ -122,7 +122,7 @@ async def create_response(
             "code": "model_providers_unavailable", "message": "All configured model providers are unavailable."
         })
 
-    cited_numbers = sorted({int(number) for number in re.findall(r"\\[S(\\d+)\\]", result.text)})
+    cited_numbers = sorted({int(number) for number in re.findall(r"\[S(\d+)\]", result.text)})
     invalid_citations = [f"S{number}" for number in cited_numbers if number < 1 or number > len(evidence)]
     valid_citations = [
         {
