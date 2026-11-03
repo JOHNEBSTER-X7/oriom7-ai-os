@@ -16,7 +16,7 @@
 **Status:** Accepted. Pursue proprietary AI cloud and hardware progressively, not as launch dependencies. Gate investment on measured workloads, reliability, financing and technical validation.
 
 ## ADR-006 — Universal language, voice and low-literacy access
-**Status:** Accepted  
-**Decision:** Treat voice-first use, multilingual search/translation, spoken answers, plain-language explanations and icon-led accessible interaction as core product requirements from the beginning.  
-**Reasoning:** People should be able to benefit from search and knowledge regardless of literacy level or source-language barriers.  
-**Consequences:** Add provider-neutral speech-to-text, translation, language identification and text-to-speech adapters; locale/accessibility preferences; multilingual retrieval and evaluation; audio consent/retention controls; and community-based language quality testing. Do not claim support for languages or dialects until evaluated.
+**Status:** Accepted. Treat voice-first use, multilingual search/translation, spoken answers, plain-language explanations and icon-led accessible interaction as core product requirements. Add provider-neutral speech-to-text, translation, language identification and text-to-speech adapters; locale preferences; multilingual retrieval and evaluation; audio consent/retention controls; and community-based language quality testing. Do not claim support for languages or dialects until evaluated.
+
+## ADR-007 — Accessibility and inclusive interaction by design
+**Status:** Accepted. ORIOM7 must support independent use by blind and low-vision users, people with hearing, motor or cognitive disabilities, and people using assistive technologies. Target WCAG 2.2 AA for the web experience; prioritise semantic HTML, screen-reader support, keyboard access, focus management, text alternatives, captions/transcripts and accessible streaming states. Validate with manual testing and disabled users, not automated scanners alone.
