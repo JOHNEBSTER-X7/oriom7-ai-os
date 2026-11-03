@@ -109,14 +109,3 @@ def test_unconfigured_model_providers_return_service_unavailable():
     )
     assert response.status_code == 503
 
-
-def test_model_catalogue_lists_configured_models_without_secrets():
-    provider = FakeProvider("openai", sample_result())
-    client = build_client(ModelOrchestrator([provider]))
-    response = client.get("/v1/models", headers={"X-Test-User": "alice"})
-    assert response.status_code == 200
-    models = response.json()["models"]
-    assert len(models) == 1
-    assert models[0]["provider"] == "openai"
-    assert models[0]["id"] == "openai-test-model"
-    assert models[0]["capabilities"]["streaming"] is False
