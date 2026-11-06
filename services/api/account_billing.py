@@ -121,11 +121,11 @@ async def get_usage(request:Request,subject:str=Depends(authenticated_subject)):
   rows=await con.fetch("""SELECT product_code,COUNT(*)::bigint AS events,COALESCE(SUM(quantity),0)::bigint AS units
    FROM oriom7_usage_ledger WHERE account_id=$1::uuid AND occurred_at>=date_trunc('month',NOW())
    GROUP BY product_code ORDER BY product_code""",account["account_id"])
- return {"period":"current_calendar_month","usage":[dict(row) for row in rows],"billing_status":"not_configured"}
+ return {"period":"current_calendar_month","usage":[dict(row) for row in rows],"billing_status":"configured" if stripe_ready() else "not_configured"}
 
 class InvitationCreate(BaseModel):
  model_config=ConfigDict(extra="forbid")
- email:str=Field(min_length=5,max_length=254,pattern=r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+ email:str=Field(min_length=5,max_length=254,pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
  role:str=Field(pattern="^(admin|developer|billing_viewer)$")
 
 class InvitationAccept(BaseModel):
