@@ -18,7 +18,7 @@ ALTER TABLE search_document_embeddings
 
 ALTER TABLE search_document_embeddings
     ADD CONSTRAINT search_document_embeddings_pkey
-    PRIMARY KEY (document_id, embedding_model);
+    PRIMARY KEY (document_id, embedding_model, embedding_dimensions);
 
 DROP INDEX IF EXISTS search_document_embeddings_hnsw_idx;
 
