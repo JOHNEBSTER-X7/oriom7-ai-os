@@ -200,6 +200,8 @@ async def oceangrid_readiness(request: Request, key: dict = Depends(require_api_
         "module": "ORIOM7 OCEANGRID",
         "version": "1.0.0",
         "assessment_api": "available",
+        "candidate_ranking_api": "available",
+        "global_coastline_ranking": "not_available_until_global_data_ingestion",
         "live_data_ingestion": "not_configured",
         "providers": {
             "copernicus_marine": "not_connected",
