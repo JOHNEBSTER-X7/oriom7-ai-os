@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
-const ALLOWED_ENDPOINTS = new Set(["documents/ocr", "speech/transcriptions"]);
+const ALLOWED_ENDPOINTS = new Set(["documents/ocr", "speech/transcriptions", "vision/analyze"]);
 const MAX_REQUEST_BYTES = 26 * 1024 * 1024;
 
 export async function POST(request: NextRequest, context: RouteContext) {
