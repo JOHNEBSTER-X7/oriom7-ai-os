@@ -154,6 +154,46 @@ async def assess_coastal_site(
     })
     return result
 
+
+@router.post("/v1/oceangrid/rank")
+async def rank_coastal_candidates(
+    body: CoastalRankingRequest, request: Request,
+    key: dict = Depends(require_api_key),
+):
+    assessed = [assess_site(site) for site in body.sites]
+    eligible = []
+    excluded = []
+    for result in assessed:
+        if result["screening_status"] == "environmental_exclusion_review":
+            excluded.append({**result, "ranking_reason": "environmental_exclusion_review"})
+        elif result["screening_score"] is None or result["evidence_coverage_pct"] < body.minimum_evidence_coverage_pct:
+            excluded.append({**result, "ranking_reason": "insufficient_evidence"})
+        else:
+            eligible.append(result)
+    eligible.sort(
+        key=lambda item: (item["screening_score"], item["evidence_coverage_pct"]),
+        reverse=True,
+    )
+    ranked = [{**item, "rank": index + 1} for index, item in enumerate(eligible)]
+    await record_usage(request, key, "oceangrid", len(body.sites), 200, {
+        "operation": "batch_coastal_ranking",
+        "submitted_sites": len(body.sites),
+        "ranked_sites": len(ranked),
+        "excluded_sites": len(excluded),
+    })
+    return {
+        "object": "oceangrid_coastal_ranking",
+        "ranking_scope": "submitted_candidates_only",
+        "global_coverage": False,
+        "minimum_evidence_coverage_pct": body.minimum_evidence_coverage_pct,
+        "submitted_count": len(body.sites),
+        "ranked_count": len(ranked),
+        "excluded_count": len(excluded),
+        "ranked_sites": ranked,
+        "excluded_sites": excluded,
+        "notice": "This ranks only the candidates supplied in this request. It is not a global coastline ranking, and scores are preliminary screening indicators, not engineering, environmental or investment approvals.",
+    }
+
 @router.get("/v1/oceangrid/readiness")
 async def oceangrid_readiness(request: Request, key: dict = Depends(require_api_key)):
     return {
