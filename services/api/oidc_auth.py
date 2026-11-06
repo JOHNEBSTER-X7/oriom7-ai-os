@@ -82,7 +82,7 @@ class OIDCVerifier:
 class OIDCAuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self,request:Request,call_next):
         authorization=request.headers.get("authorization","")
-        if authorization.lower().startswith("bearer "):
+        if authorization.lower().startswith("bearer ") and not authorization[7:].strip().startswith("oriom_live_"):
             verifier=getattr(request.app.state,"oidc_verifier",None)
             if verifier is None:
                 return JSONResponse({"detail":{"code":"identity_provider_not_configured","message":"ORIOM7 identity verification is not configured."}},status_code=503)
