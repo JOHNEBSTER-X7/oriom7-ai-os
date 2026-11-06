@@ -383,3 +383,12 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .multimodal-preview summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
 .multimodal-preview p { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 18rem; overflow: auto; }
 @media (max-width: 680px) { .multimodal-upload-grid { grid-template-columns: 1fr; } .multimodal-intake { padding: 14px; } }
+
+
+.multimodal-visual-card { display: grid; gap: 10px; margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.multimodal-visual-card h4 { margin: 0 0 4px; font-size: 1rem; }
+.multimodal-visual-card p { margin: 0; }
+.multimodal-visual-card label { font-weight: 700; }
+.multimodal-visual-card input[type="file"], .multimodal-visual-card textarea { width: 100%; min-width: 0; border: 1px solid #777; border-radius: 8px; padding: 10px; background: var(--surface); color: var(--text); }
+.multimodal-visual-card textarea { min-height: 84px; resize: vertical; }
+.multimodal-visual-card button { justify-self: start; }
