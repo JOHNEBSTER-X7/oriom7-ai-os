@@ -90,6 +90,38 @@ async def create_developer_key(body: CreateKeyRequest, request: Request):
         )
     return {"key": raw, "warning": "Copy this key now. It cannot be retrieved again.", "record": dict(row)}
 
+
+@router.get("/v1/developer/keys")
+async def list_developer_keys(request: Request):
+    owner_id = getattr(request.state, "user_id", None)
+    if not owner_id:
+        raise HTTPException(status_code=401, detail="Sign-in is required")
+    pool = await _database(request)
+    async with pool.acquire() as connection:
+        rows = await connection.fetch(
+            """SELECT api_key_id::text, name, key_prefix, plan_code, created_at, last_used_at, revoked_at
+               FROM developer_api_keys WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 100""",
+            str(owner_id),
+        )
+    return {"keys": [dict(row) for row in rows]}
+
+@router.delete("/v1/developer/keys/{api_key_id}")
+async def revoke_developer_key(api_key_id: str, request: Request):
+    owner_id = getattr(request.state, "user_id", None)
+    if not owner_id:
+        raise HTTPException(status_code=401, detail="Sign-in is required")
+    pool = await _database(request)
+    async with pool.acquire() as connection:
+        row = await connection.fetchrow(
+            """UPDATE developer_api_keys SET revoked_at=NOW()
+               WHERE api_key_id=$1::uuid AND owner_id=$2 AND revoked_at IS NULL
+               RETURNING api_key_id::text""",
+            api_key_id, str(owner_id),
+        )
+    if row is None:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return {"revoked": True, "api_key_id": row["api_key_id"]}
+
 @router.get("/v1/developer/usage")
 async def get_developer_usage(request: Request, key: dict = Depends(require_api_key)):
     pool = await _database(request)
