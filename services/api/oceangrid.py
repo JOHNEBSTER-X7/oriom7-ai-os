@@ -55,6 +55,11 @@ class SiteAssessmentRequest(BaseModel):
             return self
         return self
 
+class CoastalRankingRequest(BaseModel):
+    sites: list[SiteAssessmentRequest] = Field(min_length=1, max_length=200)
+    minimum_evidence_coverage_pct: float = Field(default=60.0, ge=0, le=100)
+
+
 def _band(value: float | None, low: float, high: float, inverse: bool = False) -> tuple[float | None, str]:
     if value is None:
         return None, "unknown"
