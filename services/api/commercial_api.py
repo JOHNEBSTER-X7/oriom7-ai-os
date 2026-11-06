@@ -47,14 +47,41 @@ async def require_api_key(request: Request, authorization: str | None = Header(d
     pool = await _database(request)
     digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
     async with pool.acquire() as connection:
-        row = await connection.fetchrow(
-            """UPDATE developer_api_keys SET last_used_at=NOW()
-               WHERE key_hash=$1 AND revoked_at IS NULL
-               RETURNING api_key_id::text, owner_id, plan_code""",
-            digest,
-        )
-    if row is None:
-        raise HTTPException(status_code=401, detail="Invalid or revoked developer API key")
+        async with connection.transaction():
+            key = await connection.fetchrow(
+                """SELECT api_key_id::text,owner_id FROM developer_api_keys
+                   WHERE key_hash=$1 AND revoked_at IS NULL""", digest)
+            if key is None:
+                raise HTTPException(status_code=401, detail="Invalid or revoked developer API key")
+            await connection.execute("SELECT pg_advisory_xact_lock(hashtext($1))", key["owner_id"])
+            entitlement = await connection.fetchrow(
+                """SELECT COALESCE(s.plan_code,'starter') AS plan_code,p.monthly_request_limit
+                   FROM (SELECT $1::text AS owner_id) owner
+                   LEFT JOIN oriom7_accounts a ON a.subject_id=owner.owner_id
+                   LEFT JOIN LATERAL (
+                     SELECT plan_code FROM oriom7_subscriptions
+                     WHERE account_id=a.account_id AND status IN ('active','trialing')
+                       AND (current_period_end IS NULL OR current_period_end>NOW())
+                     ORDER BY created_at DESC LIMIT 1
+                   ) s ON TRUE
+                   JOIN oriom7_plan_catalog p ON p.plan_code=COALESCE(s.plan_code,'starter')""",
+                key["owner_id"])
+            if entitlement is None:
+                raise HTTPException(status_code=503,detail="Plan catalogue is unavailable; apply migrations 013 and 014.")
+            used = await connection.fetchval(
+                """SELECT COUNT(*) FROM developer_api_usage u
+                   JOIN developer_api_keys k ON k.api_key_id=u.api_key_id
+                   WHERE k.owner_id=$1 AND u.product_code='__api_request__'
+                     AND u.created_at>=date_trunc('month',NOW())""",key["owner_id"])
+            limit=entitlement["monthly_request_limit"]
+            if limit is not None and used>=limit:
+                raise HTTPException(status_code=429,detail={"code":"monthly_quota_exceeded","plan_code":entitlement["plan_code"],"monthly_limit":limit,"used":used})
+            await connection.execute("UPDATE developer_api_keys SET last_used_at=NOW() WHERE api_key_id=$1::uuid",key["api_key_id"])
+            await connection.execute(
+                """INSERT INTO developer_api_usage(api_key_id,product_code,units,status_code,metadata)
+                   VALUES($1::uuid,'__api_request__',1,200,$2::jsonb)""",
+                key["api_key_id"],__import__("json").dumps({"plan_code":entitlement["plan_code"]}))
+            row={"api_key_id":key["api_key_id"],"owner_id":key["owner_id"],"plan_code":entitlement["plan_code"]}
     request.state.developer_key = dict(row)
     return dict(row)
 
@@ -87,7 +114,7 @@ async def create_developer_key(body: CreateKeyRequest, request: Request):
             """INSERT INTO developer_api_keys (owner_id, name, key_prefix, key_hash, plan_code)
                VALUES ($1, $2, $3, $4, $5)
                RETURNING api_key_id::text, name, key_prefix, plan_code, created_at""",
-            str(owner_id), body.name, prefix, digest, body.plan_code,
+            str(owner_id), body.name, prefix, digest, "starter",
         )
     return {"key": raw, "warning": "Copy this key now. It cannot be retrieved again.", "record": dict(row)}
 
@@ -100,8 +127,13 @@ async def list_developer_keys(request: Request):
     pool = await _database(request)
     async with pool.acquire() as connection:
         rows = await connection.fetch(
-            """SELECT api_key_id::text, name, key_prefix, plan_code, created_at, last_used_at, revoked_at
-               FROM developer_api_keys WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 100""",
+            """SELECT k.api_key_id::text,k.name,k.key_prefix,
+                      COALESCE((SELECT s.plan_code FROM oriom7_accounts a JOIN oriom7_subscriptions s ON s.account_id=a.account_id
+                        WHERE a.subject_id=k.owner_id AND s.status IN ('active','trialing')
+                          AND (s.current_period_end IS NULL OR s.current_period_end>NOW())
+                        ORDER BY s.created_at DESC LIMIT 1),'starter') AS plan_code,
+                      k.created_at,k.last_used_at,k.revoked_at
+               FROM developer_api_keys k WHERE k.owner_id=$1 ORDER BY k.created_at DESC LIMIT 100""",
             str(owner_id),
         )
     return {"keys": [dict(row) for row in rows]}
@@ -131,7 +163,7 @@ async def get_developer_usage(request: Request, key: dict = Depends(require_api_
             """SELECT product_code, COUNT(*)::bigint AS requests,
                       COALESCE(SUM(units),0)::bigint AS units,
                       MIN(created_at) AS first_request, MAX(created_at) AS last_request
-               FROM developer_api_usage WHERE api_key_id=$1::uuid
+               FROM developer_api_usage WHERE api_key_id=$1::uuid AND product_code <> '__api_request__'
                  AND created_at >= date_trunc('month', NOW())
                GROUP BY product_code ORDER BY product_code""",
             key["api_key_id"],
