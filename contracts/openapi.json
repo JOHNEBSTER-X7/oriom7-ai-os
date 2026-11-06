@@ -1897,6 +1897,66 @@
           }
         }
       }
+    },
+    "/documents/ocr": {
+      "post": {
+        "operationId": "extractDocumentText",
+        "summary": "Extract text from an uploaded document",
+        "description": "Requires a developer API key and an operator-configured OCR provider. Accepts PDF, PNG, JPEG and TIFF uploads up to 15 MB. Original files are not persisted by ORIOM7; the configured provider receives the document. Successful usage is metered in pages.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "language": {
+                    "type": "string",
+                    "default": "auto",
+                    "maxLength": 35
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extracted text, document digest, page count and usage"
+          },
+          "401": {
+            "description": "Invalid developer API key"
+          },
+          "413": {
+            "description": "Upload exceeds 15 MB"
+          },
+          "415": {
+            "description": "Unsupported file type or invalid file signature"
+          },
+          "502": {
+            "description": "OCR provider failed or returned invalid data"
+          },
+          "503": {
+            "description": "OCR provider is not configured"
+          },
+          "504": {
+            "description": "OCR provider timed out"
+          }
+        }
+      }
     }
   },
   "components": {
