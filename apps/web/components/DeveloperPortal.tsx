@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 
 type Product = { code: string; name: string; status: string; unit: string; description: string };
 type ApiKey = { api_key_id: string; name: string; key_prefix: string; plan_code: string; created_at: string; last_used_at?: string | null; revoked_at?: string | null };
@@ -47,7 +48,7 @@ export default function DeveloperPortal() {
 
   const activeKeys = useMemo(() => keys.filter((key) => !key.revoked_at), [keys]);
 
-  async function createKey(event: React.FormEvent<HTMLFormElement>) {
+  async function createKey(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice(""); setNewKey("");
     try {
       const result = await requestJson<{ key: string }>("/api/developer/keys", {
