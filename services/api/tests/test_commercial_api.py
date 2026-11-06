@@ -19,3 +19,7 @@ def test_embedding_api_requires_developer_key():
 def test_developer_key_creation_requires_trusted_identity():
     response = client.post("/v1/developer/keys", json={"name": "test key"})
     assert response.status_code == 401
+
+def test_developer_api_key_is_not_mistaken_for_oidc_bearer_token():
+    response=client.get("/v1/developer/usage",headers={"Authorization":"Bearer oriom_live_short"})
+    assert response.status_code==401
