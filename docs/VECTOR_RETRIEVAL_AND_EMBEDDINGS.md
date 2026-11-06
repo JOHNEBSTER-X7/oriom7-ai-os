@@ -9,7 +9,7 @@ Extend ORIOM7's existing semantic search implementation without creating a separ
 - Configurable embedding output dimension via ORIOM7_EMBEDDING_DIMENSIONS.
 - Backwards-compatible default of 1,536 dimensions.
 - Model and dimension recorded with each stored vector.
-- Composite identity (document_id, embedding_model), allowing multiple model embeddings per document.
+- Composite identity (document_id, embedding_model, embedding_dimensions), allowing multiple model/dimension variants per document.
 - Strict validation of vector length, numeric values and finite values.
 - No padding, truncation or comparisons across different models/dimensions.
 - HNSW cosine indexing for vectors up to 2,000 dimensions.
@@ -36,7 +36,7 @@ Migration 011:
 
 1. Converts the fixed vector(1536) column to an unconstrained vector column.
 2. Adds and backfills embedding_dimensions from existing stored vectors.
-3. Changes the primary key to (document_id, embedding_model).
+3. Changes the primary key to (document_id, embedding_model, embedding_dimensions).
 4. Rebuilds the HNSW index as a partial index for dimensions up to 2,000.
 5. Adds a model/dimension lookup index.
 
