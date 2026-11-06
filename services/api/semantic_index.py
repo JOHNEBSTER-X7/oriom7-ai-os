@@ -80,7 +80,7 @@ class EmbeddingProvider:
                    FROM search_documents d
                    WHERE d.document_id = $1::uuid AND d.deleted_at IS NULL
                      AND d.index_status = 'indexed' AND d.content_hash = $4
-                   ON CONFLICT (document_id, embedding_model) DO UPDATE SET
+                   ON CONFLICT (document_id, embedding_model, embedding_dimensions) DO UPDATE SET
                      embedding = EXCLUDED.embedding,
                      embedding_dimensions = EXCLUDED.embedding_dimensions,
                      content_hash = EXCLUDED.content_hash,
@@ -163,11 +163,11 @@ async def backfill_missing_embeddings(pool, embedder: EmbeddingProvider, batch_s
                    FROM search_documents d
                    LEFT JOIN search_document_embeddings e
                      ON e.document_id = d.document_id AND e.embedding_model = $1
+                     AND e.embedding_dimensions = $2
                    WHERE d.deleted_at IS NULL AND d.index_status = 'indexed'
                      AND d.rights_basis IS NOT NULL AND btrim(d.rights_basis) <> ''
                      AND d.robots_status IN ('allowed', 'not_applicable')
-                     AND (e.document_id IS NULL OR e.embedding_dimensions <> $2
-                          OR e.content_hash <> d.content_hash)
+                     AND (e.document_id IS NULL OR e.content_hash <> d.content_hash)
                    ORDER BY d.fetched_at DESC LIMIT $3""",
                 embedder.model, embedder.dimensions, batch_size,
             )
@@ -182,7 +182,7 @@ async def backfill_missing_embeddings(pool, embedder: EmbeddingProvider, batch_s
                         """INSERT INTO search_document_embeddings
                            (document_id, embedding_model, embedding, embedding_dimensions, content_hash)
                            VALUES ($1::uuid, $2, $3::vector, $4, $5)
-                           ON CONFLICT (document_id, embedding_model) DO UPDATE SET
+                           ON CONFLICT (document_id, embedding_model, embedding_dimensions) DO UPDATE SET
                              embedding = EXCLUDED.embedding,
                              embedding_dimensions = EXCLUDED.embedding_dimensions,
                              content_hash = EXCLUDED.content_hash, embedded_at = NOW()""",
