@@ -13,6 +13,7 @@ from semantic_index import PostgresVectorIndex, build_embedding_provider_from_en
 from knowledge_graph import router as knowledge_graph_router
 from research_agents import router as research_agents_router
 from commercial_api import router as commercial_api_router
+from account_billing import router as account_billing_router
 
 
 @asynccontextmanager
@@ -60,6 +61,7 @@ app.include_router(ingestion_router)
 app.include_router(knowledge_graph_router)
 app.include_router(research_agents_router)
 app.include_router(commercial_api_router)
+app.include_router(account_billing_router)
 
 
 @app.get("/v1/status", tags=["system"])
