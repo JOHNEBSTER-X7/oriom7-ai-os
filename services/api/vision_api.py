@@ -133,6 +133,8 @@ async def analyze_image(
     provider = getattr(request.app.state, "vision_provider", None)
     if provider is None:
         raise HTTPException(status_code=503, detail="Visual intelligence provider is not configured")
+    if not question.strip():
+        raise HTTPException(status_code=422, detail="A non-empty visual question is required")
     media_type = (file.content_type or "").split(";", 1)[0].strip().lower()
     content = await file.read(MAX_IMAGE_BYTES + 1)
     if len(content) > MAX_IMAGE_BYTES:
