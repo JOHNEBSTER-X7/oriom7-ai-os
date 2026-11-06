@@ -106,3 +106,8 @@ The identity and commercial milestone now includes a generic managed OIDC author
 Apply database migrations 001–015. Configure OIDC issuer, API audience, JWKS endpoint and confidential web-client settings before enabling sign-in. Configure Stripe test-mode secret/webhook keys, Builder/Business Price IDs and trusted HTTPS return URLs before checkout becomes available. No credentials are included and live billing is not enabled by this repository alone.
 
 Organisation invitation tokens are hashed and expire after seven days, but automated email delivery is not configured; the token must currently be delivered securely out-of-band. Email verification and account recovery are handled by the selected OIDC provider. See [Identity, Organisation and Commercial Billing V1](docs/IDENTITY_AND_COMMERCIAL_BILLING_ENGINE_V1.md) for exact environment variables, migration order, integration boundaries and production launch gates.
+
+
+## Speech Intelligence V1
+
+The API now contains provider-backed speech-to-text and text-to-speech adapters. Transcription accepts bounded audio uploads, validates basic media signatures, returns provider transcript metadata and optional timestamped segments/speaker labels, and meters audio seconds. Synthesis accepts bounded text and returns provider-generated audio bytes while metering input characters. Both providers are operator-configured through trusted HTTPS endpoints; no provider credentials are exposed to clients. Speech products remain planned until configured, tested and evaluated. There is no proprietary speech engine, built-in diarisation, streaming synthesis or durable audio storage yet. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
