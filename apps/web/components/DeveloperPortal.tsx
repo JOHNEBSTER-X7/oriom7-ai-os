@@ -97,6 +97,7 @@ export default function DeveloperPortal() {
       <header className="site-header developer-header">
         <a className="brand" href="/" aria-label="ORIOM7 home">ORIOM7</a>
         <span className="header-caption">Developer platform</span>
+        <a className="workspace-link" href="/account">Account</a>
         <a className="workspace-link" href="/research">Research workspace</a>
       </header>
 
