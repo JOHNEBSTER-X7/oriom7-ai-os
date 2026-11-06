@@ -20,6 +20,7 @@ from ocr_api import router as ocr_router, build_ocr_provider_from_env
 from speech_api import router as speech_router, build_speech_provider_from_env, build_tts_provider_from_env
 from voice_intelligence import router as voice_intelligence_router
 from vision_api import build_visual_provider_from_env, router as vision_router
+from visual_search import build_visual_embedding_provider_from_env, router as visual_search_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -42,6 +43,7 @@ async def lifespan(application: FastAPI):
     application.state.speech_provider = build_speech_provider_from_env()
     application.state.tts_provider = build_tts_provider_from_env()
     application.state.vision_provider = build_visual_provider_from_env()
+    application.state.visual_embedding_provider = build_visual_embedding_provider_from_env()
 
     if database_url:
         try:
