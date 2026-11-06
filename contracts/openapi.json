@@ -1473,6 +1473,358 @@
           }
         }
       }
+    },
+    "/account/checkout": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Create a Stripe subscription checkout session",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "plan_code"
+                ],
+                "properties": {
+                  "plan_code": {
+                    "type": "string",
+                    "enum": [
+                      "builder",
+                      "business"
+                    ]
+                  },
+                  "organisation_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout URL"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "Stripe checkout is not configured"
+          }
+        }
+      }
+    },
+    "/billing/webhook": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Receive signed Stripe webhook events",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Stripe-Signature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event processed or duplicate safely acknowledged"
+          },
+          "400": {
+            "description": "Invalid webhook signature or payload"
+          },
+          "503": {
+            "description": "Webhook configuration unavailable"
+          }
+        }
+      }
+    },
+    "/account/invitations/accept": {
+      "post": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Accept an organisation invitation using the authenticated verified email",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 32,
+                    "maxLength": 128
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation accepted"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Verified email claim required"
+          },
+          "404": {
+            "description": "Invitation invalid or expired"
+          }
+        }
+      }
+    },
+    "/account/organisations/{organisation_id}/invitations": {
+      "post": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Create a seven-day organisation invitation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "email",
+                  "role"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "developer",
+                      "billing_viewer"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation created; token shown once for secure manual delivery"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organisation admin required"
+          },
+          "409": {
+            "description": "Invitation already pending"
+          }
+        }
+      }
+    },
+    "/account/organisations/{organisation_id}/members": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "List organisation members",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organisation member list"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/account/organisations/{organisation_id}/members/{member_subject}": {
+      "patch": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Update a non-owner organisation member role",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "member_subject",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role"
+                ],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "developer",
+                      "billing_viewer"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member role updated"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organisation owner required"
+          },
+          "409": {
+            "description": "Owner role is protected"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Remove a non-owner organisation member",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "member_subject",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member removed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Organisation owner required"
+          },
+          "409": {
+            "description": "Owner role is protected"
+          }
+        }
+      }
     }
   },
   "components": {
