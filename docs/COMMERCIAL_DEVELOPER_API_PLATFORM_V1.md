@@ -81,3 +81,10 @@ The product catalogue deliberately reports `billing_status: not_configured`. No 
 ## Translation API preview
 
 `POST /v1/translation/text` is implemented as a provider-backed preview. It accepts `{ "text": "Hello", "source": "en", "target": "fr", "format": "text" }` and returns translated text plus input-character usage. The provider is an operator-configured LibreTranslate-compatible HTTPS endpoint (`ORIOM7_TRANSLATION_ENDPOINT`) with an optional server-side `ORIOM7_TRANSLATION_API_KEY`; callers cannot choose the endpoint or provider credential. Requests are bounded to 50,000 characters, redirects are disabled, provider failures are surfaced as gateway errors, and usage is recorded only after successful translation. Configure and evaluate a provider before enabling this preview for customers.
+
+
+## OCR & Document Intelligence API preview
+
+`POST /v1/documents/ocr` accepts a multipart upload with fields `file` and optional `language`. Supported file types are PDF, PNG, JPEG and TIFF; file signatures are checked and uploads are limited to 15 MB. The provider receives the file over HTTPS using the operator-configured `ORIOM7_OCR_ENDPOINT` and optional server-side `ORIOM7_OCR_API_KEY`. It must return JSON shaped as `{"text":"...","pages":1}`. The API validates extracted text and page count, records successful usage in pages, and returns a SHA-256 digest and extracted text. Original files are held in memory for the request and are not persisted by ORIOM7. The configured OCR provider will receive the document, so operators must assess provider retention, data residency, confidentiality and contractual terms before enabling the endpoint. Without a configured provider the product remains planned and requests return HTTP 503.
+
+The upload route is intended for documents the caller is authorised to process. It does not yet provide malware scanning, encrypted object storage, durable document records, asynchronous jobs, redaction, table/field extraction, or a provider-independent OCR engine. Do not use it for sensitive production documents until the provider and deployment controls have been reviewed.
