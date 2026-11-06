@@ -14,6 +14,8 @@ from knowledge_graph import router as knowledge_graph_router
 from research_agents import router as research_agents_router
 from commercial_api import router as commercial_api_router
 from account_billing import router as account_billing_router
+from billing import router as billing_router
+from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
 @asynccontextmanager
@@ -21,6 +23,10 @@ async def lifespan(application: FastAPI):
     database_url = os.getenv("DATABASE_URL")
     environment = os.getenv("ORIOM7_ENV", "development").lower()
     pool = None
+    try:
+        application.state.oidc_verifier = OIDCVerifier.from_env()
+    except OIDCConfigurationError as exc:
+        raise RuntimeError(str(exc)) from exc
     application.state.model_orchestrator = build_orchestrator_from_env()
 
     if database_url:
@@ -51,7 +57,8 @@ async def lifespan(application: FastAPI):
             await pool.close()
 
 
-app = FastAPI(title="ORIOM7 API", version="1.1.0", lifespan=lifespan)
+app = FastAPI(title="ORIOM7 API", version="1.2.0", lifespan=lifespan)
+app.add_middleware(OIDCAuthenticationMiddleware)
 app.include_router(accessibility_router)
 app.include_router(assistant_accessibility_router)
 app.include_router(generation_router)
@@ -62,6 +69,7 @@ app.include_router(knowledge_graph_router)
 app.include_router(research_agents_router)
 app.include_router(commercial_api_router)
 app.include_router(account_billing_router)
+app.include_router(billing_router)
 
 
 @app.get("/v1/status", tags=["system"])
