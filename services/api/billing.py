@@ -20,7 +20,7 @@ router=APIRouter(tags=["billing"])
 PLAN_PRICE_ENV={"builder":"ORIOM7_STRIPE_PRICE_BUILDER_MONTHLY","business":"ORIOM7_STRIPE_PRICE_BUSINESS_MONTHLY"}
 def stripe_ready():
     return bool(os.getenv("STRIPE_SECRET_KEY") and os.getenv("STRIPE_WEBHOOK_SECRET")
-                and all(os.getenv(name) for name in PLAN_PRICE_ENV.values()))
+                and any(os.getenv(name) for name in PLAN_PRICE_ENV.values()))
 def price_id(plan_code:str):
     name=PLAN_PRICE_ENV.get(plan_code)
     return os.getenv(name) if name else None
