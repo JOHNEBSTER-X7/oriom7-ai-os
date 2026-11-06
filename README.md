@@ -111,3 +111,8 @@ Organisation invitation tokens are hashed and expire after seven days, but autom
 ## Speech Intelligence V1
 
 The API now contains provider-backed speech-to-text and text-to-speech adapters. Transcription accepts bounded audio uploads, validates basic media signatures, returns provider transcript metadata and optional timestamped segments/speaker labels, and meters audio seconds. Synthesis accepts bounded text and returns provider-generated audio bytes while metering input characters. Both providers are operator-configured through trusted HTTPS endpoints; no provider credentials are exposed to clients. Speech products remain planned until configured, tested and evaluated. There is no proprietary speech engine, built-in diarisation, streaming synthesis or durable audio storage yet. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+
+
+### Real-Time Voice Intelligence V1
+
+An authenticated `POST /v1/assistant/voice-turn` pipeline connects speech transcription, the existing assistant orchestrator and accessibility profile, and text-to-speech. Clients may pass up to 12 previous user/assistant messages for request-scoped conversational context. Synthesized audio is returned in the response body; transcript and answer are returned in bounded base64 response headers. This is sequential request/response processing, not duplex streaming, and conversation history is not durably stored. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
