@@ -88,7 +88,7 @@ export default function AccessibilityTools() {
         <p className="note">Browser speech availability and voice quality vary by device and language. This preview does not replace full screen-reader support or the ORIOM7 voice assistant.</p>
       </section>
       {profile.display.readingGuide && guideY !== null ? (
-        <div className="reading-guide-band" style={{ top: Math.max(0, Math.min(guideY - 20, window.innerHeight - 42)) }} aria-hidden="true" />
+        <div className="reading-guide-band" style={{ top: Math.max(0, guideY - 20) }} aria-hidden="true" />
       ) : null}
     </>
   );
