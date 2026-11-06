@@ -101,3 +101,16 @@ The upload route is intended for documents the caller is authorised to process. 
 `POST /v1/speech/synthesis` accepts JSON `{ "text": "Hello", "voice": "default", "format": "mp3" }`, with text limited to 10,000 characters. The operator configures `ORIOM7_TTS_ENDPOINT` and optional `ORIOM7_TTS_API_KEY`. The provider receives text, voice and format and returns audio bytes with a supported audio content type. Output is limited to 20 MB, returned with `Cache-Control: no-store`, and metered by input characters.
 
 These are provider adapters, not proprietary speech models. Timestamping and speaker labels are included only when returned by the configured transcription provider. Neither product is available until its provider is configured and evaluated. Provider privacy, data residency, consent, voice licensing, retention and security terms must be reviewed before production use. The API does not currently provide streaming synthesis, asynchronous jobs, speaker diarisation itself, voice cloning, or a built-in speech engine.
+
+
+## Real-Time Voice Intelligence V1
+
+### End-to-end voice turn
+
+`POST /v1/assistant/voice-turn` is an authenticated user endpoint that connects the configured speech recognition provider, the existing ORIOM7 assistant response pipeline, the user's saved accessibility presentation preferences, and the configured text-to-speech provider.
+
+It accepts multipart `file` audio (same 25 MB audio limit and supported media signatures as the transcription endpoint), optional `language`, and optional `conversation_history` JSON. Conversation history is a list of at most 12 messages; roles are limited to `user` and `assistant`, each message is limited to 2,000 characters, and total history is limited to 8,000 characters. The latest transcript is appended as the current user turn. The assistant call uses the existing model orchestrator and accessibility profile; web/knowledge retrieval is disabled for this initial voice-turn path to keep conversational voice responses focused and predictable.
+
+The response body contains synthesized audio bytes. The transcript and assistant response are available as URL-safe base64 UTF-8 in `X-ORIOM7-Transcript-B64` and `X-ORIOM7-Response-B64` headers (each capped at 3,000 characters). Additional headers report language, detected input duration and that context is request-scoped. Clients should send the prior user/assistant messages on the next request if they want continuity.
+
+This is a sequential request/response voice pipeline, not low-latency duplex streaming. Conversation history is supplied by the client and is not saved by this endpoint. No live speech providers are configured by default. The pipeline requires both speech providers and at least one model provider, plus authenticated user identity and profile storage. Provider privacy, consent, retention, language accuracy and voice licensing remain launch gates.
