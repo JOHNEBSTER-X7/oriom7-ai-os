@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ORIOM7 API",
-    "version": "1.1.0",
-    "description": "Initial versioned contract for the ORIOM7 hybrid search and assistant platform."
+    "version": "1.2.0",
+    "description": "ORIOM7 hybrid search, assistant, accessibility and commercial developer API platform."
   },
   "servers": [
     {
@@ -1048,6 +1048,167 @@
           },
           "404": {
             "description": "Schedule not found for this user"
+          }
+        }
+      }
+    },
+    "/developer/products": {
+      "get": {
+        "operationId": "listDeveloperProducts",
+        "summary": "List commercial API products and readiness",
+        "responses": {
+          "200": {
+            "description": "Product catalogue and explicit billing readiness"
+          }
+        }
+      }
+    },
+    "/developer/keys": {
+      "post": {
+        "operationId": "createDeveloperApiKey",
+        "summary": "Create a developer API key",
+        "description": "Requires trusted user authentication. The secret is returned once; only its SHA-256 hash is stored.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "plan_code": {
+                    "type": "string",
+                    "enum": [
+                      "starter",
+                      "builder",
+                      "business",
+                      "enterprise"
+                    ],
+                    "default": "starter"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One-time API key and metadata"
+          },
+          "401": {
+            "description": "Sign-in required"
+          },
+          "503": {
+            "description": "Persistent database unavailable"
+          }
+        }
+      }
+    },
+    "/developer/usage": {
+      "get": {
+        "operationId": "getDeveloperUsage",
+        "summary": "Get current-month usage for the API key",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage summary by product"
+          },
+          "401": {
+            "description": "Invalid or revoked API key"
+          },
+          "503": {
+            "description": "Persistent database unavailable"
+          }
+        }
+      }
+    },
+    "/embeddings/text": {
+      "post": {
+        "operationId": "createTextEmbeddings",
+        "summary": "Create text embeddings",
+        "description": "Preview endpoint. Requires an ORIOM7 developer API key and configured server-side embedding provider. Only the configured model is available.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "input": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 12000
+                      },
+                      {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 64,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 12000
+                        }
+                      }
+                    ]
+                  },
+                  "model": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "input"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Embedding vectors, model, dimensions and usage"
+          },
+          "400": {
+            "description": "Requested model does not match configured model"
+          },
+          "401": {
+            "description": "Developer API key required"
+          },
+          "422": {
+            "description": "Invalid input"
+          },
+          "502": {
+            "description": "Embedding provider failed"
+          },
+          "503": {
+            "description": "Embedding provider not configured"
           }
         }
       }
