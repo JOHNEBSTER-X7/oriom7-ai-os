@@ -2211,6 +2211,135 @@
           }
         }
       }
+    },
+    "/vision/index": {
+      "post": {
+        "operationId": "indexVisualItem",
+        "summary": "Index an image for private similarity search",
+        "description": "Accepts an image and label, forwards image bytes transiently to the configured visual embedding provider, and stores only an owner-scoped vector and metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "label"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Visual item indexed; original image is not persisted"
+          },
+          "401": {
+            "description": "Invalid developer API key"
+          },
+          "503": {
+            "description": "Visual embedding provider or database is not configured"
+          }
+        }
+      }
+    },
+    "/vision/search": {
+      "post": {
+        "operationId": "searchVisualItems",
+        "summary": "Find visually similar indexed images",
+        "description": "Compares an uploaded query image with images indexed by the authenticated API-key owner, model and vector dimensions.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "default": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked visual similarity results"
+          },
+          "401": {
+            "description": "Invalid developer API key"
+          },
+          "503": {
+            "description": "Visual embedding provider or database is not configured"
+          }
+        }
+      }
+    },
+    "/vision/index/{item_id}": {
+      "delete": {
+        "operationId": "deleteVisualItem",
+        "summary": "Delete an owned visual index item",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Item deleted"
+          },
+          "401": {
+            "description": "Invalid developer API key"
+          },
+          "404": {
+            "description": "Item not found for this account"
+          }
+        }
+      }
     }
   },
   "components": {
