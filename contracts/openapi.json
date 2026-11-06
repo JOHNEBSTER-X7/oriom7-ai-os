@@ -1825,6 +1825,78 @@
           }
         }
       }
+    },
+    "/translation/text": {
+      "post": {
+        "operationId": "translateText",
+        "summary": "Translate text through configured provider",
+        "description": "Requires a developer API key. Uses an operator-configured HTTPS translation provider; credentials and endpoint are never caller-controlled. Successful input characters are metered.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50000
+                  },
+                  "source": {
+                    "type": "string",
+                    "default": "auto",
+                    "maxLength": 35
+                  },
+                  "target": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 35
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "html"
+                    ],
+                    "default": "text"
+                  }
+                },
+                "required": [
+                  "text",
+                  "target"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Translated text and metered input characters"
+          },
+          "401": {
+            "description": "Invalid developer API key"
+          },
+          "422": {
+            "description": "Invalid request or identical source and target languages"
+          },
+          "502": {
+            "description": "Translation provider failed"
+          },
+          "503": {
+            "description": "Translation provider is not configured"
+          },
+          "504": {
+            "description": "Translation provider timed out"
+          }
+        }
+      }
     }
   },
   "components": {
