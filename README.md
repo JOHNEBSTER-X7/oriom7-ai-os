@@ -116,3 +116,8 @@ The API now contains provider-backed speech-to-text and text-to-speech adapters.
 ### Real-Time Voice Intelligence V1
 
 An authenticated `POST /v1/assistant/voice-turn` pipeline connects speech transcription, the existing assistant orchestrator and accessibility profile, and text-to-speech. Clients may pass up to 12 previous user/assistant messages for request-scoped conversational context. Synthesized audio is returned in the response body; transcript and answer are returned in bounded base64 response headers. This is sequential request/response processing, not duplex streaming, and conversation history is not durably stored. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+
+
+## Visual Intelligence V1
+
+ORIOM7 now includes a provider-backed visual question-answering API foundation for JPEG, PNG and WebP images. Users can ask questions about photographs, charts, diagrams and scenes from the research workspace. The provider must be configured by the operator; images are not stored by ORIOM7's endpoint but are forwarded to that provider. This is an integration preview, not an ORIOM7-hosted vision model. See [Visual Intelligence V1](docs/VISUAL_INTELLIGENCE_V1.md).
