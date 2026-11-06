@@ -64,3 +64,12 @@ def test_readiness_reports_unconnected_sources(app):
 def test_coordinates_are_validated():
     with pytest.raises(Exception):
         oceangrid.SiteAssessmentRequest(site_id="bad", name="Invalid", latitude=91, longitude=0)
+
+
+def test_source_catalogue_lists_independent_provider_families(app):
+    response = TestClient(app).get("/v1/oceangrid/sources")
+    assert response.status_code == 200
+    body = response.json()
+    source_ids = {item["id"] for item in body["sources"]}
+    assert {"copernicus_marine", "sentinel_eumetsat", "nasa_swot", "noaa", "argo", "commercial_imagery"} <= source_ids
+    assert all(item["status"] != "connected" for item in body["sources"])
