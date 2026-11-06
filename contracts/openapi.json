@@ -2085,6 +2085,73 @@
           }
         }
       }
+    },
+    "/assistant/voice-turn": {
+      "post": {
+        "operationId": "createAssistantVoiceTurn",
+        "summary": "Run an authenticated end-to-end voice conversation turn",
+        "description": "Requires authenticated ORIOM7 user identity. Accepts audio, transcribes it through the configured speech provider, invokes the existing assistant response pipeline using the user's accessibility profile and up to 12 client-supplied conversation messages, then returns synthesized audio. Conversation context is request-scoped and is not persisted. The transcript and answer are returned in base64-encoded X-ORIOM7-Transcript-B64 and X-ORIOM7-Response-B64 response headers. Both headers are truncated to 3,000 characters. Audio and text are not durably stored by this endpoint.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "language": {
+                    "type": "string",
+                    "default": "auto",
+                    "maxLength": 35
+                  },
+                  "conversation_history": {
+                    "type": "string",
+                    "default": "[]",
+                    "description": "JSON array of at most 12 messages with role user or assistant and content up to 2,000 characters each; 8,000 characters total."
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Synthesized audio bytes. Transcript and assistant answer are in X-ORIOM7-Transcript-B64 and X-ORIOM7-Response-B64 headers; decode as URL-safe base64 UTF-8."
+          },
+          "401": {
+            "description": "Authenticated user identity required"
+          },
+          "413": {
+            "description": "Audio or transcribed input exceeds limit"
+          },
+          "415": {
+            "description": "Unsupported audio type or invalid signature"
+          },
+          "422": {
+            "description": "Invalid conversation history"
+          },
+          "502": {
+            "description": "Speech, assistant or synthesis provider failed"
+          },
+          "503": {
+            "description": "Speech recognition, synthesis or model providers are not configured"
+          },
+          "504": {
+            "description": "Speech provider timed out"
+          }
+        }
+      }
     }
   },
   "components": {
