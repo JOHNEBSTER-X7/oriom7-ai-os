@@ -12,6 +12,7 @@ from ingestion import router as ingestion_router
 from semantic_index import PostgresVectorIndex, build_embedding_provider_from_env
 from knowledge_graph import router as knowledge_graph_router
 from research_agents import router as research_agents_router
+from commercial_api import router as commercial_api_router
 
 
 @asynccontextmanager
@@ -29,8 +30,8 @@ async def lifespan(application: FastAPI):
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
         application.state.database_pool = pool
         application.state.accessibility_profile_store = PostgresProfileStore(pool)
-        embedding_provider = build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None
-        semantic_index = PostgresVectorIndex(pool, embedding_provider) if embedding_provider else None
+        embedding_provider = build_embedding_provider_from_env()
+        semantic_index = PostgresVectorIndex(pool, embedding_provider) if embedding_provider and os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None
         application.state.embedding_provider = embedding_provider
         application.state.retrieval_service = RetrievalService(
             PostgresLexicalIndex(pool), build_external_search_providers_from_env(), semantic_index
@@ -39,7 +40,7 @@ async def lifespan(application: FastAPI):
         if environment == "production":
             raise RuntimeError("DATABASE_URL is required in production; refusing ephemeral profile storage.")
         application.state.accessibility_profile_store = MemoryProfileStore()
-        application.state.embedding_provider = None
+        application.state.embedding_provider = build_embedding_provider_from_env()
         application.state.retrieval_service = RetrievalService(None, build_external_search_providers_from_env())
 
     try:
@@ -58,6 +59,7 @@ app.include_router(search_router)
 app.include_router(ingestion_router)
 app.include_router(knowledge_graph_router)
 app.include_router(research_agents_router)
+app.include_router(commercial_api_router)
 
 
 @app.get("/v1/status", tags=["system"])
