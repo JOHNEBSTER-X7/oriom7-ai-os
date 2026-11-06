@@ -177,6 +177,8 @@ async def synthesize_speech(body: SpeechSynthesisRequest, request: Request,
         raise HTTPException(status_code=503, detail="Text-to-speech provider is not configured")
     try:
         audio, media_type = await provider.synthesize(body.text, body.voice, body.format)
+        if not isinstance(audio, bytes) or not audio or len(audio) > MAX_OUTPUT_BYTES or media_type not in OUTPUT_TYPES:
+            raise ValueError("Speech synthesis provider returned invalid audio")
     except httpx.TimeoutException as exc:
         raise HTTPException(status_code=504, detail="Text-to-speech provider timed out") from exc
     except httpx.HTTPStatusError as exc:
