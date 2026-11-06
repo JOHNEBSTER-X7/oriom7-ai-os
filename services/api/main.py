@@ -25,6 +25,10 @@ async def lifespan(application: FastAPI):
     pool = None
     try:
         application.state.oidc_verifier = OIDCVerifier.from_env()
+        if environment == "production" and application.state.oidc_verifier is None:
+            raise OIDCConfigurationError("OIDC issuer, API audience and JWKS URL are required in production.")
+        if environment == "production" and os.getenv("ORIOM7_ALLOW_DEV_USER_HEADER") == "true":
+            raise OIDCConfigurationError("Development identity headers must remain disabled in production.")
     except OIDCConfigurationError as exc:
         raise RuntimeError(str(exc)) from exc
     application.state.model_orchestrator = build_orchestrator_from_env()
