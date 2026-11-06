@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import translation_api
+import commercial_api
 from translation_api import router
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def app(monkeypatch):
     application.state.translation_provider = SimpleNamespace(
         translate=AsyncMock(return_value="Bonjour le monde")
     )
-    monkeypatch.setattr(translation_api, "require_api_key", lambda: {"api_key_id": "00000000-0000-0000-0000-000000000001", "owner_id": "acct", "plan_code": "starter"})
+    application.dependency_overrides[commercial_api.require_api_key] = lambda: {"api_key_id": "00000000-0000-0000-0000-000000000001", "owner_id": "acct", "plan_code": "starter"}
     monkeypatch.setattr(translation_api, "record_usage", AsyncMock())
     return application
 
