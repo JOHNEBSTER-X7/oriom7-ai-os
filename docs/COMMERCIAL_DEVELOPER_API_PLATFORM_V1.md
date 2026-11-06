@@ -76,3 +76,8 @@ Before public launch:
 9. Publish prices only after measuring provider cost, infrastructure cost, support overhead and gross margin.
 
 The product catalogue deliberately reports `billing_status: not_configured`. No charges are taken and no daily revenue is implied by this code.
+
+
+## Translation API preview
+
+`POST /v1/translation/text` is implemented as a provider-backed preview. It accepts `{ "text": "Hello", "source": "en", "target": "fr", "format": "text" }` and returns translated text plus input-character usage. The provider is an operator-configured LibreTranslate-compatible HTTPS endpoint (`ORIOM7_TRANSLATION_ENDPOINT`) with an optional server-side `ORIOM7_TRANSLATION_API_KEY`; callers cannot choose the endpoint or provider credential. Requests are bounded to 50,000 characters, redirects are disabled, provider failures are surfaced as gateway errors, and usage is recorded only after successful translation. Configure and evaluate a provider before enabling this preview for customers.
