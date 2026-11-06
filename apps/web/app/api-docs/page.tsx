@@ -6,6 +6,7 @@ const endpoints = [
   ["GET", "/v1/developer/keys", "List your key metadata; secrets are never returned."],
   ["DELETE", "/v1/developer/keys/{api_key_id}", "Revoke one of your keys."],
   ["POST", "/v1/embeddings/text", "Generate text embeddings with the configured provider (preview)."],
+  ["POST", "/v1/vision/analyze", "Ask a question about a JPEG, PNG or WebP image (provider-configured preview)."],
   ["GET", "/v1/developer/usage", "Read current-month usage using a developer API key."],
 ];
 
