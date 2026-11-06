@@ -6,8 +6,8 @@ This release establishes the developer-platform foundation and a first server-si
 
 | Product | Current status | What is still required |
 |---|---|---|
-| Multilingual Translation | Planned | Select provider, configure credentials, quality evaluation, usage/billing |
-| OCR & Document Intelligence | Planned | Secure upload/object storage, OCR provider, retention controls, evaluation |
+| Multilingual Translation | Preview when configured | Configure trusted HTTPS provider, language-quality evaluation and commercial monitoring |
+| OCR & Document Intelligence | Preview when configured | Configure trusted HTTPS provider, retention/data-residency review, malware scanning and extraction evaluation |
 | Speech & Transcription | Planned | Speech provider, audio upload limits, consent and retention controls |
 | Text-to-Speech | Planned | Speech synthesis provider, voice rights and safety controls |
 | Text Embeddings | Preview | Configured embedding provider, production auth integration, quotas and billing |
