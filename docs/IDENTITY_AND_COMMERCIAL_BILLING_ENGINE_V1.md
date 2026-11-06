@@ -58,6 +58,7 @@ Back up PostgreSQL and rehearse migrations before production. Do not assume an e
 - `ORIOM7_OIDC_ISSUER`
 - `ORIOM7_OIDC_AUDIENCE` (API resource audience)
 - `ORIOM7_OIDC_JWKS_URL`
+- `ORIOM7_OIDC_CLIENT_ID`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `ORIOM7_STRIPE_PRICE_BUILDER_MONTHLY`
@@ -77,7 +78,7 @@ Back up PostgreSQL and rehearse migrations before production. Do not assume an e
 - `ORIOM7_OIDC_REDIRECT_URI` (must exactly match the identity-provider callback URL)
 - `ORIOM7_OIDC_SCOPES`
 
-The OIDC provider must issue RS256-signed JWT access tokens whose issuer, JWKS and API audience match the FastAPI configuration. The confidential web client must permit the authorization-code flow and PKCE S256. The client secret is server-only.
+The OIDC provider must issue RS256-signed JWT access tokens whose issuer, JWKS and API audience match the FastAPI configuration. The confidential web client must permit the authorization-code flow and PKCE S256. The verified ID token is passed server-to-server in addition to the access token so FastAPI can validate the same subject and trusted email-verification claim. The client secret is server-only.
 
 ## Production launch gates
 1. Select a managed OIDC provider and configure its confidential web client and API audience.
