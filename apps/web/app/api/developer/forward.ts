@@ -11,7 +11,7 @@ export async function forwardDeveloperRequest(request: NextRequest, path: string
   }
   const body = ["POST", "PUT", "PATCH"].includes(method) ? await request.text() : undefined;
   try {
-    const upstream = await fetch(new URL(`/v1/${path.join("/")}`, apiOrigin), { method, headers, body, cache: "no-store" });
+    const upstream = await fetch(new URL(`/v1/developer/${path.join("/")}`, apiOrigin), { method, headers, body, cache: "no-store" });
     const payload = await upstream.json().catch(() => ({}));
     return NextResponse.json(payload, { status: upstream.status });
   } catch {
