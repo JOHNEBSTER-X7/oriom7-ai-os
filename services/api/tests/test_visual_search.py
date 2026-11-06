@@ -81,10 +81,6 @@ def test_visual_embedding_provider_requires_https():
         visual_search.VisualEmbeddingProvider("http://localhost/embed", None, "m", 3)
 
 
-def test_visual_embedding_provider_rejects_wrong_dimensions():
-    provider = visual_search.VisualEmbeddingProvider("https://example.com/embed", None, "m", 2)
-    import asyncio
-    async def run():
-        with pytest.raises(ValueError):
-            await provider.embed  # provider network call deliberately not invoked
-    assert provider.dimensions == 2
+def test_visual_embedding_dimensions_are_bounded():
+    with pytest.raises(ValueError):
+        visual_search.VisualEmbeddingProvider("https://example.com/embed", None, "m", 0)
