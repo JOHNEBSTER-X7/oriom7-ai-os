@@ -134,3 +134,7 @@ Run `python worker.py` as a separate supervised process. Apply migrations 001–
 ## Multidimensional vector retrieval
 
 Apply migrations 001–011 in numerical order. Migration 011 preserves existing 1,536-dimensional embeddings while adding dimension-aware storage and support for multiple embedding models per document. Configure `ORIOM7_EMBEDDING_DIMENSIONS` (default 1536) to a dimension supported by the selected model/provider. HNSW cosine indexing is used up to 2,000 dimensions; higher dimensions use exact cosine ranking up to 16,000 dimensions, with higher compute cost. See [Vector Retrieval and Embeddings](../../docs/VECTOR_RETRIEVAL_AND_EMBEDDINGS.md).
+
+## Visual Intelligence V1
+
+The optional `POST /v1/vision/analyze` endpoint accepts JPEG, PNG and WebP images up to 10 MB plus a question up to 2,000 characters. It requires a developer API key and an operator-configured HTTPS provider. Configure `ORIOM7_VISION_ENDPOINT`, optional `ORIOM7_VISION_API_KEY`, and optional `ORIOM7_VISION_MODEL`. The provider receives a JSON request containing the model, question and base64-encoded image, and must return a non-empty `description` plus optional bounded `answer`, `objects` and `text_found` fields. Images are not persisted by ORIOM7, but are forwarded to the configured provider. Review provider privacy, retention and data residency before enabling it. See [Visual Intelligence V1](../../docs/VISUAL_INTELLIGENCE_V1.md).
