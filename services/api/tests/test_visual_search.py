@@ -61,7 +61,7 @@ def test_index_stores_vector_metadata_not_image_bytes(app):
     assert response.json()["raw_image_persisted"] is False
     args = app.state.database_pool.connection.fetchrow.await_args.args
     assert args[1] == "account-a"
-    assert args[1] == "red bicycle"
+    assert args[2] == "red bicycle"
 
 
 def test_similarity_search_is_owner_scoped(app):
