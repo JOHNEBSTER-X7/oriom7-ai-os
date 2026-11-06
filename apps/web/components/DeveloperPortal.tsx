@@ -150,7 +150,7 @@ export default function DeveloperPortal() {
               <div><strong>{key.name}</strong><code>{key.key_prefix}••••••••</code><small>{key.plan_code} · Created {new Date(key.created_at).toLocaleDateString()}</small></div>
               {key.revoked_at ? <span className="developer-badge planned">Revoked</span> : <button className="danger-button" disabled={busy} onClick={() => void revokeKey(key.api_key_id)}>Revoke</button>}
             </li>)}
-          </ul>}
+          </ul> : null}
         </article>
       </section>
 
