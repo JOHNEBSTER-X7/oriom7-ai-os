@@ -141,6 +141,28 @@ async def analyze_image(
     digest = hashlib.sha256(content).hexdigest()
     try:
         result = await provider.analyze(content, media_type, question.strip())
+        if not isinstance(result, dict):
+            raise ValueError("Visual provider returned an invalid result")
+        description = result.get("description")
+        answer = result.get("answer")
+        objects = result.get("objects", [])
+        text_found = result.get("text_found", [])
+        if not isinstance(description, str) or not description.strip() or len(description) > MAX_DESCRIPTION_CHARS:
+            raise ValueError("Visual provider returned an invalid description")
+        if answer is not None and (not isinstance(answer, str) or len(answer) > MAX_DESCRIPTION_CHARS):
+            raise ValueError("Visual provider returned an invalid answer")
+        if (not isinstance(objects, list) or len(objects) > 100
+            or any(not isinstance(item, str) or not item.strip() or len(item) > 160 for item in objects)):
+            raise ValueError("Visual provider returned invalid objects")
+        if (not isinstance(text_found, list) or len(text_found) > 100
+            or any(not isinstance(item, str) or len(item) > 2000 for item in text_found)):
+            raise ValueError("Visual provider returned invalid detected text")
+        result = {
+            "description": description.strip(),
+            "answer": answer.strip() if isinstance(answer, str) else None,
+            "objects": objects,
+            "text_found": text_found,
+        }
     except httpx.TimeoutException as exc:
         raise HTTPException(status_code=504, detail="Visual intelligence provider timed out") from exc
     except httpx.HTTPStatusError as exc:
