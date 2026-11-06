@@ -1265,6 +1265,214 @@
           }
         }
       }
+    },
+    "/account/profile": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Get the authenticated account profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account profile"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "Account database unavailable"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Update the authenticated account display name",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "display_name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/account/plans": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "List plans and commercial readiness",
+        "responses": {
+          "200": {
+            "description": "Informational plan catalogue; checkout disabled until billing is configured"
+          }
+        }
+      }
+    },
+    "/account/subscription": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Get the authenticated account subscription status",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription status or not-configured response"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/account/invoices": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "List invoices for the authenticated account",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice history"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/account/organisations": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "List organisations for the authenticated subject",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organisation memberships"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Create an organisation and assign the caller as owner",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "slug"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organisation created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Organisation slug already taken"
+          }
+        }
+      }
+    },
+    "/account/usage": {
+      "get": {
+        "tags": [
+          "account-billing"
+        ],
+        "summary": "Get current-month account usage ledger totals",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage by product"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
     }
   },
   "components": {
