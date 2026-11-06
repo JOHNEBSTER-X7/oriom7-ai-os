@@ -12,7 +12,9 @@ const statusLabel: Record<string, string> = {
 };
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, headers: { "content-type": "application/json", ...(init?.headers || {}) }, cache: "no-store" });
+  const headers = new Headers(init?.headers);
+  if (!headers.has("content-type")) headers.set("content-type", "application/json");
+  const response = await fetch(url, { ...init, headers, cache: "no-store" });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.detail || payload.error || `Request failed (${response.status})`);
   return payload as T;
@@ -29,16 +31,24 @@ export default function DeveloperPortal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [keyAccessMessage, setKeyAccessMessage] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [catalogue, keyData] = await Promise.all([
+      const [catalogueResult, keyResult] = await Promise.allSettled([
         requestJson<{ products: Product[] }>("/api/developer/products"),
         requestJson<{ keys: ApiKey[] }>("/api/developer/keys"),
       ]);
-      setProducts(catalogue.products || []);
-      setKeys(keyData.keys || []);
+      if (catalogueResult.status === "fulfilled") setProducts(catalogueResult.value.products || []);
+      else throw catalogueResult.reason;
+      if (keyResult.status === "fulfilled") {
+        setKeys(keyResult.value.keys || []);
+        setKeyAccessMessage("");
+      } else {
+        setKeys([]);
+        setKeyAccessMessage("Sign in is required to manage API keys. Your deployment must connect trusted identity middleware.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load developer portal.");
     } finally { setLoading(false); }
@@ -71,7 +81,7 @@ export default function DeveloperPortal() {
     finally { setBusy(false); }
   }
 
-  async function loadUsage(event: React.FormEvent<HTMLFormElement>) {
+  async function loadUsage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setUsage([]);
     try {
       const result = await requestJson<{ usage: Usage[] }>("/api/developer/usage", {
@@ -135,7 +145,7 @@ export default function DeveloperPortal() {
 
         <article className="developer-panel">
           <p className="eyebrow">ACCOUNT SECURITY</p><h2>Your API keys</h2>
-          {keys.length === 0 ? <p className="muted">No keys have been created yet.</p> : <ul className="developer-key-list">
+          {keyAccessMessage && <p className="muted">{keyAccessMessage}</p>}{keys.length === 0 && !keyAccessMessage ? <p className="muted">No keys have been created yet.</p> : keys.length > 0 ? <ul className="developer-key-list">
             {keys.map((key) => <li key={key.api_key_id}>
               <div><strong>{key.name}</strong><code>{key.key_prefix}••••••••</code><small>{key.plan_code} · Created {new Date(key.created_at).toLocaleDateString()}</small></div>
               {key.revoked_at ? <span className="developer-badge planned">Revoked</span> : <button className="danger-button" disabled={busy} onClick={() => void revokeKey(key.api_key_id)}>Revoke</button>}
