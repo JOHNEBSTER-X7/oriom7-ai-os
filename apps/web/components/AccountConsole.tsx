@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import type { FormEvent } from "react";
 type Plan={plan_code:string;name:string;price_minor:number|null;currency:string;monthly_request_limit:number|null;availability:string};
 type Account={account_id:string;display_name:string|null;created_at:string};
 type Org={organisation_id:string;name:string;slug:string;role:string};
@@ -9,8 +10,8 @@ export default function AccountConsole(){
  const [name,setName]=useState(""),[orgName,setOrgName]=useState(""),[slug,setSlug]=useState("");
  const [message,setMessage]=useState("Loading account…"),[error,setError]=useState("");
  useEffect(()=>{void Promise.all([api<{account:Account}>("/api/account/profile"),api<{plans:Plan[]}>("/api/account/plans"),api<{organisations:Org[]}>("/api/account/organisations")]).then(([a,p,o])=>{setAccount(a.account);setName(a.account.display_name||"");setPlans(p.plans);setOrgs(o.organisations);setMessage("Account loaded.");}).catch(e=>setMessage(e instanceof Error?e.message:"Sign-in is required."));},[]);
- async function saveProfile(e:React.FormEvent){e.preventDefault();setError("");try{const r=await api<{account:Account}>("/api/account/profile",{method:"PATCH",body:JSON.stringify({display_name:name||null})});setAccount(r.account);setMessage("Profile updated.");}catch(e){setError(e instanceof Error?e.message:"Unable to update profile.");}}
- async function createOrg(e:React.FormEvent){e.preventDefault();setError("");try{const r=await api<{organisation:Org}>("/api/account/organisations",{method:"POST",body:JSON.stringify({name:orgName,slug})});setOrgs(v=>[...v,r.organisation]);setOrgName("");setSlug("");setMessage("Organisation created.");}catch(e){setError(e instanceof Error?e.message:"Unable to create organisation.");}}
+ async function saveProfile(e:FormEvent){e.preventDefault();setError("");try{const r=await api<{account:Account}>("/api/account/profile",{method:"PATCH",body:JSON.stringify({display_name:name||null})});setAccount(r.account);setMessage("Profile updated.");}catch(e){setError(e instanceof Error?e.message:"Unable to update profile.");}}
+ async function createOrg(e:FormEvent){e.preventDefault();setError("");try{const r=await api<{organisation:Org}>("/api/account/organisations",{method:"POST",body:JSON.stringify({name:orgName,slug})});setOrgs(v=>[...v,r.organisation]);setOrgName("");setSlug("");setMessage("Organisation created.");}catch(e){setError(e instanceof Error?e.message:"Unable to create organisation.");}}
  return <main className="developer-shell"><header className="site-header developer-header"><a className="brand" href="/">ORIOM7</a><span className="header-caption">Account and billing</span><a className="workspace-link" href="/developer">Developer console</a></header>
  <section className="developer-hero"><p className="eyebrow">ORIOM7 · ACCOUNT</p><h1>Your account workspace.</h1><p>Manage your profile, team organisations, plan information and future billing records.</p></section>
  {error&&<div className="developer-alert error" role="alert">{error}</div>}<p role="status" className="note">{message}</p>
