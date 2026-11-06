@@ -20,6 +20,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 
 ## Repository map
 - `docs/` — architecture, specifications, implementation plan, universal language/voice access, accessibility/inclusion and adaptive accessibility.
+- `docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md` — commercial developer API foundation, readiness status and production launch gates.
 - `packages/accessibility-engine/` — typed preference model, JSON Schema, resolver and contract test cases.
 - `contracts/` — machine-readable API contract.
 - `apps/web/` — frontend implementation notes.
@@ -87,3 +88,7 @@ ORIOM7 now queues user-initiated research for a separate PostgreSQL-backed worke
 ## Multidimensional vector retrieval
 
 ORIOM7's existing pgvector semantic-search path now supports configurable embedding dimensions and multiple embedding models per document. The default remains 1,536 dimensions. HNSW indexing is used up to 2,000 dimensions; higher dimensions use exact cosine ranking. See [Vector Retrieval and Embeddings](docs/VECTOR_RETRIEVAL_AND_EMBEDDINGS.md).
+
+## Commercial developer API foundation
+
+The commercial API foundation is being developed on the feature branch. It currently includes a product-readiness catalogue, hashed developer API keys (issuance requires trusted identity middleware), current-month usage summaries, a preview text-embedding endpoint and migration 012 for key/usage records. Translation, OCR, speech and text-to-speech are catalogue entries only until provider adapters are implemented and evaluated. Payment processing, plan enforcement, production identity integration and public launch are not yet configured. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
