@@ -30,6 +30,7 @@ export async function GET(request:NextRequest){
   const maxAge=Math.max(60,Math.min(Number(tokens.expires_in)||300,3600));
   const response=NextResponse.redirect(new URL("/account",request.url));
   response.cookies.set("oriom7_access_token",tokens.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge});
+  response.cookies.set("oriom7_id_token",tokens.id_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge});
   clearFlowCookies(response);
   return response;
  }catch{return fail("The identity token or API access token could not be verified.");}
