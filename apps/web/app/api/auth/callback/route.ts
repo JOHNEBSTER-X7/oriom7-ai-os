@@ -23,8 +23,10 @@ export async function GET(request:NextRequest){
   if(!tokens.access_token||!tokens.id_token||tokens.token_type?.toLowerCase()!=="bearer")return fail("The identity provider did not return the required tokens.");
   const jwks=createRemoteJWKSet(new URL(jwksUrl));
   const idResult=await jwtVerify(tokens.id_token,jwks,{issuer,audience:clientId});
+  if(idResult.protectedHeader.alg!=="RS256")return fail("The identity provider must use RS256 token signatures.");
   if(idResult.payload.nonce!==nonce)return fail("The identity-provider nonce did not match.");
-  await jwtVerify(tokens.access_token,jwks,{issuer,audience});
+  const accessResult=await jwtVerify(tokens.access_token,jwks,{issuer,audience});
+  if(accessResult.protectedHeader.alg!=="RS256")return fail("The API access token must use RS256 token signatures.");
   const maxAge=Math.max(60,Math.min(Number(tokens.expires_in)||300,3600));
   const response=NextResponse.redirect(new URL("/account",request.url));
   response.cookies.set("oriom7_access_token",tokens.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge});
