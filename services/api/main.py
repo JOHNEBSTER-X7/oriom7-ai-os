@@ -18,6 +18,7 @@ from billing import router as billing_router
 from translation_api import router as translation_router, build_translation_provider_from_env
 from ocr_api import router as ocr_router, build_ocr_provider_from_env
 from speech_api import router as speech_router, build_speech_provider_from_env, build_tts_provider_from_env
+from voice_intelligence import router as voice_intelligence_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -84,6 +85,7 @@ app.include_router(billing_router)
 app.include_router(translation_router)
 app.include_router(ocr_router)
 app.include_router(speech_router)
+app.include_router(voice_intelligence_router)
 
 
 @app.get("/v1/status", tags=["system"])
