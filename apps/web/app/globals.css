@@ -365,3 +365,21 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .accessibility-tool-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0; }
 .accessibility-speech-sample { max-width: 72ch; }
 .reading-guide-band { position: fixed; left: 0; right: 0; height: 42px; z-index: 9999; pointer-events: none; border-top: 2px solid #7b1e24; border-bottom: 2px solid #7b1e24; background: rgb(255 220 90 / 16%); box-shadow: 0 0 0 100vmax rgb(0 0 0 / 8%); }
+
+
+/* Multimodal search intake */
+.multimodal-intake { margin: 18px 0 22px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--page); }
+.multimodal-intake h3 { margin: 0; font-size: 1.12rem; }
+.multimodal-intake h4 { margin: 0 0 10px; font-size: 1rem; }
+.multimodal-key-field { display: grid; gap: 6px; margin: 16px 0; max-width: 620px; }
+.multimodal-key-field label, .multimodal-upload-card label { font-weight: 700; }
+.multimodal-key-field input, .multimodal-upload-card input[type="file"] { width: 100%; min-width: 0; min-height: 46px; border: 1px solid #777; border-radius: 8px; padding: 9px 10px; background: var(--surface); color: var(--text); }
+.multimodal-key-field small { color: var(--muted); }
+.multimodal-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.multimodal-upload-card { min-width: 0; display: grid; align-content: start; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.multimodal-upload-card p { margin: 0; overflow-wrap: anywhere; }
+.multimodal-upload-card button { justify-self: start; }
+.multimodal-preview { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
+.multimodal-preview summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+.multimodal-preview p { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 18rem; overflow: auto; }
+@media (max-width: 680px) { .multimodal-upload-grid { grid-template-columns: 1fr; } .multimodal-intake { padding: 14px; } }
