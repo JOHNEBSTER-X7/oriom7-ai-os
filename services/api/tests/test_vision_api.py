@@ -102,7 +102,7 @@ def test_visual_interpretation_task_presets(app, monkeypatch, task):
     monkeypatch.setattr(vision_api, "record_usage", usage)
     response = TestClient(app).post(
         "/v1/vision/interpret",
-        files={"file": ("input.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        files={"file": ("input.jpg", bytes([255, 216, 255]) + b"image", "image/jpeg")},
         data={"task": task},
     )
     assert response.status_code == 200
@@ -118,7 +118,7 @@ def test_visual_interpretation_task_presets(app, monkeypatch, task):
 def test_visual_interpretation_rejects_unknown_task(app):
     response = TestClient(app).post(
         "/v1/vision/interpret",
-        files={"file": ("input.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        files={"file": ("input.jpg", bytes([255, 216, 255]) + b"image", "image/jpeg")},
         data={"task": "face"},
     )
     assert response.status_code == 422
@@ -128,7 +128,7 @@ def test_visual_interpretation_requires_provider(app):
     app.state.vision_provider = None
     response = TestClient(app).post(
         "/v1/vision/interpret",
-        files={"file": ("input.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        files={"file": ("input.jpg", bytes([255, 216, 255]) + b"image", "image/jpeg")},
         data={"task": "chart"},
     )
     assert response.status_code == 503
