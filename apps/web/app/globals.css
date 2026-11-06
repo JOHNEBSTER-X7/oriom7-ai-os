@@ -356,3 +356,12 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .http-method { display: inline-flex; justify-content: center; border-radius: 6px; padding: 4px 7px; font-size: .75rem; font-weight: 800; background: #e7f3e9; color: #155b2b; }
 .http-method.post { background: #eaf0ff; color: #234c9b; }
 .http-method.delete { background: #fff0ef; color: #8b2424; }
+
+
+/* Universal accessibility interaction tools */
+.accessibility-tools { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--oriom7-border, var(--border)); }
+.accessibility-tools h3 { margin: 0 0 8px; font-size: 1.1em; }
+.accessibility-tools p { max-width: 72ch; }
+.accessibility-tool-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0; }
+.accessibility-speech-sample { max-width: 72ch; }
+.reading-guide-band { position: fixed; left: 0; right: 0; height: 42px; z-index: 9999; pointer-events: none; border-top: 2px solid #7b1e24; border-bottom: 2px solid #7b1e24; background: rgb(255 220 90 / 16%); box-shadow: 0 0 0 100vmax rgb(0 0 0 / 8%); }
