@@ -91,7 +91,7 @@ ORIOM7's existing pgvector semantic-search path now supports configurable embedd
 
 ## Commercial developer API foundation
 
-The commercial API foundation is being developed on the feature branch. It currently includes a product-readiness catalogue, hashed developer API keys (issuance requires trusted identity middleware), current-month usage summaries, a preview text-embedding endpoint and migration 012 for key/usage records. Translation, OCR, speech and text-to-speech are catalogue entries only until provider adapters are implemented and evaluated. Payment processing, plan enforcement, production identity integration and public launch are not yet configured. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+The commercial developer API now includes hashed developer API keys, OIDC-backed account identity, Stripe checkout/webhook foundations, subscription-derived monthly quotas, usage metering, a preview text-embedding endpoint, a provider-backed translation endpoint and a provider-backed OCR/document extraction endpoint. Translation and OCR remain planned until operators configure and evaluate their HTTPS providers. OCR accepts PDF, PNG, JPEG and TIFF files up to 15 MB, validates file signatures, forwards uploads to the configured provider, does not persist originals and meters successful extraction by pages. Speech, text-to-speech, durable document storage, malware scanning and structured table/field extraction remain future work. Live billing and public production readiness are not implied. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
 
 
 ## Identity and commercial billing foundation
