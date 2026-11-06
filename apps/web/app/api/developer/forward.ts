@@ -8,6 +8,8 @@ export async function forwardDeveloperRequest(request: NextRequest, path: string
  const sessionToken=request.cookies.get("oriom7_access_token")?.value;
  if(apiKey)headers.set("authorization",apiKey);
  else if(sessionToken)headers.set("authorization",`Bearer ${sessionToken}`);
+ const identityToken=request.cookies.get("oriom7_id_token")?.value;
+ if(identityToken)headers.set("x-oriom7-id-token",identityToken);
  const contentType=request.headers.get("content-type");if(contentType)headers.set("content-type",contentType);
  const body = ["POST", "PUT", "PATCH"].includes(method) ? await request.text() : undefined;
  try {
