@@ -60,7 +60,7 @@ def test_index_stores_vector_metadata_not_image_bytes(app):
     assert response.json()["storage"] == "embedding_only"
     assert response.json()["raw_image_persisted"] is False
     args = app.state.database_pool.connection.fetchrow.await_args.args
-    assert args[0] == "account-a"
+    assert args[1] == "account-a"
     assert args[1] == "red bicycle"
 
 
@@ -72,8 +72,8 @@ def test_similarity_search_is_owner_scoped(app):
     assert response.status_code == 200
     assert response.json()["results"][0]["similarity"] == 0.94
     args = app.state.database_pool.connection.fetch.await_args.args
-    assert args[1] == "account-a"
-    assert args[2] == "vision-embed-v1"
+    assert args[2] == "account-a"
+    assert args[3] == "vision-embed-v1"
 
 
 def test_visual_embedding_provider_requires_https():
