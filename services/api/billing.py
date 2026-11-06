@@ -68,6 +68,11 @@ async def create_checkout_session(body:CheckoutRequest,request:Request,subject:s
             account=await con.fetchrow("""INSERT INTO oriom7_accounts(subject_id) VALUES($1)
              ON CONFLICT(subject_id) DO UPDATE SET updated_at=NOW()
              RETURNING account_id::text,stripe_customer_id""",subject)
+            active=await con.fetchval("""SELECT 1 FROM oriom7_subscriptions
+             WHERE account_id=$1::uuid AND status IN ('active','trialing')
+               AND (current_period_end IS NULL OR current_period_end>NOW()) LIMIT 1""",account["account_id"])
+            if active:
+                raise HTTPException(409,detail={"code":"subscription_already_active","message":"An active subscription already exists for this account."})
             if body.organisation_id:
                 member=await con.fetchrow("""SELECT role FROM oriom7_organisation_members
                  WHERE organisation_id=$1::uuid AND subject_id=$2""",body.organisation_id,subject)
