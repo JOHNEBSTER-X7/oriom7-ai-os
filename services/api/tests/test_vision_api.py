@@ -93,3 +93,42 @@ def test_vision_rejects_invalid_provider_description(app):
         files={"file": ("photo.jpg", b"\xff\xd8\xfffake", "image/jpeg")},
     )
     assert response.status_code == 502
+
+
+
+@pytest.mark.parametrize("task", ["chart", "map", "diagram", "product"])
+def test_visual_interpretation_task_presets(app, monkeypatch, task):
+    usage = AsyncMock()
+    monkeypatch.setattr(vision_api, "record_usage", usage)
+    response = TestClient(app).post(
+        "/v1/vision/interpret",
+        files={"file": ("input.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        data={"task": task},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["object"] == "visual_interpretation"
+    assert payload["task"] == task
+    assert payload["storage"] == "not_persisted"
+    assert "verify critical measurements" in payload["limitations"]
+    assert task in vision_api.INTERPRETATION_TASKS
+    usage.assert_awaited_once()
+
+
+def test_visual_interpretation_rejects_unknown_task(app):
+    response = TestClient(app).post(
+        "/v1/vision/interpret",
+        files={"file": ("input.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        data={"task": "face"},
+    )
+    assert response.status_code == 422
+
+
+def test_visual_interpretation_requires_provider(app):
+    app.state.vision_provider = None
+    response = TestClient(app).post(
+        "/v1/vision/interpret",
+        files={"file": ("input.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        data={"task": "chart"},
+    )
+    assert response.status_code == 503
