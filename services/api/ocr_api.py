@@ -110,7 +110,7 @@ async def extract_document_text(
     )
     return {
         "object": "document_extraction",
-        "filename": file.filename,
+        "filename": safe_filename,
         "media_type": media_type,
         "sha256": digest,
         "language": language,
