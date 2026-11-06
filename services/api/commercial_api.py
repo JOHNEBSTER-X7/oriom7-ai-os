@@ -9,10 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime, timezone
-from uuid import UUID
-
-import asyncpg
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
