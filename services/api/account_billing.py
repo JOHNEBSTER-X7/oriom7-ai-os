@@ -118,10 +118,16 @@ async def get_usage(request:Request,subject:str=Depends(authenticated_subject)):
  pool=await _pool(request)
  async with pool.acquire() as con:
   account=await _account(con,subject)
-  rows=await con.fetch("""SELECT product_code,COUNT(*)::bigint AS events,COALESCE(SUM(quantity),0)::bigint AS units
-   FROM oriom7_usage_ledger WHERE account_id=$1::uuid AND occurred_at>=date_trunc('month',NOW())
-   GROUP BY product_code ORDER BY product_code""",account["account_id"])
- return {"period":"current_calendar_month","usage":[dict(row) for row in rows],"billing_status":"configured" if stripe_ready() else "not_configured"}
+  requests=await con.fetchval("""SELECT COUNT(*) FROM developer_api_usage u
+   JOIN developer_api_keys k ON k.api_key_id=u.api_key_id
+   WHERE k.owner_id=$1 AND u.product_code='__api_request__'
+     AND u.created_at>=date_trunc('month',NOW())""",subject)
+  rows=await con.fetch("""SELECT u.product_code,COUNT(*)::bigint AS events,COALESCE(SUM(u.units),0)::bigint AS units
+   FROM developer_api_usage u JOIN developer_api_keys k ON k.api_key_id=u.api_key_id
+   WHERE k.owner_id=$1 AND u.product_code<>'__api_request__'
+     AND u.created_at>=date_trunc('month',NOW())
+   GROUP BY u.product_code ORDER BY u.product_code""",subject)
+ return {"period":"current_calendar_month","requests_used":requests,"usage":[dict(row) for row in rows],"billing_status":"configured" if stripe_ready() else "not_configured"}
 
 class InvitationCreate(BaseModel):
  model_config=ConfigDict(extra="forbid")
