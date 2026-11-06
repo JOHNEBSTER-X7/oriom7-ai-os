@@ -2152,6 +2152,65 @@
           }
         }
       }
+    },
+    "/vision/analyze": {
+      "post": {
+        "operationId": "analyzeImage",
+        "summary": "Answer a question about an uploaded image",
+        "description": "Requires a developer API key and an operator-configured trusted HTTPS visual intelligence provider. Accepts JPEG, PNG and WebP images up to 10 MB and a question up to 2,000 characters. The provider receives the image and question. Original images are not persisted by ORIOM7. Successful usage is metered per image.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "question": {
+                    "type": "string",
+                    "default": "Describe this image clearly.",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image description, optional answer, object labels and detected text"
+          },
+          "401": {
+            "description": "Invalid developer API key"
+          },
+          "413": {
+            "description": "Image exceeds 10 MB"
+          },
+          "415": {
+            "description": "Unsupported image type or invalid image signature"
+          },
+          "502": {
+            "description": "Visual provider failed or returned invalid data"
+          },
+          "503": {
+            "description": "Visual intelligence provider is not configured"
+          },
+          "504": {
+            "description": "Visual intelligence provider timed out"
+          }
+        }
+      }
     }
   },
   "components": {
