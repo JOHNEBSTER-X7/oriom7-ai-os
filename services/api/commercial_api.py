@@ -18,8 +18,8 @@ router = APIRouter(tags=["developer-platform"])
 PRODUCTS = [
     {"code": "translation", "name": "Multilingual Translation API", "status": "planned", "unit": "characters", "description": "Translate and localise authorised text while preserving the source."},
     {"code": "ocr", "name": "OCR & Document Intelligence API", "status": "planned", "unit": "pages", "description": "Extract text and structured fields from customer-authorised documents."},
-    {"code": "speech", "name": "Speech & Transcription API", "status": "planned", "unit": "audio_seconds", "description": "Transcribe speech and produce accessible text."},
-    {"code": "text_to_speech", "name": "Text-to-Speech API", "status": "planned", "unit": "characters", "description": "Generate spoken output using a configured speech provider."},
+    {"code": "speech", "name": "Speech & Transcription API", "status": "planned", "unit": "audio_seconds", "description": "Transcribe uploaded audio with optional timestamped segments and provider-supplied speaker labels."},
+    {"code": "text_to_speech", "name": "Text-to-Speech API", "status": "planned", "unit": "characters", "description": "Generate downloadable spoken audio using a configured speech synthesis provider."},
     {"code": "embeddings", "name": "Universal Text Embedding API", "status": "preview", "unit": "input_characters", "description": "Create vectors using the configured embedding model; dimensions and model are returned."},
     {"code": "multilingual_search", "name": "Global Multilingual Search API", "status": "existing_core_preview", "unit": "requests", "description": "Hybrid search foundation exists; cross-language quality and commercial controls require further integration."},
 ]
@@ -99,7 +99,7 @@ async def record_usage(request: Request, key: dict, product: str, units: int, st
 @router.get("/v1/developer/products")
 async def list_products(request: Request):
     products = [dict(product) for product in PRODUCTS]
-    configured = {"translation": getattr(request.app.state, "translation_provider", None), "ocr": getattr(request.app.state, "ocr_provider", None)}
+    configured = {"translation": getattr(request.app.state, "translation_provider", None), "ocr": getattr(request.app.state, "ocr_provider", None), "speech": getattr(request.app.state, "speech_provider", None), "text_to_speech": getattr(request.app.state, "tts_provider", None)}
     for product in products:
         if configured.get(product["code"]) is not None:
             product["status"] = "preview"
