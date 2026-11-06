@@ -2340,6 +2340,71 @@
           }
         }
       }
+    },
+    "/vision/interpret": {
+      "post": {
+        "operationId": "interpretVisualContent",
+        "summary": "Interpret a chart, map, diagram or product image",
+        "description": "Task-guided interpretation through the configured vision provider. Provider-generated results require independent verification for critical values, locations and identities.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "task"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "task": {
+                    "type": "string",
+                    "enum": [
+                      "chart",
+                      "map",
+                      "diagram",
+                      "product"
+                    ]
+                  },
+                  "question": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task-guided visual interpretation"
+          },
+          "401": {
+            "description": "Developer API key required"
+          },
+          "413": {
+            "description": "Image exceeds 10 MB"
+          },
+          "422": {
+            "description": "Invalid task or image"
+          },
+          "502": {
+            "description": "Vision provider failed"
+          },
+          "503": {
+            "description": "Vision provider not configured"
+          }
+        }
+      }
     }
   },
   "components": {
