@@ -9,6 +9,7 @@ import hmac
 import json
 import os
 import time
+from uuid import UUID
 from urllib.parse import urlparse
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -50,7 +51,7 @@ async def _stripe_post(path:str,data:dict[str,str],idempotency_key:str|None=None
 class CheckoutRequest(BaseModel):
     model_config=ConfigDict(extra="forbid")
     plan_code:str=Field(pattern="^(builder|business)$")
-    organisation_id:str|None=None
+    organisation_id:UUID|None=None
 
 @router.post("/v1/account/checkout")
 async def create_checkout_session(body:CheckoutRequest,request:Request,subject:str=Depends(authenticated_subject)):
