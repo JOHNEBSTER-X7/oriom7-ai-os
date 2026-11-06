@@ -71,7 +71,7 @@ def assess_site(site: SiteAssessmentRequest) -> dict:
     factors["bathymetry"] = ({"high": 100.0, "medium": 65.0, "low": 30.0}.get(site.bathymetry_confidence), site.bathymetry_confidence)
     factors["power_access"] = _band(site.grid_capacity_mw, 0.0, 500.0)
     factors["renewable_power"] = _band(site.renewable_share_pct, 0.0, 100.0)
-    factors["fibre_connectivity"] = _band(site.fibre_distance_km, 100.0, 0.0, inverse=True)
+    factors["fibre_connectivity"] = _band(site.fibre_distance_km, 0.0, 100.0, inverse=True)
     factors["environmental_constraints"] = (
         0.0 if site.protected_area_overlap is True or site.environmental_screening == "restricted"
         else 100.0 if site.protected_area_overlap is False and site.environmental_screening == "clear"
