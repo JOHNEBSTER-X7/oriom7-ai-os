@@ -1957,6 +1957,134 @@
           }
         }
       }
+    },
+    "/speech/transcriptions": {
+      "post": {
+        "operationId": "transcribeSpeech",
+        "summary": "Transcribe uploaded audio through configured provider",
+        "description": "Requires developer API key. Accepts WAV, MP3, OGG, WebM, MP4 and AAC uploads up to 25 MB. Provider must return transcript text and duration_seconds; optional segments and speaker labels are passed through after validation. Audio is not persisted by ORIOM7.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "language": {
+                    "type": "string",
+                    "default": "auto",
+                    "maxLength": 35
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcript, optional timestamped segments and audio-second usage"
+          },
+          "401": {
+            "description": "Developer API key required"
+          },
+          "413": {
+            "description": "Audio exceeds 25 MB"
+          },
+          "415": {
+            "description": "Unsupported audio media type or invalid signature"
+          },
+          "502": {
+            "description": "Speech provider failed or returned invalid data"
+          },
+          "503": {
+            "description": "Speech provider is not configured"
+          },
+          "504": {
+            "description": "Speech provider timed out"
+          }
+        }
+      }
+    },
+    "/speech/synthesis": {
+      "post": {
+        "operationId": "synthesizeSpeech",
+        "summary": "Generate speech audio from text",
+        "description": "Requires developer API key. Uses an operator-configured HTTPS speech provider and returns supported audio bytes. Input is limited to 10,000 characters and output to 20 MB. Usage is metered by input characters.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "voice": {
+                    "type": "string",
+                    "default": "default",
+                    "maxLength": 80
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "mp3",
+                      "wav",
+                      "ogg",
+                      "webm",
+                      "mp4"
+                    ],
+                    "default": "mp3"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audio bytes; content type reflects provider output"
+          },
+          "401": {
+            "description": "Developer API key required"
+          },
+          "422": {
+            "description": "Invalid synthesis request"
+          },
+          "502": {
+            "description": "Synthesis provider failed or returned invalid audio"
+          },
+          "503": {
+            "description": "Synthesis provider is not configured"
+          },
+          "504": {
+            "description": "Synthesis provider timed out"
+          }
+        }
+      }
     }
   },
   "components": {
