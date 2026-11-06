@@ -119,5 +119,6 @@ async def voice_turn(
         "X-ORIOM7-Language": str(output_language)[:35],
         "X-ORIOM7-Duration-Seconds": str(duration),
         "X-ORIOM7-Conversation-Context": "request-scoped",
+        "X-ORIOM7-Text-Truncated": "true" if len(transcript) > 3000 or len(answer) > 3000 else "false",
     }
     return Response(content=audio, media_type=output_type, headers=headers)
