@@ -19,3 +19,11 @@ The first page contains an interactive accessibility preference screen with disp
 The controls configure preferences; they do not themselves provide microphone capture, speech synthesis, switch-device support or full screen-reader certification. Those capabilities require the corresponding adapters and testing.
 
 Keep provider credentials and orchestration logic server-side; never embed secrets in client bundles.
+
+
+## Developer portal
+
+- `/developer` — product catalogue, API key management and usage overview.
+- `/api-docs` — API authentication and endpoint reference.
+
+The portal uses same-origin Next.js route handlers to forward requests to `ORIOM7_API_URL`. It requires the API deployment's trusted identity middleware for account-scoped key management. The usage panel requires the developer's API key and does not persist it in browser storage. Billing is not configured and planned products are labelled as such.
