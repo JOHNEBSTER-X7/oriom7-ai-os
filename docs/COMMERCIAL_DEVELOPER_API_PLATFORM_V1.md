@@ -33,6 +33,9 @@ The response contains the secret once. The database stores only its SHA-256 hash
 
 Supported plan labels are placeholders for entitlement configuration: starter, builder, business and enterprise. They are not payment plans and do not imply billing has been activated.
 
+### Manage API keys
+`GET /v1/developer/keys` lists the authenticated user's key metadata without returning secrets. `DELETE /v1/developer/keys/{api_key_id}` revokes a key owned by the authenticated user. Both require trusted identity middleware. Create a replacement key before revoking an in-use key to avoid integration downtime.
+
 ### Text embeddings
 `POST /v1/embeddings/text`
 
