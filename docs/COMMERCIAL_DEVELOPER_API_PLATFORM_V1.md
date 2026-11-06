@@ -8,8 +8,8 @@ This release establishes the developer-platform foundation and a first server-si
 |---|---|---|
 | Multilingual Translation | Preview when configured | Configure trusted HTTPS provider, language-quality evaluation and commercial monitoring |
 | OCR & Document Intelligence | Preview when configured | Configure trusted HTTPS provider, retention/data-residency review, malware scanning and extraction evaluation |
-| Speech & Transcription | Planned | Speech provider, audio upload limits, consent and retention controls |
-| Text-to-Speech | Planned | Speech synthesis provider, voice rights and safety controls |
+| Speech & Transcription | Preview when configured | Trusted HTTPS transcription provider, language/accuracy evaluation, audio consent and retention controls |
+| Text-to-Speech | Preview when configured | Trusted HTTPS synthesis provider, voice rights, safety and quality controls |
 | Text Embeddings | Preview | Configured embedding provider, production auth integration, quotas and billing |
 | Multilingual Search | Existing core preview | Cross-language evaluation, developer auth, quotas and billing |
 
@@ -88,3 +88,16 @@ The product catalogue deliberately reports `billing_status: not_configured`. No 
 `POST /v1/documents/ocr` accepts a multipart upload with fields `file` and optional `language`. Supported file types are PDF, PNG, JPEG and TIFF; file signatures are checked and uploads are limited to 15 MB. The provider receives the file over HTTPS using the operator-configured `ORIOM7_OCR_ENDPOINT` and optional server-side `ORIOM7_OCR_API_KEY`. It must return JSON shaped as `{"text":"...","pages":1}`. The API validates extracted text and page count, records successful usage in pages, and returns a SHA-256 digest and extracted text. Original files are held in memory for the request and are not persisted by ORIOM7. The configured OCR provider will receive the document, so operators must assess provider retention, data residency, confidentiality and contractual terms before enabling the endpoint. Without a configured provider the product remains planned and requests return HTTP 503.
 
 The upload route is intended for documents the caller is authorised to process. It does not yet provide malware scanning, encrypted object storage, durable document records, asynchronous jobs, redaction, table/field extraction, or a provider-independent OCR engine. Do not use it for sensitive production documents until the provider and deployment controls have been reviewed.
+
+
+## Speech Intelligence V1
+
+### Speech-to-text
+
+`POST /v1/speech/transcriptions` accepts multipart fields `file` and optional `language`, requires an ORIOM7 developer API key, and supports WAV, MP3, OGG, WebM, MP4 and AAC media types with basic signature checks. Uploads are limited to 25 MB. The operator configures `ORIOM7_SPEECH_ENDPOINT` and optional server-side `ORIOM7_SPEECH_API_KEY`; the provider must return JSON containing `text` and numeric `duration_seconds`, with optional `language` and `segments`. Segment entries use `start`, `end`, `text` and optional provider-supplied `speaker`. ORIOM7 validates response bounds and meters rounded-up audio seconds. Original audio is not persisted by ORIOM7.
+
+### Text-to-speech
+
+`POST /v1/speech/synthesis` accepts JSON `{ "text": "Hello", "voice": "default", "format": "mp3" }`, with text limited to 10,000 characters. The operator configures `ORIOM7_TTS_ENDPOINT` and optional `ORIOM7_TTS_API_KEY`. The provider receives text, voice and format and returns audio bytes with a supported audio content type. Output is limited to 20 MB, returned with `Cache-Control: no-store`, and metered by input characters.
+
+These are provider adapters, not proprietary speech models. Timestamping and speaker labels are included only when returned by the configured transcription provider. Neither product is available until its provider is configured and evaluated. Provider privacy, data residency, consent, voice licensing, retention and security terms must be reviewed before production use. The API does not currently provide streaming synthesis, asynchronous jobs, speaker diarisation itself, voice cloning, or a built-in speech engine.
