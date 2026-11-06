@@ -92,3 +92,8 @@ ORIOM7's existing pgvector semantic-search path now supports configurable embedd
 ## Commercial developer API foundation
 
 The commercial API foundation is being developed on the feature branch. It currently includes a product-readiness catalogue, hashed developer API keys (issuance requires trusted identity middleware), current-month usage summaries, a preview text-embedding endpoint and migration 012 for key/usage records. Translation, OCR, speech and text-to-speech are catalogue entries only until provider adapters are implemented and evaluated. Payment processing, plan enforcement, production identity integration and public launch are not yet configured. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+
+
+## Identity and commercial billing foundation
+
+The account workspace now includes authenticated account profiles, organisation creation and owner membership, a plan catalogue, subscription/invoice read models and a monthly usage-ledger endpoint. Migration 013 adds the underlying account, organisation, subscription, invoice, payment-event and usage tables. All private routes reuse the existing trusted `authenticated_subject` dependency. No password-based login or payment provider is activated; checkout is disabled, paid pricing is pending, and usage-ledger metering/quota enforcement remains integration work. See [Identity and Commercial Billing Engine V1](docs/IDENTITY_AND_COMMERCIAL_BILLING_ENGINE_V1.md).
