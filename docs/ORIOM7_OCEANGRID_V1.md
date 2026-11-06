@@ -33,3 +33,8 @@ Future site evaluation must consider national and EEZ jurisdiction, marine prote
 4. Satellite/in-situ fusion, uncertainty and freshness scoring.
 5. Heat-rejection models and GPU power/fibre economics.
 6. Pilot engineering, environmental assessment and permits.
+
+## Batch coastal ranking API
+Authenticated `POST /v1/oceangrid/rank` accepts 1–200 candidate records and a configurable minimum evidence-coverage threshold (default 60%). It ranks eligible submitted candidates by screening score, using evidence coverage as a tie-breaker. Environmental exclusion flags and insufficient-coverage records are returned separately with reasons. Usage is metered by the number of submitted candidate sites.
+
+This is a ranking engine for a supplied candidate set, not a ranking of every coastline on Earth. The endpoint explicitly returns `ranking_scope=submitted_candidates_only` and `global_coverage=false`. Global rankings require licensed global shoreline segmentation, global ocean and infrastructure data, EEZ/jurisdiction overlays, protected-area data and validated time-aware spatial ingestion. Never interpret a preliminary score as permission to build.
