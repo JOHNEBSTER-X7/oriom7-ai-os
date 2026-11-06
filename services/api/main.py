@@ -16,6 +16,7 @@ from commercial_api import router as commercial_api_router
 from account_billing import router as account_billing_router
 from billing import router as billing_router
 from translation_api import router as translation_router, build_translation_provider_from_env
+from ocr_api import router as ocr_router, build_ocr_provider_from_env
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -34,6 +35,7 @@ async def lifespan(application: FastAPI):
         raise RuntimeError(str(exc)) from exc
     application.state.model_orchestrator = build_orchestrator_from_env()
     application.state.translation_provider = build_translation_provider_from_env()
+    application.state.ocr_provider = build_ocr_provider_from_env()
 
     if database_url:
         try:
@@ -77,6 +79,7 @@ app.include_router(commercial_api_router)
 app.include_router(account_billing_router)
 app.include_router(billing_router)
 app.include_router(translation_router)
+app.include_router(ocr_router)
 
 
 @app.get("/v1/status", tags=["system"])
