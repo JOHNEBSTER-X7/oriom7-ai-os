@@ -32,9 +32,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Upload must use multipart form data." }, { status: 415 });
   }
 
-  const body = new Uint8Array(await request.arrayBuffer());
-  if (body.byteLength > MAX_REQUEST_BYTES) {
-    return NextResponse.json({ error: "Upload exceeds the 26 MB request limit." }, { status: 413 });
+  if (!request.body) {
+    return NextResponse.json({ error: "Upload body is missing." }, { status: 400 });
+  }
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_REQUEST_BYTES) {
+      await reader.cancel();
+      return NextResponse.json({ error: "Upload exceeds the 26 MB request limit." }, { status: 413 });
+    }
+    chunks.push(value);
+  }
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
   }
 
   try {
