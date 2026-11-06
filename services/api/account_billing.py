@@ -3,11 +3,12 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from accessibility import authenticated_subject
+from billing import stripe_ready, price_id
 
 router = APIRouter(prefix="/v1/account", tags=["account-billing"])
 PLANS = [
  {"plan_code":"starter","name":"Starter","price_minor":0,"currency":"USD","monthly_request_limit":1000,"availability":"development"},
- {"plan_code":"builder","name":"Builder","price_minor":None,"currency":"USD","monthly_request_limit":25000,"availability":"pricing_pending"},
+ {"plan_code":"builder","name":"Builder","price_minor":None,"currency":"USD","monthly_request_limit":25000,"availability":"checkout_available"},
  {"plan_code":"business","name":"Business","price_minor":None,"currency":"USD","monthly_request_limit":250000,"availability":"pricing_pending"},
  {"plan_code":"enterprise","name":"Enterprise","price_minor":None,"currency":"USD","monthly_request_limit":None,"availability":"contact_required"},
 ]
@@ -46,7 +47,14 @@ async def update_profile(payload:AccountUpdate,request:Request,subject:str=Depen
 
 @router.get("/plans")
 async def list_plans():
- return {"plans":PLANS,"billing_status":"not_configured","checkout_enabled":False}
+ plans=[]
+ for plan in PLANS:
+  item=dict(plan)
+  item["checkout_available"]=bool(stripe_ready() and price_id(item["plan_code"]))
+  if item["plan_code"] in ("builder","business") and not item["checkout_available"]:item["availability"]="pricing_pending"
+  plans.append(item)
+ return {"plans":plans,"billing_status":"configured" if stripe_ready() else "not_configured",
+         "checkout_enabled":any(p["checkout_available"] for p in plans)}
 
 @router.get("/subscription")
 async def get_subscription(request:Request,subject:str=Depends(authenticated_subject)):
@@ -55,7 +63,7 @@ async def get_subscription(request:Request,subject:str=Depends(authenticated_sub
   account=await _account(con,subject)
   row=await con.fetchrow("""SELECT subscription_id::text,plan_code,status,provider,current_period_start,current_period_end
    FROM oriom7_subscriptions WHERE account_id=$1::uuid ORDER BY created_at DESC LIMIT 1""",account["account_id"])
- if row is None: return {"subscription":None,"billing_status":"not_configured","message":"No paid subscription is active. Checkout is disabled until a payment provider is configured."}
+ if row is None: return {"subscription":None,"billing_status":"configured" if stripe_ready() else "not_configured","message":"No paid subscription is active."}
  item=dict(row)
  for key in ("current_period_start","current_period_end"):
   if item[key] is not None: item[key]=item[key].isoformat()
@@ -74,7 +82,7 @@ async def list_invoices(request:Request,subject:str=Depends(authenticated_subjec
   for key in ("issued_at","due_at"):
    if item[key] is not None: item[key]=item[key].isoformat()
   items.append(item)
- return {"invoices":items,"billing_status":"not_configured"}
+ return {"invoices":items,"billing_status":"configured" if stripe_ready() else "not_configured"}
 
 @router.post("/organisations",status_code=201)
 async def create_organisation(payload:OrganisationCreate,request:Request,subject:str=Depends(authenticated_subject)):
