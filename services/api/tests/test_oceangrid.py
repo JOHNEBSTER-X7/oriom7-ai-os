@@ -30,7 +30,7 @@ def test_assessment_scores_known_factors_and_reports_coverage():
     assert result["screening_score"] is not None
     assert result["evidence_coverage_pct"] < 100
     assert result["factors"]["salinity_corrosion"]["score"] is None
-    assert result["screening_status"] == "preliminary_screening_only"
+    assert result["screening_status"] == "insufficient_evidence"
 
 
 def test_protected_area_is_flagged_for_exclusion_review():
