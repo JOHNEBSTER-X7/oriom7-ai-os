@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -106,7 +107,7 @@ async def list_developer_keys(request: Request):
     return {"keys": [dict(row) for row in rows]}
 
 @router.delete("/v1/developer/keys/{api_key_id}")
-async def revoke_developer_key(api_key_id: str, request: Request):
+async def revoke_developer_key(api_key_id: UUID, request: Request):
     owner_id = getattr(request.state, "user_id", None)
     if not owner_id:
         raise HTTPException(status_code=401, detail="Sign-in is required")
@@ -116,7 +117,7 @@ async def revoke_developer_key(api_key_id: str, request: Request):
             """UPDATE developer_api_keys SET revoked_at=NOW()
                WHERE api_key_id=$1::uuid AND owner_id=$2 AND revoked_at IS NULL
                RETURNING api_key_id::text""",
-            api_key_id, str(owner_id),
+            str(api_key_id), str(owner_id),
         )
     if row is None:
         raise HTTPException(status_code=404, detail="API key not found")
