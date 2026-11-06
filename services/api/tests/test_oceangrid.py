@@ -73,3 +73,31 @@ def test_source_catalogue_lists_independent_provider_families(app):
     source_ids = {item["id"] for item in body["sources"]}
     assert {"copernicus_marine", "sentinel_eumetsat", "nasa_swot", "noaa", "argo", "commercial_imagery"} <= source_ids
     assert all(item["status"] != "connected" for item in body["sources"])
+
+
+def test_batch_ranking_orders_eligible_sites_and_separates_exclusions(app):
+    response = TestClient(app).post("/v1/oceangrid/rank", json={
+        "minimum_evidence_coverage_pct": 40,
+        "sites": [
+            {"site_id":"candidate-a","name":"Coast A","latitude":5,"longitude":10,
+             "sea_surface_temperature_c":10,"salinity_psu":30,"current_speed_m_s":1,
+             "bathymetry_confidence":"high","grid_capacity_mw":400,
+             "renewable_share_pct":90,"fibre_distance_km":10,
+             "protected_area_overlap":False,"environmental_screening":"clear",
+             "permit_status":"confirmed","water_strategy":"waterless"},
+            {"site_id":"candidate-b","name":"Coast B","latitude":-5,"longitude":20,
+             "sea_surface_temperature_c":25,"grid_capacity_mw":50,
+             "protected_area_overlap":False,"environmental_screening":"clear",
+             "permit_status":"not_started","water_strategy":"freshwater"},
+            {"site_id":"candidate-c","name":"Protected coast","latitude":-10,"longitude":30,
+             "protected_area_overlap":True},
+        ],
+    })
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ranking_scope"] == "submitted_candidates_only"
+    assert body["global_coverage"] is False
+    assert body["ranked_count"] == 2
+    assert body["ranked_sites"][0]["site_id"] == "candidate-a"
+    assert body["excluded_sites"][0]["site_id"] == "candidate-c"
+    assert body["excluded_sites"][0]["ranking_reason"] == "environmental_exclusion_review"
