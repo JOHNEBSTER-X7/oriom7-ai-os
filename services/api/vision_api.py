@@ -184,3 +184,76 @@ async def analyze_image(
         "usage": {"images": 1},
         "storage": "not_persisted",
     }
+
+
+INTERPRETATION_TASKS = {
+    "chart": "Read this chart or graph. Identify chart type, title, axes, units, legend, visible data points or series, trends, outliers, and any uncertainty caused by image resolution. Do not invent unreadable values.",
+    "map": "Interpret this map. Identify its visible geographic area, labels, legend, scale, orientation, routes, boundaries and notable symbols. Distinguish visible facts from uncertain geographic inference; do not claim exact coordinates unless printed.",
+    "diagram": "Explain this diagram or technical schematic. Identify components, labels, connections, direction of flow and the overall process. Do not infer hidden components.",
+    "product": "Describe the visible product or object for discovery. Identify observable category, shape, materials, colour, distinguishing features, visible text and plausible search terms. Do not assert a brand or model unless legible."
+}
+
+
+@router.post("/v1/vision/interpret")
+async def interpret_visual_content(
+    request: Request,
+    file: UploadFile = File(...),
+    task: str = Form(..., min_length=1, max_length=20),
+    question: str = Form(default="", max_length=MAX_QUESTION_CHARS),
+    key: dict = Depends(require_api_key),
+):
+    """Task-guided chart, map, diagram or product interpretation via configured vision provider."""
+    provider = getattr(request.app.state, "vision_provider", None)
+    if provider is None:
+        raise HTTPException(status_code=503, detail="Visual intelligence provider is not configured")
+    task = task.strip().lower()
+    if task not in INTERPRETATION_TASKS:
+        raise HTTPException(status_code=422, detail="Task must be chart, map, diagram or product")
+    media_type = (file.content_type or "").split(";", 1)[0].strip().lower()
+    content = await file.read(MAX_IMAGE_BYTES + 1)
+    if len(content) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image exceeds the 10 MB upload limit")
+    validate_image(content, media_type)
+    prompt = INTERPRETATION_TASKS[task]
+    if question.strip():
+        prompt += " Address this additional question: " + question.strip()
+    digest = hashlib.sha256(content).hexdigest()
+    try:
+        result = await provider.analyze(content, media_type, prompt)
+        if not isinstance(result, dict):
+            raise ValueError("Visual provider returned an invalid result")
+        description = result.get("description")
+        answer = result.get("answer")
+        objects = result.get("objects", [])
+        text_found = result.get("text_found", [])
+        if not isinstance(description, str) or not description.strip() or len(description) > MAX_DESCRIPTION_CHARS:
+            raise ValueError("Visual provider returned an invalid description")
+        if answer is not None and (not isinstance(answer, str) or len(answer) > MAX_DESCRIPTION_CHARS):
+            raise ValueError("Visual provider returned an invalid answer")
+        if (not isinstance(objects, list) or len(objects) > 100
+            or any(not isinstance(item, str) or not item.strip() or len(item) > 160 for item in objects)):
+            raise ValueError("Visual provider returned invalid objects")
+        if (not isinstance(text_found, list) or len(text_found) > 100
+            or any(not isinstance(item, str) or len(item) > 2000 for item in text_found)):
+            raise ValueError("Visual provider returned invalid detected text")
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="Visual intelligence provider timed out") from exc
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail="Visual intelligence provider rejected the image") from exc
+    except (httpx.HTTPError, ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=502, detail="Visual intelligence provider failed or returned invalid data") from exc
+    await record_usage(request, key, "vision", 1, 200, {
+        "operation": "interpret", "task": task, "media_type": media_type, "sha256": digest
+    })
+    return {
+        "object": "visual_interpretation",
+        "task": task,
+        "sha256": digest,
+        "description": description.strip(),
+        "answer": answer.strip() if isinstance(answer, str) else None,
+        "objects": objects,
+        "text_found": text_found,
+        "limitations": "Provider-generated interpretation; verify critical measurements, locations and product identities against authoritative sources.",
+        "storage": "not_persisted",
+        "usage": {"images": 1},
+    }
