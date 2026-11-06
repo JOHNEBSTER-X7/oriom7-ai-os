@@ -55,6 +55,15 @@ def test_vision_rejects_mismatched_signature(app):
     assert response.status_code == 415
 
 
+def test_vision_rejects_blank_question(app):
+    response = TestClient(app).post(
+        "/v1/vision/analyze",
+        files={"file": ("photo.jpg", b"\\xff\\xd8\\xfffake", "image/jpeg")},
+        data={"question": "   "},
+    )
+    assert response.status_code == 422
+
+
 def test_vision_rejects_unsupported_media_type(app):
     response = TestClient(app).post(
         "/v1/vision/analyze",
