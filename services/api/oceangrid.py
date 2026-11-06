@@ -124,6 +124,24 @@ def assess_site(site: SiteAssessmentRequest) -> dict:
         ],
     }
 
+
+SOURCE_CATALOGUE = [
+    {"id":"copernicus_marine","name":"Copernicus Marine Service","data":["ocean temperature","salinity","currents","waves","model analysis and forecasts"],"modality":"satellite, in-situ and model products","status":"catalogued_not_connected","licence_review_required":True},
+    {"id":"sentinel_eumetsat","name":"Copernicus Sentinel and EUMETSAT","data":["sea-surface temperature","ocean colour","sea level","coastal observations"],"modality":"satellite observations","status":"catalogued_not_connected","licence_review_required":True},
+    {"id":"nasa_swot","name":"NASA SWOT","data":["ocean surface water elevation and topography"],"modality":"satellite altimetry","status":"catalogued_not_connected","licence_review_required":True},
+    {"id":"noaa","name":"NOAA ocean and coastal data","data":["bathymetry","marine observations","coastal datasets"],"modality":"in-situ, survey and model datasets","status":"catalogued_not_connected","licence_review_required":True},
+    {"id":"argo","name":"Argo","data":["ocean temperature profiles","salinity profiles"],"modality":"in-situ profiling floats","status":"catalogued_not_connected","licence_review_required":True},
+    {"id":"commercial_imagery","name":"Licensed commercial satellite providers","data":["selected high-resolution coastal imagery"],"modality":"commercial satellite imagery and tasking","status":"provider_selection_required","licence_review_required":True},
+]
+
+@router.get("/v1/oceangrid/sources")
+async def oceangrid_sources(request: Request, key: dict = Depends(require_api_key)):
+    return {
+        "object": "oceangrid_source_catalogue",
+        "sources": SOURCE_CATALOGUE,
+        "notice": "Catalogue entries are planned integrations, not connected services or guarantees of coverage, resolution, freshness or licence rights.",
+    }
+
 @router.post("/v1/oceangrid/assess")
 async def assess_coastal_site(
     body: SiteAssessmentRequest, request: Request,
