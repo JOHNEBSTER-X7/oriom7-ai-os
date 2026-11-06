@@ -19,3 +19,16 @@ def test_private_account_routes_require_trusted_identity():
 def test_organisation_creation_requires_trusted_identity():
  response=client.post("/v1/account/organisations",json={"name":"Example Team","slug":"example-team"})
  assert response.status_code==401
+
+def test_organisation_invitation_routes_require_trusted_identity():
+ response=client.post("/v1/account/organisations/00000000-0000-0000-0000-000000000001/invitations",
+  json={"email":"developer@example.com","role":"developer"})
+ assert response.status_code==401
+
+def test_invitation_acceptance_requires_trusted_identity():
+ response=client.post("/v1/account/invitations/accept",json={"token":"x"*48})
+ assert response.status_code==401
+
+def test_member_management_requires_trusted_identity():
+ response=client.get("/v1/account/organisations/00000000-0000-0000-0000-000000000001/members")
+ assert response.status_code==401
