@@ -53,7 +53,7 @@ def app(monkeypatch):
 def test_index_stores_vector_metadata_not_image_bytes(app):
     response = TestClient(app).post(
         "/v1/vision/index",
-        files={"file": ("bike.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        files={"file": ("bike.jpg", bytes([255, 216, 255]) + b"image", "image/jpeg")},
         data={"label": "red bicycle"},
     )
     assert response.status_code == 201
@@ -67,7 +67,7 @@ def test_index_stores_vector_metadata_not_image_bytes(app):
 def test_similarity_search_is_owner_scoped(app):
     response = TestClient(app).post(
         "/v1/vision/search",
-        files={"file": ("query.jpg", b"\\xff\\xd8\\xffimage", "image/jpeg")},
+        files={"file": ("query.jpg", bytes([255, 216, 255]) + b"image", "image/jpeg")},
     )
     assert response.status_code == 200
     assert response.json()["results"][0]["similarity"] == 0.94
