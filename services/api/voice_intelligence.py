@@ -113,8 +113,9 @@ async def voice_turn(
     encode = lambda value: base64.urlsafe_b64encode(value.encode("utf-8")).decode("ascii")
     headers = {
         "Cache-Control": "no-store",
-        "X-ORIOM7-Transcript-B64": encode(transcript[:12000]),
-        "X-ORIOM7-Response-B64": encode(answer[:12000]),
+        "Access-Control-Expose-Headers": "X-ORIOM7-Transcript-B64, X-ORIOM7-Response-B64, X-ORIOM7-Language, X-ORIOM7-Duration-Seconds, X-ORIOM7-Conversation-Context",
+        "X-ORIOM7-Transcript-B64": encode(transcript[:3000]),
+        "X-ORIOM7-Response-B64": encode(answer[:3000]),
         "X-ORIOM7-Language": str(output_language)[:35],
         "X-ORIOM7-Duration-Seconds": str(duration),
         "X-ORIOM7-Conversation-Context": "request-scoped",
