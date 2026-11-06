@@ -92,7 +92,9 @@ async def create_checkout_session(body:CheckoutRequest,request:Request,subject:s
       "subscription_data[metadata][oriom7_account_id]":account["account_id"],
       "subscription_data[metadata][oriom7_plan_code]":body.plan_code,
     }
-    if body.organisation_id:data["metadata[oriom7_organisation_id]"]=body.organisation_id
+    if body.organisation_id:
+        data["metadata[oriom7_organisation_id]"]=str(body.organisation_id)
+        data["subscription_data[metadata][oriom7_organisation_id]"]=str(body.organisation_id)
     session=await _stripe_post("checkout/sessions",data,"oriom7-checkout-"+account["account_id"]+"-"+body.plan_code+"-"+str(int(time.time())//60))
     if not session.get("url"):raise HTTPException(502,detail="Stripe did not return a checkout URL.")
     return {"checkout_url":session["url"],"session_id":session.get("id"),"provider":"stripe","plan_code":body.plan_code}
@@ -162,12 +164,13 @@ async def stripe_webhook(request:Request):
                     await con.execute("UPDATE oriom7_accounts SET stripe_customer_id=$2,updated_at=NOW() WHERE account_id=$1::uuid",account_id,customer)
                 subscription_id=obj.get("subscription")
                 plan=(metadata.get("oriom7_plan_code") or "starter")
+                organisation_id=metadata.get("oriom7_organisation_id")
                 if account_id and subscription_id:
                     await con.execute("""INSERT INTO oriom7_subscriptions(account_id,organisation_id,plan_code,provider,provider_subscription_id,status)
-                     VALUES($1::uuid,NULL,$2,'stripe',$3,'pending')
+                     VALUES($1::uuid,$2::uuid,$3,'stripe',$4,'pending')
                      ON CONFLICT(provider,provider_subscription_id) WHERE provider_subscription_id IS NOT NULL
                      DO UPDATE SET account_id=EXCLUDED.account_id,plan_code=EXCLUDED.plan_code,updated_at=NOW()""",
-                     account_id,plan,subscription_id)
+                     account_id,organisation_id,plan,subscription_id)
             elif event_type in ("customer.subscription.created","customer.subscription.updated","customer.subscription.deleted"):
                 account_id=account_id or metadata.get("oriom7_account_id")
                 subscription_id=obj.get("id")
@@ -176,13 +179,14 @@ async def stripe_webhook(request:Request):
                     if event_type.endswith(".deleted"):status="canceled"
                     if status not in ("pending","trialing","active","past_due","canceled","incomplete"):status="incomplete"
                     plan=_plan_for_subscription(obj)
+                    organisation_id=metadata.get("oriom7_organisation_id")
                     period_start=_unix(obj.get("current_period_start"));period_end=_unix(obj.get("current_period_end"))
-                    await con.execute("""INSERT INTO oriom7_subscriptions(account_id,plan_code,provider,provider_subscription_id,status,current_period_start,current_period_end)
-                     VALUES($1::uuid,$2,'stripe',$3,$4,$5,$6)
+                    await con.execute("""INSERT INTO oriom7_subscriptions(account_id,organisation_id,plan_code,provider,provider_subscription_id,status,current_period_start,current_period_end)
+                     VALUES($1::uuid,$2::uuid,$3,'stripe',$4,$5,$6,$7)
                      ON CONFLICT(provider,provider_subscription_id) WHERE provider_subscription_id IS NOT NULL
                      DO UPDATE SET account_id=EXCLUDED.account_id,plan_code=EXCLUDED.plan_code,status=EXCLUDED.status,
                        current_period_start=EXCLUDED.current_period_start,current_period_end=EXCLUDED.current_period_end,updated_at=NOW()""",
-                     account_id,plan,subscription_id,status,period_start,period_end)
+                     account_id,organisation_id,plan,subscription_id,status,period_start,period_end)
             elif event_type in ("invoice.finalized","invoice.paid","invoice.payment_failed","invoice.voided"):
                 account_id=account_id or await _account_id_for_customer(con,customer,{})
                 invoice_id=obj.get("id")
