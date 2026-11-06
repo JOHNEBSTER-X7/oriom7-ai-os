@@ -97,3 +97,12 @@ The commercial API foundation is being developed on the feature branch. It curre
 ## Identity and commercial billing foundation
 
 The account workspace now includes authenticated account profiles, organisation creation and owner membership, a plan catalogue, subscription/invoice read models and a monthly usage-ledger endpoint. Migration 013 adds the underlying account, organisation, subscription, invoice, payment-event and usage tables. All private routes reuse the existing trusted `authenticated_subject` dependency. No password-based login or payment provider is activated; checkout is disabled, paid pricing is pending, and usage-ledger metering/quota enforcement remains integration work. See [Identity and Commercial Billing Engine V1](docs/IDENTITY_AND_COMMERCIAL_BILLING_ENGINE_V1.md).
+
+
+## OIDC identity, organisation management and Stripe billing
+
+The identity and commercial milestone now includes a generic managed OIDC authorization-code + PKCE web sign-in flow, RS256/JWKS access-token verification in the API, secure HttpOnly access-token cookies, organisation invitations and role management, Stripe Checkout Sessions, timestamp-verified/idempotent Stripe webhooks, subscription/invoice synchronization, and subscription-derived monthly API request quotas.
+
+Apply database migrations 001–015. Configure OIDC issuer, API audience, JWKS endpoint and confidential web-client settings before enabling sign-in. Configure Stripe test-mode secret/webhook keys, Builder/Business Price IDs and trusted HTTPS return URLs before checkout becomes available. No credentials are included and live billing is not enabled by this repository alone.
+
+Organisation invitation tokens are hashed and expire after seven days, but automated email delivery is not configured; the token must currently be delivered securely out-of-band. Email verification and account recovery are handled by the selected OIDC provider. See [Identity, Organisation and Commercial Billing V1](docs/IDENTITY_AND_COMMERCIAL_BILLING_ENGINE_V1.md) for exact environment variables, migration order, integration boundaries and production launch gates.
