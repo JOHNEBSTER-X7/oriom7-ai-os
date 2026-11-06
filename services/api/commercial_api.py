@@ -99,10 +99,10 @@ async def record_usage(request: Request, key: dict, product: str, units: int, st
 @router.get("/v1/developer/products")
 async def list_products(request: Request):
     products = [dict(product) for product in PRODUCTS]
-    if getattr(request.app.state, "translation_provider", None) is not None:
-        for product in products:
-            if product["code"] == "translation":
-                product["status"] = "preview"
+    configured = {"translation": getattr(request.app.state, "translation_provider", None), "ocr": getattr(request.app.state, "ocr_provider", None)}
+    for product in products:
+        if configured.get(product["code"]) is not None:
+            product["status"] = "preview"
     return {"products": products, "billing_status": "not_configured"}
 
 @router.post("/v1/developer/keys")
