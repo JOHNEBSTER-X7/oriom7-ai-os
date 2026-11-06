@@ -21,6 +21,7 @@ from speech_api import router as speech_router, build_speech_provider_from_env, 
 from voice_intelligence import router as voice_intelligence_router
 from vision_api import build_visual_provider_from_env, router as vision_router
 from visual_search import build_visual_embedding_provider_from_env, router as visual_search_router
+from oceangrid import router as oceangrid_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -91,6 +92,8 @@ app.include_router(ocr_router)
 app.include_router(speech_router)
 app.include_router(voice_intelligence_router)
 app.include_router(vision_router)
+app.include_router(visual_search_router)
+app.include_router(oceangrid_router)
 
 
 @app.get("/v1/status", tags=["system"])
