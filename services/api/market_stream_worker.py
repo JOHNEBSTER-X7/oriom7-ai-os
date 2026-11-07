@@ -15,12 +15,14 @@ from typing import Any
 import redis.asyncio as redis
 import websockets
 
-from market_stream import SequenceGapTracker, normalise_stream_message
+from market_stream import normalise_stream_message
 
 LOG = logging.getLogger("oriom7.market_stream")
 STREAM_KEY = os.getenv("ORIOM7_MARKET_REDIS_STREAM", "oriom7:market:events")
 STREAM_MAXLEN = int(os.getenv("ORIOM7_MARKET_REDIS_MAXLEN", "100000"))
 QUEUE_SIZE = int(os.getenv("ORIOM7_MARKET_STREAM_QUEUE_SIZE", "5000"))
+if STREAM_MAXLEN < 1 or QUEUE_SIZE < 1:
+    raise RuntimeError("Redis stream retention and queue capacity must be positive integers")
 METRICS = Counter()
 
 
@@ -62,7 +64,6 @@ async def _publish(redis_client: Any, queue: asyncio.Queue) -> None:
 
 async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyncio.Queue) -> None:
     delay = 1.0
-    sequences = SequenceGapTracker()
     while True:
         connected_at = asyncio.get_running_loop().time()
         try:
@@ -88,7 +89,6 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                             "channel": "ticker", "symbol": symbols,
                         },
                     }))
-                delay = 1.0
                 async for message in socket:
                     try:
                         payload = json.loads(message)
@@ -130,6 +130,15 @@ async def main() -> None:
     redis_url = os.getenv("REDIS_URL")
     if not redis_url:
         raise RuntimeError("REDIS_URL is required; streaming events are not silently discarded.")
+    binance_symbols = _symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT")
+    coinbase_symbols = _symbols("ORIOM7_COINBASE_STREAM_PRODUCTS", "BTC-USD")
+    kraken_symbols = _symbols("ORIOM7_KRAKEN_STREAM_SYMBOLS", "BTC/USD")
+    if len(binance_symbols) > 512:
+        raise RuntimeError("Binance supports at most 512 configured symbols in this combined-stream worker")
+    if len(coinbase_symbols) > 10:
+        raise RuntimeError("Coinbase public subscription tier supports at most 10 product/channel subscriptions; reduce configured products")
+    if not kraken_symbols:
+        raise RuntimeError("Configure at least one Kraken symbol")
     queue: asyncio.Queue = asyncio.Queue(maxsize=QUEUE_SIZE)
     client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=5,
                             socket_timeout=5, health_check_interval=30)
@@ -137,12 +146,11 @@ async def main() -> None:
     tasks = [
         asyncio.create_task(_publish(client, queue), name="redis-publisher"),
         asyncio.create_task(_report_metrics(queue), name="metrics-reporter"),
-        asyncio.create_task(_run_provider("binance_spot", _binance_url(_symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT")),
-                                          _symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT"), queue)),
+        asyncio.create_task(_run_provider("binance_spot", _binance_url(binance_symbols), binance_symbols, queue)),
         asyncio.create_task(_run_provider("coinbase_exchange", "wss://ws-feed.exchange.coinbase.com",
-                                          _symbols("ORIOM7_COINBASE_STREAM_PRODUCTS", "BTC-USD"), queue)),
+                                          coinbase_symbols, queue)),
         asyncio.create_task(_run_provider("kraken_spot", "wss://ws.kraken.com/v2",
-                                          _symbols("ORIOM7_KRAKEN_STREAM_SYMBOLS", "BTC/USD"), queue)),
+                                          kraken_symbols, queue)),
     ]
     try:
         await asyncio.gather(*tasks)
