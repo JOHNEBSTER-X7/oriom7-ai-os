@@ -23,6 +23,7 @@ from vision_api import build_visual_provider_from_env, router as vision_router
 from visual_search import build_visual_embedding_provider_from_env, router as visual_search_router
 from oceangrid import router as oceangrid_router
 from quant_research import router as quant_research_router
+from quant_backtest import router as quant_backtest_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -96,6 +97,7 @@ app.include_router(vision_router)
 app.include_router(visual_search_router)
 app.include_router(oceangrid_router)
 app.include_router(quant_research_router)
+app.include_router(quant_backtest_router)
 
 
 @app.get("/v1/status", tags=["system"])
