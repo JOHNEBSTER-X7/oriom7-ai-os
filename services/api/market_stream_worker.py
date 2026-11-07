@@ -1,0 +1,141 @@
+"""Standalone ORIOM7 public market-data WebSocket worker.
+
+Run: python market_stream_worker.py
+Requires REDIS_URL and the optional streaming dependencies.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+from collections import Counter
+from typing import Any
+
+import redis.asyncio as redis
+import websockets
+
+from market_stream import SequenceGapTracker, normalise_stream_message
+
+LOG = logging.getLogger("oriom7.market_stream")
+STREAM_KEY = os.getenv("ORIOM7_MARKET_REDIS_STREAM", "oriom7:market:events")
+STREAM_MAXLEN = int(os.getenv("ORIOM7_MARKET_REDIS_MAXLEN", "100000"))
+QUEUE_SIZE = int(os.getenv("ORIOM7_MARKET_STREAM_QUEUE_SIZE", "5000"))
+METRICS = Counter()
+
+
+def _symbols(name: str, default: str) -> list[str]:
+    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+
+
+def _binance_url(symbols: list[str]) -> str:
+    streams = []
+    for symbol in symbols:
+        s = symbol.lower()
+        streams.extend([f"{s}@trade", f"{s}@bookTicker"])
+    return "wss://data-stream.binance.vision/stream?streams=" + "/".join(streams)
+
+
+async def _publish(redis_client: Any, queue: asyncio.Queue) -> None:
+    while True:
+        event = await queue.get()
+        try:
+            await redis_client.xadd(
+                STREAM_KEY,
+                {"event": json.dumps(event, separators=(",", ":"), ensure_ascii=True)},
+                maxlen=STREAM_MAXLEN,
+                approximate=True,
+            )
+            METRICS["published"] += 1
+        except Exception:
+            METRICS["publish_errors"] += 1
+            LOG.exception("Redis market event publish failed")
+        finally:
+            queue.task_done()
+
+
+async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyncio.Queue) -> None:
+    delay = 1.0
+    sequences = SequenceGapTracker()
+    while True:
+        try:
+            async with websockets.connect(
+                url, ping_interval=20, ping_timeout=20, close_timeout=10,
+                max_size=1_000_000, max_queue=1000,
+            ) as socket:
+                METRICS[f"{provider}_connections"] += 1
+                LOG.info("Connected provider=%s symbols=%s", provider, len(symbols))
+                if provider == "coinbase_exchange":
+                    await socket.send(json.dumps({
+                        "type": "subscribe", "product_ids": symbols,
+                        "channels": ["ticker", "heartbeat"],
+                    }))
+                elif provider == "kraken_spot":
+                    await socket.send(json.dumps({
+                        "method": "subscribe", "params": {
+                            "channel": "trade", "symbol": symbols,
+                        },
+                    }))
+                    await socket.send(json.dumps({
+                        "method": "subscribe", "params": {
+                            "channel": "ticker", "symbol": symbols,
+                        },
+                    }))
+                delay = 1.0
+                async for message in socket:
+                    try:
+                        payload = json.loads(message)
+                    except (TypeError, json.JSONDecodeError):
+                        METRICS[f"{provider}_invalid_json"] += 1
+                        continue
+                    for event in normalise_stream_message(provider, payload):
+                        diagnostic = sequences.observe(provider, event["instrument_id"], event.get("sequence"))
+                        event.update(diagnostic)
+                        if diagnostic["sequence_gap"]:
+                            METRICS[f"{provider}_sequence_gaps"] += 1
+                            LOG.warning("Sequence discontinuity provider=%s instrument=%s previous=%s current=%s",
+                                        provider, event["instrument_id"], diagnostic["previous_sequence"],
+                                        event.get("sequence"))
+                        try:
+                            queue.put_nowait(event)
+                            METRICS["queued"] += 1
+                        except asyncio.QueueFull:
+                            METRICS["queue_dropped"] += 1
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            METRICS[f"{provider}_disconnects"] += 1
+            LOG.warning("Provider disconnected provider=%s error=%s retry_in=%.1fs", provider, exc, delay)
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 60.0)
+
+
+async def main() -> None:
+    logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        raise RuntimeError("REDIS_URL is required; streaming events are not silently discarded.")
+    queue: asyncio.Queue = asyncio.Queue(maxsize=QUEUE_SIZE)
+    client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=5,
+                            socket_timeout=5, health_check_interval=30)
+    await client.ping()
+    tasks = [
+        asyncio.create_task(_publish(client, queue), name="redis-publisher"),
+        asyncio.create_task(_run_provider("binance_spot", _binance_url(_symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT")),
+                                          _symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT"), queue)),
+        asyncio.create_task(_run_provider("coinbase_exchange", "wss://ws-feed.exchange.coinbase.com",
+                                          _symbols("ORIOM7_COINBASE_STREAM_PRODUCTS", "BTC-USD"), queue)),
+        asyncio.create_task(_run_provider("kraken_spot", "wss://ws.kraken.com/v2",
+                                          _symbols("ORIOM7_KRAKEN_STREAM_SYMBOLS", "BTC/USD"), queue)),
+    ]
+    try:
+        await asyncio.gather(*tasks)
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await client.aclose()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
