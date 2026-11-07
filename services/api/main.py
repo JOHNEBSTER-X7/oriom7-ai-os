@@ -24,6 +24,7 @@ from visual_search import build_visual_embedding_provider_from_env, router as vi
 from oceangrid import router as oceangrid_router
 from quant_research import router as quant_research_router
 from quant_backtest import router as quant_backtest_router
+from quant_walk_forward import router as quant_walk_forward_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -98,6 +99,7 @@ app.include_router(visual_search_router)
 app.include_router(oceangrid_router)
 app.include_router(quant_research_router)
 app.include_router(quant_backtest_router)
+app.include_router(quant_walk_forward_router)
 
 
 @app.get("/v1/status", tags=["system"])
