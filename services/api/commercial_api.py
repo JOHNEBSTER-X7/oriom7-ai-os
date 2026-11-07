@@ -26,6 +26,7 @@ PRODUCTS = [
     {"code": "multilingual_search", "name": "Global Multilingual Search API", "status": "existing_core_preview", "unit": "requests", "description": "Hybrid search foundation exists; cross-language quality and commercial controls require further integration."},
     {"code": "quant_research", "name": "Quantitative Research & Backtesting API", "status": "preview", "unit": "observations", "description": "OHLCV indicators, cost-aware backtesting, walk-forward validation, optional PyTorch forecasting and historical portfolio risk diagnostics; no live execution."},
     {"code": "market_data", "name": "Global Market Data & Order Book Intelligence API", "status": "preview", "unit": "candles_instruments_stream_and_l2_events", "description": "Ingest Binance Spot candles, synchronise Binance/Coinbase/Kraken instruments, stream public trades/tickers and reconstruct validated Level 2 books with microstructure analytics through an optional Redis worker; no trading or cross-venue identity inference."},
+    {"code": "market_intelligence", "name": "Global Market Intelligence Analytics API", "status": "preview", "unit": "market_intelligence_analysis", "description": "Analyse order-book liquidity heatmaps and walls, aggressor flow, absorption/exhaustion candidates, volume profile, heuristic market regimes, cross-venue divergence and research alerts from supplied market data; not investment advice or execution."},
 ]
 
 class CreateKeyRequest(BaseModel):
