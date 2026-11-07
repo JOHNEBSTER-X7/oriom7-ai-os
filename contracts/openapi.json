@@ -3053,6 +3053,165 @@
           }
         }
       }
+    },
+    "/quant/risk/portfolio": {
+      "post": {
+        "operationId": "calculatePortfolioRisk",
+        "summary": "Calculate historical multi-asset portfolio risk diagnostics",
+        "description": "Historical close-to-close weighted portfolio analysis for aligned long-only fully invested asset weights. Returns empirical VaR/expected shortfall, volatility, drawdown, correlations, risk contributions, concentration and deterministic user-specified stress scenarios. No live execution.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "assets"
+                ],
+                "properties": {
+                  "assets": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "symbol",
+                        "weight",
+                        "bars"
+                      ],
+                      "properties": {
+                        "symbol": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 32
+                        },
+                        "weight": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "bars": {
+                          "type": "array",
+                          "minItems": 61,
+                          "maxItems": 5000,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "timestamp",
+                              "open",
+                              "high",
+                              "low",
+                              "close",
+                              "volume"
+                            ],
+                            "properties": {
+                              "timestamp": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "open": {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                              },
+                              "high": {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                              },
+                              "low": {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                              },
+                              "close": {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                              },
+                              "volume": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "confidence_level": {
+                    "type": "number",
+                    "enum": [
+                      0.95,
+                      0.99
+                    ],
+                    "default": 0.95
+                  },
+                  "annualization_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 252
+                  },
+                  "annual_risk_free_rate": {
+                    "type": "number",
+                    "minimum": -0.5,
+                    "maximum": 1,
+                    "default": 0
+                  },
+                  "stress_scenarios": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "shocks"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "shocks": {
+                          "type": "object",
+                          "minProperties": 1,
+                          "maxProperties": 20,
+                          "additionalProperties": {
+                            "type": "number",
+                            "minimum": -1,
+                            "maximum": 5
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Historical portfolio performance, tail risk, concentration, correlations and stress diagnostics"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Invalid weights, timestamps, OHLCV or stress shocks"
+          },
+          "429": {
+            "description": "Quota exceeded"
+          },
+          "503": {
+            "description": "Developer API persistence unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
