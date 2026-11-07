@@ -1,0 +1,3 @@
+# Optional dependencies for the standalone public market-data WebSocket worker.
+websockets>=13,<16
+redis>=5,<7
