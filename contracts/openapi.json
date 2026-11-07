@@ -2405,6 +2405,249 @@
           }
         }
       }
+    },
+    "/quant/backtest": {
+      "post": {
+        "operationId": "runQuantitativeBacktest",
+        "summary": "Run cost-aware historical SMA crossover backtest",
+        "description": "Authenticated deterministic long-only historical simulation. Signals use completed closes strictly before each execution bar, fills use the next bar open, and fee/slippage assumptions are charged on position changes. No live execution, order routing or walk-forward validation.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol",
+                  "timeframe",
+                  "bars"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "timeframe": {
+                    "type": "string",
+                    "enum": [
+                      "1m",
+                      "5m",
+                      "15m",
+                      "1h",
+                      "4h",
+                      "1d",
+                      "1w"
+                    ]
+                  },
+                  "bars": {
+                    "type": "array",
+                    "minItems": 35,
+                    "maxItems": 5000,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "timestamp",
+                        "open",
+                        "high",
+                        "low",
+                        "close",
+                        "volume"
+                      ],
+                      "properties": {
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "open": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "high": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "low": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "close": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "volume": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "fast_period": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 250,
+                    "default": 10
+                  },
+                  "slow_period": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 500,
+                    "default": 30
+                  },
+                  "fee_bps_per_side": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "default": 5
+                  },
+                  "slippage_bps_per_side": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "default": 5
+                  },
+                  "annualization_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 252
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Backtest metrics, equity curve, trade log, assumptions and limitations"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Invalid OHLCV data or strategy parameters"
+          },
+          "429": {
+            "description": "Quota exceeded"
+          },
+          "503": {
+            "description": "Developer API persistence unavailable"
+          }
+        }
+      }
+    },
+    "/quant/analyse": {
+      "post": {
+        "operationId": "analyseQuantitativeBars",
+        "summary": "Calculate quantitative OHLCV indicators",
+        "description": "Authenticated descriptive analysis of caller-supplied OHLCV bars. Does not provide investment advice or execute orders.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol",
+                  "timeframe",
+                  "bars"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "timeframe": {
+                    "type": "string",
+                    "enum": [
+                      "1m",
+                      "5m",
+                      "15m",
+                      "1h",
+                      "4h",
+                      "1d",
+                      "1w"
+                    ]
+                  },
+                  "bars": {
+                    "type": "array",
+                    "minItems": 30,
+                    "maxItems": 5000,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "timestamp",
+                        "open",
+                        "high",
+                        "low",
+                        "close",
+                        "volume"
+                      ],
+                      "properties": {
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "open": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "high": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "low": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "close": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "volume": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "annualization_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 252
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Indicators, methodology and limitations"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Invalid OHLCV data"
+          },
+          "429": {
+            "description": "Quota exceeded"
+          }
+        }
+      }
     }
   },
   "components": {
