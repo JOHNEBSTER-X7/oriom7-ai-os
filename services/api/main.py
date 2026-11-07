@@ -28,6 +28,7 @@ from quant_walk_forward import router as quant_walk_forward_router
 from quant_ml import router as quant_ml_router
 from quant_risk import router as quant_risk_router
 from market_data import router as market_data_router
+from market_intelligence import router as market_intelligence_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -106,6 +107,7 @@ app.include_router(quant_walk_forward_router)
 app.include_router(quant_ml_router)
 app.include_router(quant_risk_router)
 app.include_router(market_data_router)
+app.include_router(market_intelligence_router)
 
 
 @app.get("/v1/status", tags=["system"])
