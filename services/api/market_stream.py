@@ -124,12 +124,13 @@ def stream_capabilities() -> dict[str, Any]:
     return {
         "status": "worker_optional_not_started_by_api",
         "providers": [
-            {"code": "binance_spot", "status": "adapter_implemented", "channels": ["trade", "bookTicker"], "endpoint": "wss://data-stream.binance.vision"},
-            {"code": "coinbase_exchange", "status": "adapter_implemented", "channels": ["ticker", "heartbeat", "match"], "endpoint": "wss://ws-feed.exchange.coinbase.com"},
-            {"code": "kraken_spot", "status": "adapter_implemented", "channels": ["trade", "ticker", "heartbeat"], "endpoint": "wss://ws.kraken.com/v2"},
+            {"code": "binance_spot", "status": "adapter_implemented", "channels": ["trade", "bookTicker", "depth@100ms"], "book_integrity": "REST snapshot plus U/u update continuity", "endpoint": "wss://data-stream.binance.vision"},
+            {"code": "coinbase_exchange", "status": "adapter_implemented", "channels": ["ticker", "heartbeat", "match", "level2_batch"], "book_integrity": "Level 2 snapshot and guaranteed-delivery channel", "endpoint": "wss://ws-feed.exchange.coinbase.com"},
+            {"code": "kraken_spot", "status": "adapter_implemented", "channels": ["trade", "ticker", "heartbeat", "book"], "book_integrity": "CRC32 top-10 checksum", "endpoint": "wss://ws.kraken.com/v2"},
         ],
         "sink": "Redis Streams",
-        "limitations": ["Public trade/ticker events only; full depth order-book reconstruction is a separate milestone.",
-                        "Sequence diagnostics are applied only where the venue message exposes a sequence number.",
+        "limitations": ["Level 2 books are maintained in the optional worker and published as Redis events; the API does not host an in-memory shared book service.",
+                        "Binance snapshot bridging and sequence continuity, Coinbase Level 2 snapshots/updates, and Kraken CRC32 verification are implemented in the worker.",
+                        "Analytics are indicative and exclude hidden liquidity, latency, fees, queue priority and market impact beyond visible levels.",
                         "This API catalogue does not assert that a separate streaming worker is running."],
     }
