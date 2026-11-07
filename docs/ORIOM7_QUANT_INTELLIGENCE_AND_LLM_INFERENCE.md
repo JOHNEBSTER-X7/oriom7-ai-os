@@ -129,3 +129,22 @@ Execution assumptions:
 Reported outputs include total and annualised return, annualised volatility, Sharpe ratio, maximum drawdown, buy-and-hold benchmark return, position changes, turnover, trade log and equity curve.
 
 The endpoint is intentionally a baseline, not an institutional-grade simulator. It does not model bid/ask spread, order-book depth, market impact, queue position, latency, funding, borrow, dividends, corporate actions, delisted assets or survivorship bias. It does not perform walk-forward validation or claim out-of-sample performance. Next work should add realistic execution-cost models, point-in-time data and purged/embargoed walk-forward validation before strategy comparisons are treated as robust.
+
+
+## Quant Engine V3: walk-forward validation
+
+Authenticated `POST /v1/quant/walk-forward` adds expanding-training, rolling-test evaluation for the SMA crossover baseline.
+
+- Accepts 100–5,000 chronological OHLCV bars.
+- Uses an expanding training window, a configurable embargo gap, a held-out test window and a configurable step.
+- Evaluates a bounded grid of fast/slow SMA candidates independently inside each training window. The candidate with the highest training-window total return after configured fee and slippage is selected; deterministic ties prefer lower fast and then lower slow periods.
+- The selected parameters are frozen for that fold's test window. Test-window returns do not participate in that fold's parameter selection.
+- Historical closes before the test window provide indicator warm-up, but only returns generated within the held-out test window are scored.
+- Reports per-fold boundaries, selected parameters, training selection return, test return, annualised return/volatility, Sharpe ratio, maximum drawdown, trade count and turnover; aggregate output reports compounded fold return and fold-return dispersion.
+- Usage is metered by input observation count under `quant_walk_forward`.
+
+### Validation boundaries and cautions
+
+The embargo interval is excluded from the training slice and scored test slice. Historical bars in the embargo may still be used as signal warm-up before the test starts; this is valid for causal indicator state, but it is not a claim of a fully purged label-based cross-validation framework. This baseline uses non-overlapping test windows when `step_bars >= test_bars`; if the step is smaller, windows overlap and compounded aggregate return double-counts dates. Use non-overlapping windows for aggregate compounding.
+
+Parameter selection maximises in-sample total return across a candidate grid, so multiple-testing and overfitting risks remain. Fold counts and trade counts may be small; no statistical significance, probability of profitability or generalisation guarantee is claimed. Data remains caller-supplied OHLCV; execution uses open-price references and simplified fee/slippage assumptions. No exchange feed, broker connection or live execution is present.
