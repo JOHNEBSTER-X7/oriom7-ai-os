@@ -99,3 +99,61 @@ def test_depth_is_bounded_and_trims_worst_levels():
                   [["101", "1"], ["102", "1"], ["103", "1"]])
     assert len(book.bids) == 2
     assert len(book.asks) == 2
+
+
+def test_kraken_frame_selects_requested_symbol_from_multi_symbol_message():
+    from market_orderbook import apply_kraken_frame
+
+    first = OrderBook("kraken_spot", "BTC/USD", depth=10)
+    second = OrderBook("kraken_spot", "ETH/USD", depth=10)
+    btc = OrderBook("kraken_spot", "BTC/USD", depth=10)
+    btc.snapshot([["100", "2"]], [["101", "3"]])
+    btc_checksum = kraken_checksum(btc.bids, btc.asks)
+    eth = OrderBook("kraken_spot", "ETH/USD", depth=10)
+    eth.snapshot([["200", "4"]], [["201", "5"]])
+    eth_checksum = kraken_checksum(eth.bids, eth.asks)
+    frame = {"channel": "book", "type": "snapshot", "data": [
+        {"symbol": "BTC/USD", "bids": [{"price": "100", "qty": "2"}],
+         "asks": [{"price": "101", "qty": "3"}], "checksum": btc_checksum},
+        {"symbol": "ETH/USD", "bids": [{"price": "200", "qty": "4"}],
+         "asks": [{"price": "201", "qty": "5"}], "checksum": eth_checksum},
+    ]}
+    assert apply_kraken_frame(first, frame) is True
+    assert apply_kraken_frame(second, frame) is True
+    assert first.bids[Decimal("100")] == Decimal("2")
+    assert second.bids[Decimal("200")] == Decimal("4")
+
+
+def test_kraken_checksum_verified_incremental_update():
+    from market_orderbook import apply_kraken_frame
+
+    book = OrderBook("kraken_spot", "BTC/USD", depth=10)
+    initial = OrderBook("kraken_spot", "BTC/USD", depth=10)
+    initial.snapshot([["100", "2"]], [["101", "3"]])
+    frame = {"channel": "book", "type": "snapshot", "data": [{
+        "symbol": "BTC/USD", "bids": [{"price": "100", "qty": "2"}],
+        "asks": [{"price": "101", "qty": "3"}],
+        "checksum": kraken_checksum(initial.bids, initial.asks)
+    }]}
+    assert apply_kraken_frame(book, frame) is True
+    expected = OrderBook("kraken_spot", "BTC/USD", depth=10)
+    expected.snapshot([["100", "2"], ["99", "1"]], [["101", "3"]])
+    update = {"channel": "book", "type": "update", "data": [{
+        "symbol": "BTC/USD", "bids": [{"price": "99", "qty": "1"}], "asks": [],
+        "checksum": kraken_checksum(expected.bids, expected.asks)
+    }]}
+    assert apply_kraken_frame(book, update) is True
+    assert book.bids[Decimal("99")] == Decimal("1")
+
+
+def test_kraken_wrong_incremental_checksum_invalidates_book():
+    from market_orderbook import apply_kraken_frame
+
+    book = OrderBook("kraken_spot", "BTC/USD", depth=10)
+    book.snapshot([["100", "2"]], [["101", "3"]])
+    frame = {"channel": "book", "type": "update", "data": [{
+        "symbol": "BTC/USD", "bids": [{"price": "99", "qty": "1"}],
+        "asks": [], "checksum": 123
+    }]}
+    assert apply_kraken_frame(book, frame) is False
+    assert book.valid is False
