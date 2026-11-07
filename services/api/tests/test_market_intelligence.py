@@ -95,14 +95,14 @@ def test_alert_engine_raises_rule_based_signals():
                      "CROSS_VENUE_DIVERGENCE", "HIGH_VOLATILITY_REGIME"}
 
 
-def test_market_intelligence_api_auth_and_metering():
+def test_market_intelligence_api_auth_and_metering(monkeypatch):
     app = FastAPI()
     app.include_router(mi.router)
     app.dependency_overrides[commercial_api.require_api_key] = lambda: {"owner_id": "acct"}
     usage = []
     async def record(*args, **kwargs):
         usage.append(args)
-    mi.record_usage = record
+    monkeypatch.setattr(mi, "record_usage", record)
     body = {
         "symbol": "BTCUSDT",
         "venue_books": [
@@ -127,3 +127,27 @@ def test_market_intelligence_api_auth_and_metering():
 def test_market_intelligence_api_rejects_naive_timestamps():
     with pytest.raises(ValueError, match="timezone"):
         mi._iso(datetime(2026, 11, 7))
+
+
+def test_flow_pressure_marks_absorption_and_exhaustion_candidates():
+    absorption = mi.flow_pressure([
+        {"timestamp": "2026-11-07T00:00:00Z", "price": "100", "quantity": "10", "aggressor_side": "buy"},
+        {"timestamp": "2026-11-07T00:00:01Z", "price": "100.01", "quantity": "1", "aggressor_side": "sell"},
+    ])
+    assert absorption["absorption_candidate"] is True
+    assert absorption["exhaustion_candidate"] is False
+    exhaustion = mi.flow_pressure([
+        {"timestamp": "2026-11-07T00:00:00Z", "price": "100", "quantity": "1", "aggressor_side": "buy"},
+        {"timestamp": "2026-11-07T00:00:01Z", "price": "101", "quantity": "10", "aggressor_side": "buy"},
+    ])
+    assert exhaustion["exhaustion_candidate"] is True
+
+
+def test_wall_persistence_measures_size_persistence_not_price_presence():
+    snapshots = [
+        snap("2026-11-07T00:00:00Z", bids=[["99", "100"], ["98", "1"]]),
+        snap("2026-11-07T00:00:01Z", bids=[["99", "1"], ["98", "1"]]),
+        snap("2026-11-07T00:00:02Z", bids=[["99", "1"], ["98", "1"]]),
+    ]
+    wall = next(x for x in mi.liquidity_wall_analysis(snapshots)["walls"] if x["price"] == "99")
+    assert wall["persistence_ratio"] == str(1/3) or float(wall["persistence_ratio"]) == pytest.approx(1/3)
