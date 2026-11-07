@@ -68,7 +68,7 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                 if provider == "coinbase_exchange":
                     await socket.send(json.dumps({
                         "type": "subscribe", "product_ids": symbols,
-                        "channels": ["ticker", "heartbeat"],
+                        "channels": ["ticker", "heartbeat", "matches"],
                     }))
                 elif provider == "kraken_spot":
                     await socket.send(json.dumps({
@@ -89,13 +89,11 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                         METRICS[f"{provider}_invalid_json"] += 1
                         continue
                     for event in normalise_stream_message(provider, payload):
-                        diagnostic = sequences.observe(provider, event["instrument_id"], event.get("sequence"))
-                        event.update(diagnostic)
-                        if diagnostic["sequence_gap"]:
-                            METRICS[f"{provider}_sequence_gaps"] += 1
-                            LOG.warning("Sequence discontinuity provider=%s instrument=%s previous=%s current=%s",
-                                        provider, event["instrument_id"], diagnostic["previous_sequence"],
-                                        event.get("sequence"))
+                        # Trade/ticker channels are not a complete order-book delta
+                        # sequence. Do not infer packet loss from their IDs. The tested
+                        # tracker is reserved for sequence-guaranteed book-delta adapters.
+                        event.update({"sequence_checked": False, "sequence_gap": False,
+                                      "previous_sequence": None})
                         try:
                             queue.put_nowait(event)
                             METRICS["queued"] += 1
@@ -110,6 +108,13 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
             delay = min(delay * 2, 60.0)
 
 
+async def _report_metrics(queue: asyncio.Queue) -> None:
+    while True:
+        await asyncio.sleep(60)
+        LOG.info("stream_metrics queue_depth=%s queue_capacity=%s counters=%s",
+                 queue.qsize(), QUEUE_SIZE, dict(METRICS))
+
+
 async def main() -> None:
     logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
     redis_url = os.getenv("REDIS_URL")
@@ -121,6 +126,7 @@ async def main() -> None:
     await client.ping()
     tasks = [
         asyncio.create_task(_publish(client, queue), name="redis-publisher"),
+        asyncio.create_task(_report_metrics(queue), name="metrics-reporter"),
         asyncio.create_task(_run_provider("binance_spot", _binance_url(_symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT")),
                                           _symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT"), queue)),
         asyncio.create_task(_run_provider("coinbase_exchange", "wss://ws-feed.exchange.coinbase.com",
