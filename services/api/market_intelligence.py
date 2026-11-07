@@ -215,6 +215,12 @@ def build_alerts(flow: dict[str, Any], walls: dict[str, Any], cross: dict[str, A
     if abs(imbalance) >= Decimal("0.6"):
         alerts.append({"severity": "medium", "code": "AGGRESSOR_FLOW_IMBALANCE",
                        "message": f"Strong { 'buy' if imbalance > 0 else 'sell' } aggressor notional imbalance observed."})
+    if flow.get("absorption_candidate"):
+        alerts.append({"severity": "medium", "code": "AGGRESSOR_FLOW_ABSORPTION",
+                       "message": "Strong aggressive notional flow has produced limited observed price movement; investigate passive replenishment."})
+    if flow.get("exhaustion_candidate"):
+        alerts.append({"severity": "medium", "code": "AGGRESSOR_FLOW_EXHAUSTION",
+                       "message": "Strong aggressive notional flow coincides with a large price move; investigate continuation or reversal context."})
     if any(x["research_flag"] == "large_ephemeral_liquidity" for x in walls["walls"]):
         alerts.append({"severity": "low", "code": "EPHEMERAL_LIQUIDITY_WALL",
                        "message": "A large liquidity level appeared intermittently; investigate cancellations and executions."})
