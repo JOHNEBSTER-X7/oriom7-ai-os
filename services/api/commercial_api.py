@@ -24,6 +24,7 @@ PRODUCTS = [
     {"code": "text_to_speech", "name": "Text-to-Speech API", "status": "planned", "unit": "characters", "description": "Generate downloadable spoken audio using a configured speech synthesis provider."},
     {"code": "embeddings", "name": "Universal Text Embedding API", "status": "preview", "unit": "input_characters", "description": "Create vectors using the configured embedding model; dimensions and model are returned."},
     {"code": "multilingual_search", "name": "Global Multilingual Search API", "status": "existing_core_preview", "unit": "requests", "description": "Hybrid search foundation exists; cross-language quality and commercial controls require further integration."},
+    {"code": "quant_research", "name": "Quantitative Research & Backtesting API", "status": "preview", "unit": "observations", "description": "Calculate OHLCV indicators and run cost-aware historical SMA crossover simulations; no live execution."},
 ]
 
 class CreateKeyRequest(BaseModel):
