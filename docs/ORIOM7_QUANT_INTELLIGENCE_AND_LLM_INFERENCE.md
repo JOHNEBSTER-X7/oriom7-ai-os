@@ -279,3 +279,33 @@ From `services/api`:
 - Sequence diagnostics are implemented as a reusable utility and tested, but trade/ticker identifiers are not treated as contiguous book-update sequences. No false claim of order-book gap detection is made in this V3 increment.
 - The worker has not been started against a live Redis instance or verified against live exchange connections in CI. Tests use deterministic provider message fixtures.
 - Review each venue's current feed terms, geographic availability, rate limits and redistribution rights before commercial use.
+
+
+## Market Data Fabric V3.1: Level 2 Order Book Intelligence
+
+### Order-book engine
+- Added `services/api/market_orderbook.py` with Decimal-based price/quantity handling, bounded depth, snapshot loading, absolute-size updates, zero-size deletion, crossed-book rejection and explicit validity state.
+- Binance Spot: dedicated public depth WebSocket per configured symbol plus REST depth snapshot. Stream starts before snapshot retrieval; queued frames are then bridged against snapshot `lastUpdateId`. Updates older than the current ID are ignored; a non-bridging/gapped `U/u` range invalidates the book and triggers reconnect/rebuild.
+- Coinbase Exchange: public `level2_batch` snapshot and `l2update` messages. Change sizes are treated as absolute level quantities, and zero removes the level.
+- Kraken Spot WebSocket v2: public `book` channel snapshot and updates. Full-precision JSON numbers are decoded as Decimal, all updates in a frame are applied in order, depth is truncated to the subscribed range, and the official top-10 CRC32 checksum is verified after every frame. A mismatch invalidates the book and forces reconnection/snapshot.
+- Reconnect invalidates prior Coinbase/Kraken book state until a new snapshot is received. Binance rebuilds a fresh REST snapshot and bridges the new depth stream.
+
+### Market microstructure analytics
+- Best bid/ask, bid/ask size, mid-price, absolute spread and spread in basis points.
+- Top-level quantity imbalance and notional depth on both sides of the configured book.
+- Indicative visible-book market-order simulation: filled/unfilled quantity, visible notional, VWAP and slippage against the best visible price.
+- Published Redis events include analytics plus the top 25 price levels, while the worker retains up to 1,000 Binance levels and 25 Coinbase/Kraken levels.
+- The output is research data, not an execution quote. It excludes hidden liquidity, latency, fees, queue priority, order matching and market movement.
+
+### Limits and operating controls
+- Binance L2 uses one WebSocket connection per configured symbol and is intentionally capped at five symbols in this worker. Coinbase is capped at five configured products in this worker. Tune and load-test before increasing.
+- The worker publishes order-book events to Redis Streams; it does not expose a shared, low-latency in-memory book query endpoint in the API.
+- Coinbase Level 2 and Kraken book updates are applied only after a fresh snapshot. Binance snapshot bridging and update-ID continuity are enforced.
+- A queue overflow increments a drop counter; consumers must monitor telemetry and treat a dropped event as a data-quality incident. Redis write failures retry the current event with bounded exponential delay.
+- No production deployment, live exchange session, Redis environment, database persistence of depth events, or end-to-end latency benchmark has been claimed. Tests use deterministic provider fixtures.
+- No order execution, account access, private feed, or trading capability is added.
+
+### Exchange protocol references
+- Binance Spot depth stream and snapshot synchronisation: official Spot WebSocket stream documentation.
+- Coinbase Exchange Level 2 and level2_batch channel: official Exchange WebSocket channel documentation.
+- Kraken Spot WebSocket v2 book and CRC32 checksum: official Book (Level 2) and Spot WebSocket v2 Book Checksum guide.
