@@ -2825,6 +2825,234 @@
           }
         }
       }
+    },
+    "/quant/ml/dataset": {
+      "post": {
+        "operationId": "buildQuantMLDataset",
+        "summary": "Build chronological ML dataset",
+        "description": "Create causal rolling features and next-bar return targets; scaler is fitted on training data only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol",
+                  "timeframe",
+                  "bars"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "timeframe": {
+                    "type": "string",
+                    "enum": [
+                      "1m",
+                      "5m",
+                      "15m",
+                      "1h",
+                      "4h",
+                      "1d",
+                      "1w"
+                    ]
+                  },
+                  "bars": {
+                    "type": "array",
+                    "minItems": 100,
+                    "maxItems": 5000,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "timestamp",
+                        "open",
+                        "high",
+                        "low",
+                        "close",
+                        "volume"
+                      ],
+                      "properties": {
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "open": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "high": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "low": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "close": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "volume": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dataset partitions or model training diagnostics"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Invalid OHLCV or insufficient data"
+          },
+          "429": {
+            "description": "Quota exceeded"
+          },
+          "503": {
+            "description": "Optional PyTorch runtime or persistence unavailable"
+          }
+        }
+      }
+    },
+    "/quant/ml/train": {
+      "post": {
+        "operationId": "trainQuantMLBaseline",
+        "summary": "Train optional PyTorch forecasting baseline",
+        "description": "Chronological train/validation/test split. Training data updates weights, validation selects epoch and test is evaluated once. Requires optional PyTorch runtime.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol",
+                  "timeframe",
+                  "bars"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "timeframe": {
+                    "type": "string",
+                    "enum": [
+                      "1m",
+                      "5m",
+                      "15m",
+                      "1h",
+                      "4h",
+                      "1d",
+                      "1w"
+                    ]
+                  },
+                  "bars": {
+                    "type": "array",
+                    "minItems": 100,
+                    "maxItems": 5000,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "timestamp",
+                        "open",
+                        "high",
+                        "low",
+                        "close",
+                        "volume"
+                      ],
+                      "properties": {
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "open": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "high": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "low": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "close": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "volume": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "epochs": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20
+                  },
+                  "learning_rate": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 0.1,
+                    "default": 0.001
+                  },
+                  "seed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000,
+                    "default": 42
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dataset partitions or model training diagnostics"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Invalid OHLCV or insufficient data"
+          },
+          "429": {
+            "description": "Quota exceeded"
+          },
+          "503": {
+            "description": "Optional PyTorch runtime or persistence unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
