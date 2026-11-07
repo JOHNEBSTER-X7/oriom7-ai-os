@@ -14,7 +14,9 @@ from typing import Any
 
 import redis.asyncio as redis
 import websockets
+import httpx
 
+from market_orderbook import OrderBook, apply_kraken_frame
 from market_stream import normalise_stream_message
 
 LOG = logging.getLogger("oriom7.market_stream")
@@ -24,6 +26,7 @@ QUEUE_SIZE = int(os.getenv("ORIOM7_MARKET_STREAM_QUEUE_SIZE", "5000"))
 if STREAM_MAXLEN < 1 or QUEUE_SIZE < 1:
     raise RuntimeError("Redis stream retention and queue capacity must be positive integers")
 METRICS = Counter()
+BOOKS: dict[tuple[str, str], OrderBook] = {}
 
 
 def _symbols(name: str, default: str) -> list[str]:
@@ -62,6 +65,93 @@ async def _publish(redis_client: Any, queue: asyncio.Queue) -> None:
                 retry_delay = min(retry_delay * 2, 60.0)
 
 
+
+
+async def _emit_book(queue: asyncio.Queue, book: OrderBook, event_type: str = "order_book") -> None:
+    stats = book.analytics()
+    event = {
+        "schema_version": 1, "provider": book.provider,
+        "venue": book.provider.upper(), "instrument_id": book.instrument_id,
+        "event_type": event_type, "received_at": __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc).isoformat(),
+        "exchange_time": book.last_exchange_time, "sequence": book.update_id,
+        "data": stats,
+    }
+    try:
+        queue.put_nowait(event)
+        METRICS["order_books_published"] += 1
+    except asyncio.QueueFull:
+        METRICS["queue_dropped"] += 1
+
+
+async def _run_binance_order_book(symbol: str, queue: asyncio.Queue) -> None:
+    """Buffer depth deltas, bridge a REST snapshot, then enforce U/u continuity."""
+    delay = 1.0
+    symbol = symbol.upper()
+    while True:
+        connected_at = asyncio.get_running_loop().time()
+        try:
+            url = f"wss://data-stream.binance.vision/ws/{symbol.lower()}@depth@100ms"
+            async with websockets.connect(url, ping_interval=20, ping_timeout=20,
+                                          close_timeout=10, max_size=1_000_000,
+                                          max_queue=2000) as socket:
+                buffer = []
+                async for message in socket:
+                    frame = json.loads(message, parse_float=__import__("decimal").Decimal)
+                    if frame.get("e") != "depthUpdate":
+                        continue
+                    buffer.append(frame)
+                    if len(buffer) > 10000:
+                        raise ConnectionError("Binance depth bootstrap buffer overflow; restarting snapshot")
+                    if not buffer:
+                        continue
+                    async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
+                        response = await client.get(
+                            "https://data-api.binance.vision/api/v3/depth",
+                            params={"symbol": symbol, "limit": 1000},
+                        )
+                        response.raise_for_status()
+                        if len(response.content) > 2_000_000:
+                            raise ConnectionError("Binance depth snapshot exceeded response safety limit")
+                        snapshot = response.json(parse_float=__import__("decimal").Decimal)
+                    book = OrderBook("binance_spot", symbol, depth=1000)
+                    book.snapshot(snapshot.get("bids", []), snapshot.get("asks", []),
+                                  update_id=int(snapshot["lastUpdateId"]))
+                    pending = buffer
+                    buffer = []
+                    first_bridge = next((i for i, item in enumerate(pending)
+                                         if int(item["u"]) > book.update_id
+                                         and int(item["U"]) <= book.update_id + 1
+                                         and int(item["u"]) >= book.update_id + 1), None)
+                    if first_bridge is None:
+                        raise ConnectionError("Binance snapshot could not be bridged to buffered depth events")
+                    for item in pending[first_bridge:]:
+                        outcome = book.apply_binance(item)
+                        if outcome == "sequence_gap_resync_required":
+                            raise ConnectionError("Binance depth sequence gap; book invalidated")
+                    await _emit_book(queue, book, "order_book_snapshot")
+                    async for message in socket:
+                        frame = json.loads(message, parse_float=__import__("decimal").Decimal)
+                        if frame.get("e") != "depthUpdate":
+                            continue
+                        outcome = book.apply_binance(frame)
+                        if outcome == "sequence_gap_resync_required":
+                            METRICS["binance_order_book_gaps"] += 1
+                            raise ConnectionError("Binance depth sequence gap; resynchronising")
+                        if outcome == "applied":
+                            await _emit_book(queue, book)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            METRICS["binance_order_book_rebuilds"] += 1
+            if asyncio.get_running_loop().time() - connected_at >= 60:
+                delay = 1.0
+            LOG.warning("Binance order book rebuild symbol=%s error=%s retry_in=%.1fs",
+                        symbol, exc, delay)
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 60.0)
+
+
 async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyncio.Queue) -> None:
     delay = 1.0
     while True:
@@ -76,7 +166,7 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                 if provider == "coinbase_exchange":
                     await socket.send(json.dumps({
                         "type": "subscribe", "product_ids": symbols,
-                        "channels": ["ticker", "heartbeat", "matches"],
+                        "channels": ["ticker", "heartbeat", "matches", "level2_batch"],
                     }))
                 elif provider == "kraken_spot":
                     await socket.send(json.dumps({
@@ -91,9 +181,30 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                     }))
                 async for message in socket:
                     try:
-                        payload = json.loads(message)
+                        payload = json.loads(message, parse_float=__import__("decimal").Decimal)
                     except (TypeError, json.JSONDecodeError):
                         METRICS[f"{provider}_invalid_json"] += 1
+                        continue
+                    if provider == "coinbase_exchange" and payload.get("type") in ("snapshot", "l2update") and payload.get("product_id"):
+                        symbol = payload["product_id"]
+                        book = BOOKS.setdefault((provider, symbol), OrderBook(provider, symbol, depth=100))
+                        if payload["type"] == "snapshot":
+                            book.snapshot(payload.get("bids", []), payload.get("asks", []))
+                            await _emit_book(queue, book, "order_book_snapshot")
+                        elif book.valid:
+                            book.apply_coinbase(payload.get("changes", []), payload.get("time"))
+                            await _emit_book(queue, book)
+                        else:
+                            raise ConnectionError("Coinbase Level 2 update received before snapshot")
+                        continue
+                    if provider == "kraken_spot" and payload.get("channel") == "book":
+                        for item in payload.get("data", []):
+                            symbol = item.get("symbol", "unknown")
+                            book = BOOKS.setdefault((provider, symbol), OrderBook(provider, symbol, depth=25))
+                            if not apply_kraken_frame(book, payload):
+                                METRICS["kraken_order_book_checksum_failures"] += 1
+                                raise ConnectionError(f"Kraken order book checksum failed for {symbol}")
+                            await _emit_book(queue, book, "order_book_snapshot" if payload.get("type") == "snapshot" else "order_book")
                         continue
                     for event in normalise_stream_message(provider, payload):
                         # Trade/ticker channels are not a complete order-book delta
@@ -135,8 +246,8 @@ async def main() -> None:
     kraken_symbols = _symbols("ORIOM7_KRAKEN_STREAM_SYMBOLS", "BTC/USD")
     if len(binance_symbols) > 512:
         raise RuntimeError("Binance supports at most 512 configured symbols in this combined-stream worker")
-    if len(coinbase_symbols) > 10:
-        raise RuntimeError("Coinbase public subscription tier supports at most 10 product/channel subscriptions; reduce configured products")
+    if len(coinbase_symbols) > 5:
+        raise RuntimeError("Coinbase subscription plan: limit this worker to 5 products across four channels; reduce configured products")
     if not kraken_symbols:
         raise RuntimeError("Configure at least one Kraken symbol")
     queue: asyncio.Queue = asyncio.Queue(maxsize=QUEUE_SIZE)
@@ -146,6 +257,7 @@ async def main() -> None:
     tasks = [
         asyncio.create_task(_publish(client, queue), name="redis-publisher"),
         asyncio.create_task(_report_metrics(queue), name="metrics-reporter"),
+        *[asyncio.create_task(_run_binance_order_book(symbol, queue), name=f"binance-l2-{symbol}") for symbol in binance_symbols],
         asyncio.create_task(_run_provider("binance_spot", _binance_url(binance_symbols), binance_symbols, queue)),
         asyncio.create_task(_run_provider("coinbase_exchange", "wss://ws-feed.exchange.coinbase.com",
                                           coinbase_symbols, queue)),
