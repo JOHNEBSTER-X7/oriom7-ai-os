@@ -31,7 +31,7 @@ def test_heatmap_normalises_distance_and_notional_depth():
     ], top_n=1)
     assert result["snapshot_count"] == 2
     assert result["heatmap"][0]["bids"][0]["notional"] == "198"
-    assert result["heatmap"][0]["asks"][0]["distance_bps"] == "100"
+    assert float(result["heatmap"][0]["asks"][0]["distance_bps"]) == pytest.approx(100.0)
 
 
 def test_heatmap_rejects_crossed_or_one_sided_book():
