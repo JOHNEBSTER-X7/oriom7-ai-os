@@ -162,6 +162,7 @@ def test_instrument_registry_sync_persists_and_meters(monkeypatch):
     usage.assert_awaited_once()
 
 
+import market_stream
 from market_stream import SequenceGapTracker, normalise_stream_message
 
 
