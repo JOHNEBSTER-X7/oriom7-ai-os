@@ -38,8 +38,9 @@ def make_body(**overrides):
 def test_walk_forward_creates_ordered_disjoint_train_embargo_test_windows():
     result = quant_walk_forward.run_walk_forward(make_body())
     assert result["fold_count"] > 1
-    for fold in result["folds"]:
-        assert fold["training_observations"] == 100
+    expected_train_lengths = [100, 130, 160, 190, 220]
+    for fold, expected_train_length in zip(result["folds"], expected_train_lengths):
+        assert fold["training_observations"] == expected_train_length
         assert fold["embargo_observations"] == 5
         assert fold["test_observations"] == 30
         assert fold["train_end_exclusive"] < fold["test_start"]
