@@ -222,3 +222,15 @@ def test_stream_capabilities_are_explicit_about_worker_state():
     assert result["status"] == "worker_optional_not_started_by_api"
     assert all(provider["status"] == "adapter_implemented" for provider in result["providers"])
     assert any("order-book" in item for item in result["limitations"])
+
+
+def test_streaming_capabilities_endpoint_is_authenticated_and_truthful():
+    app = FastAPI()
+    app.include_router(market_data.router)
+    app.dependency_overrides[commercial_api.require_api_key] = lambda: {"owner_id": "acct"}
+    response = TestClient(app).get("/v1/market-data/streaming/capabilities")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "worker_optional_not_started_by_api"
+    assert body["sink"] == "Redis Streams"
+    assert len(body["providers"]) == 3
