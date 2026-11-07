@@ -222,7 +222,7 @@ def test_stream_capabilities_are_explicit_about_worker_state():
     result = market_stream.stream_capabilities()
     assert result["status"] == "worker_optional_not_started_by_api"
     assert all(provider["status"] == "adapter_implemented" for provider in result["providers"])
-    assert any("order-book" in item for item in result["limitations"])
+    assert any("Level 2 books" in item for item in result["limitations"])
 
 
 def test_streaming_capabilities_endpoint_is_authenticated_and_truthful():
