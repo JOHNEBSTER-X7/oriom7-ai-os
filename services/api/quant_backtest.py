@@ -51,6 +51,11 @@ def _sma(values: list[float], period: int) -> float:
     return sum(values[-period:]) / period
 
 
+def _target_position(prior_closes: list[float], fast_period: int, slow_period: int) -> int:
+    """Derive a binary target using only completed closes supplied by the caller."""
+    return 1 if _sma(prior_closes, fast_period) > _sma(prior_closes, slow_period) else 0
+
+
 def run_sma_backtest(body: BacktestRequest) -> dict:
     """Signals at prior close; rebalance at next bar open; mark open-to-open."""
     bars = body.bars
@@ -71,7 +76,7 @@ def run_sma_backtest(body: BacktestRequest) -> dict:
         history = closes[:index]
         fast_sma = _sma(history, body.fast_period)
         slow_sma = _sma(history, body.slow_period)
-        target = 1 if fast_sma > slow_sma else 0
+        target = _target_position(history, body.fast_period, body.slow_period)
         turnover = abs(target - position)
         if turnover:
             trades.append({
