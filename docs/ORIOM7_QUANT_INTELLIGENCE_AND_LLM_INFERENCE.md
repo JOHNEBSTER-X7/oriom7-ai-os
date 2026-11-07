@@ -219,3 +219,26 @@ The engine uses static long-only weights and historical close-to-close returns. 
 Binance Spot public REST candles are the only connected provider in this V1. Coinbase Exchange and Kraken Spot are listed as planned, not integrated. Real-time WebSocket ingestion, exchange instrument master synchronisation, L1/L2 order books, trade prints, cross-provider symbol mapping, streaming queue, TimescaleDB partitioning, Redis cache and automatic scheduled backfills remain future work.
 
 Provider access, instrument coverage, geo-availability, redistribution rights and commercial use must be checked against the exchange's current terms. Public endpoint access does not grant unrestricted data redistribution rights. No exchange account is linked; no private credentials, order routing or trading permissions are used.
+
+
+## Market Data Fabric V2: multi-exchange instrument master
+
+### Public instrument adapters
+- Added provider-specific instrument catalogue synchronisation for Binance Spot `GET /api/v3/exchangeInfo`, Coinbase Exchange `GET /products`, and Kraken Spot `GET /0/public/AssetPairs`.
+- Added authenticated `POST /v1/market-data/instruments/sync?provider=...` and `GET /v1/market-data/instruments`.
+- All adapters use fixed HTTPS hostnames, 15-second timeouts, disabled redirects and a 5 MB response cap. Public endpoints require no exchange API credentials.
+- Normalised fields include provider, venue, native instrument ID, base and quote asset codes, display symbol, status, and available tick/lot/minimum-size metadata. Missing metadata remains null rather than being guessed.
+- Binance tick and lot metadata is extracted from PRICE_FILTER and LOT_SIZE. Coinbase increments and minimum base size are mapped from product metadata. Kraken preserves its internal pair key and WebSocket/display symbol separately; tick size and order minimum are mapped where supplied.
+- Provider metadata is hashed and stored with first/last-seen timestamps. Migration `018_market_instruments.sql` creates the provider-specific instrument master and indexes.
+
+### Identity and data-quality policy
+- Primary identity is `(provider, instrument_id)`. The same text symbol on two venues is never merged automatically.
+- Base/quote strings are preserved exactly as supplied by each provider. For example, Kraken's internal asset codes may differ from the familiar display codes.
+- No cross-provider fungibility, token contract identity, wrapped-asset equivalence, or fiat settlement equivalence is inferred. A future canonical asset graph requires independently verified mappings and provenance.
+- Catalogue sync is a point-in-time snapshot/upsert, not a complete delisting reconciliation process. Instruments absent from a later response are not automatically marked inactive; status is taken from the provider response.
+- The 20,000-instrument parser ceiling, 5 MB response ceiling and bounded list endpoint are safety limits, not claims of complete exchange coverage.
+
+### Validation boundaries
+- Instrument sync is connected to public exchange REST endpoints in code, but provider-backed live sync and the PostgreSQL migration have not been represented as completed until staging credentials/environment and database migration validation are run.
+- Binance remains the only connected candle-ingestion adapter in V2. Coinbase and Kraken candle ingestion, WebSocket feeds, order books, trades, scheduled refresh, stale-record reconciliation and canonical cross-venue asset mapping remain future milestones.
+- Public API access does not grant unrestricted commercial redistribution rights. Review each exchange's current terms, regional availability, attribution and licensing requirements before resale or redistribution.
