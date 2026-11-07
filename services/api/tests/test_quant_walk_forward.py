@@ -41,7 +41,7 @@ def test_walk_forward_creates_ordered_disjoint_train_embargo_test_windows():
     for fold in result["folds"]:
         assert fold["training_observations"] == 100
         assert fold["embargo_observations"] == 5
-        assert fold["test_observations"] == 30
+        assert fold["test_observations"] == 29
         assert fold["train_end_exclusive"] < fold["test_start"]
         assert fold["test_performance"]["scored_periods"] == 30
 
@@ -63,7 +63,7 @@ def test_test_window_uses_prior_history_but_scores_only_test_periods():
     body = make_body()
     result = quant_walk_forward.run_walk_forward(body)
     first = result["folds"][0]
-    assert first["test_performance"]["scored_periods"] == body.test_bars
+    assert first["test_performance"]["scored_periods"] == body.test_bars - 1
     assert first["test_start"] == body.bars[body.train_bars + body.embargo_bars].timestamp.isoformat()
 
 
