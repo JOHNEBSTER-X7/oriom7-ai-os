@@ -175,3 +175,21 @@ The core API does not install PyTorch by default. Install the separate optional 
 
 ### Validation boundaries
 A single chronological holdout and a small MLP do not establish predictive validity, statistical significance or profitability. There is no hyperparameter search, nested walk-forward retraining, calibrated uncertainty, transaction-cost model, portfolio evaluation, market feed or execution. This is experimental research only, not financial advice or a trading instruction.
+
+
+## Quant Engine V5: historical portfolio risk laboratory
+
+Authenticated `POST /v1/quant/risk/portfolio` adds historical multi-asset portfolio diagnostics.
+
+### Inputs and calculations
+- Accepts 2–20 assets, each with 61–5,000 chronological OHLCV bars.
+- Requires unique symbols, identical aligned timestamps and long-only non-negative weights summing to 1.0.
+- Builds close-to-close simple returns for each asset and static-weight portfolio returns.
+- Calculates annualised volatility, cumulative return, Sharpe ratio against a configurable annual risk-free rate and maximum drawdown.
+- Calculates empirical historical VaR and expected shortfall at 95% or 99% confidence, including tail observation count.
+- Reports asset return correlation matrix, portfolio variance risk-contribution fractions and Herfindahl concentration/effective position count.
+- Accepts up to 20 deterministic, user-supplied asset shock scenarios and reports their weighted portfolio impact.
+- Usage is metered by total submitted asset-bar observations under `quant_portfolio_risk`.
+
+### Assumptions and limitations
+The engine uses static long-only weights and historical close-to-close returns. It does not model rebalancing, leverage, short positions, derivatives, currency conversion, intraperiod gaps, spread, liquidity, market impact, funding, taxes or execution costs. Empirical VaR/expected shortfall are sample-dependent and do not bound worst-case losses. User-defined stress scenarios are not probability-weighted forecasts. Instrument identity, corporate actions, data licensing and survivorship are not independently verified. No market feed, broker or order execution is connected. This is risk research, not investment advice.
