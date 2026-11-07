@@ -193,3 +193,29 @@ Authenticated `POST /v1/quant/risk/portfolio` adds historical multi-asset portfo
 
 ### Assumptions and limitations
 The engine uses static long-only weights and historical close-to-close returns. It does not model rebalancing, leverage, short positions, derivatives, currency conversion, intraperiod gaps, spread, liquidity, market impact, funding, taxes or execution costs. Empirical VaR/expected shortfall are sample-dependent and do not bound worst-case losses. User-defined stress scenarios are not probability-weighted forecasts. Instrument identity, corporate actions, data licensing and survivorship are not independently verified. No market feed, broker or order execution is connected. This is risk research, not investment advice.
+
+
+## Market Data Fabric V1: public Binance Spot candle ingestion
+
+### Connected provider
+- Binance Spot public REST market data is connected through the documented market-data-only host `https://data-api.binance.vision`.
+- Authenticated ORIOM7 endpoint: `POST /v1/market-data/binance/klines`.
+- Provider catalogue: `GET /v1/market-data/providers`.
+- Supported candle intervals: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w and 1M.
+- Bounded request size: 1–1,000 candles; optional timezone-aware start/end timestamps.
+- Public endpoint needs no Binance API key and does not request account, trade or withdrawal permissions.
+- Redirects are disabled; requests have a 10-second timeout; oversized responses are rejected; provider rate-limit/ban responses are mapped to a retryable service error.
+
+### Normalisation and storage
+- Converts provider kline arrays into canonical UTC timestamps, decimal OHLCV/quote volume, trade count, closed/open status and a SHA-256 digest of the raw candle row.
+- Validates chronological uniqueness, numeric fields, non-negative volume, OHLC consistency and time range.
+- Upserts candles by provider, symbol, timeframe and open time, so repeat ingestion refreshes a still-open candle instead of creating duplicates.
+- Migration `017_market_data.sql` creates `market_candles` with numeric precision, primary key, integrity checks and symbol/time indexes.
+- API requires configured `DATABASE_URL` and migration 017; it returns HTTP 503 instead of pretending data was stored when persistence is unavailable.
+- Raw provider response payloads are not persisted. Only normalised candle fields and a per-row raw payload digest are stored.
+- Usage is metered by received candle count under `market_data_ingestion`.
+
+### Provider roadmap and boundaries
+Binance Spot public REST candles are the only connected provider in this V1. Coinbase Exchange and Kraken Spot are listed as planned, not integrated. Real-time WebSocket ingestion, exchange instrument master synchronisation, L1/L2 order books, trade prints, cross-provider symbol mapping, streaming queue, TimescaleDB partitioning, Redis cache and automatic scheduled backfills remain future work.
+
+Provider access, instrument coverage, geo-availability, redistribution rights and commercial use must be checked against the exchange's current terms. Public endpoint access does not grant unrestricted data redistribution rights. No exchange account is linked; no private credentials, order routing or trading permissions are used.
