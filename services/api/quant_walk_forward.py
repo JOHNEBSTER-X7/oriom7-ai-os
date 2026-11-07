@@ -79,7 +79,6 @@ def _evaluate_test_window(bars: list[BacktestBar], start: int, end: int, fast: i
         max_drawdown = max(max_drawdown, (peak - equity) / peak if peak else 0.0)
     if position:
         equity *= max(0.0, 1.0 - cost)
-        returns.append(-cost)
         trades += 1
         turnover += 1
         peak = max(peak, equity)
