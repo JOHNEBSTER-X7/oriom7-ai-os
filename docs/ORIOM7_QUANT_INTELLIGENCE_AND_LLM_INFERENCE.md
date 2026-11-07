@@ -114,3 +114,18 @@ The quantitative endpoint and vLLM adapter are code foundations. No market feed,
 - Machine Learning Mastery, Faster LLM Inference: https://machinelearningmastery.com/faster-llm-inference/ — conceptual and practical learning guide informing this roadmap.
 
 Runtime features must be benchmarked on the exact model, accelerator, driver, precision and workload. Quantization or compilation can change numerical outputs and may reduce quality; no setting should be enabled globally without regression tests.
+
+## Quant Engine V2: historical backtesting
+Authenticated `POST /v1/quant/backtest` accepts 35–5,000 chronological OHLCV bars and runs a deterministic long-only SMA crossover research simulation. The fast/slow periods, per-side fees, per-side slippage and annualisation periods are explicit inputs.
+
+Execution assumptions:
+- At each bar open, the target position is derived only from closes strictly before that bar.
+- Rebalancing uses the current bar's open as a reference fill.
+- Exposure is marked open-to-next-open.
+- Fee plus slippage basis points are charged on each position change.
+- Any remaining position is liquidated at the final available open and charged a final side.
+- No leverage, shorting or live order routing.
+
+Reported outputs include total and annualised return, annualised volatility, Sharpe ratio, maximum drawdown, buy-and-hold benchmark return, position changes, turnover, trade log and equity curve.
+
+The endpoint is intentionally a baseline, not an institutional-grade simulator. It does not model bid/ask spread, order-book depth, market impact, queue position, latency, funding, borrow, dividends, corporate actions, delisted assets or survivorship bias. It does not perform walk-forward validation or claim out-of-sample performance. Next work should add realistic execution-cost models, point-in-time data and purged/embargoed walk-forward validation before strategy comparisons are treated as robust.
