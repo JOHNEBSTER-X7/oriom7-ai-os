@@ -3319,6 +3319,107 @@
           }
         }
       }
+    },
+    "/market-data/instruments/sync": {
+      "post": {
+        "operationId": "syncMarketInstruments",
+        "summary": "Synchronise public spot instrument metadata from a supported exchange",
+        "description": "Fetches provider metadata from Binance Spot, Coinbase Exchange or Kraken Spot, normalises it and upserts by provider plus native instrument identifier. Does not infer cross-provider equivalence.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "binance_spot",
+                "coinbase_exchange",
+                "kraken_spot"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instrument metadata synchronised"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Unsupported provider"
+          },
+          "429": {
+            "description": "Developer API quota exceeded"
+          },
+          "502": {
+            "description": "Exchange response invalid or unavailable"
+          },
+          "503": {
+            "description": "Database migration or provider temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/market-data/instruments": {
+      "get": {
+        "operationId": "listMarketInstruments",
+        "summary": "List the provider-specific instrument registry",
+        "description": "Returns normalised exchange instrument records. Native provider identifiers are preserved; base/quote fields are metadata, not proof of fungibility or cross-venue equivalence.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider-specific instrument records"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "503": {
+            "description": "Database migration 018 or database unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
