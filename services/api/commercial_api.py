@@ -25,7 +25,7 @@ PRODUCTS = [
     {"code": "embeddings", "name": "Universal Text Embedding API", "status": "preview", "unit": "input_characters", "description": "Create vectors using the configured embedding model; dimensions and model are returned."},
     {"code": "multilingual_search", "name": "Global Multilingual Search API", "status": "existing_core_preview", "unit": "requests", "description": "Hybrid search foundation exists; cross-language quality and commercial controls require further integration."},
     {"code": "quant_research", "name": "Quantitative Research & Backtesting API", "status": "preview", "unit": "observations", "description": "OHLCV indicators, cost-aware backtesting, walk-forward validation, optional PyTorch forecasting and historical portfolio risk diagnostics; no live execution."},
-    {"code": "market_data", "name": "Global Market Data & Instrument Registry API", "status": "preview", "unit": "candles_and_instruments", "description": "Ingest public Binance Spot candles and synchronise provider-specific spot instrument metadata from Binance, Coinbase Exchange and Kraken; no trading or cross-provider identity inference."},
+    {"code": "market_data", "name": "Global Market Data & Streaming API", "status": "preview", "unit": "candles_instruments_stream_events", "description": "Ingest Binance Spot candles, synchronise provider-specific instruments across Binance/Coinbase/Kraken and stream public trade/ticker events through an optional Redis worker; no trading or cross-venue identity inference."},
 ]
 
 class CreateKeyRequest(BaseModel):
