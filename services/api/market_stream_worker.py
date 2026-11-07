@@ -75,7 +75,7 @@ async def _emit_book(queue: asyncio.Queue, book: OrderBook, event_type: str = "o
         "event_type": event_type, "received_at": __import__("datetime").datetime.now(
             __import__("datetime").timezone.utc).isoformat(),
         "exchange_time": book.last_exchange_time, "sequence": book.update_id,
-        "data": stats,
+        "data": {**stats, **book.top_levels(min(25, book.depth))},
     }
     try:
         queue.put_nowait(event)
@@ -228,8 +228,8 @@ async def main() -> None:
     binance_symbols = _symbols("ORIOM7_BINANCE_STREAM_SYMBOLS", "BTCUSDT")
     coinbase_symbols = _symbols("ORIOM7_COINBASE_STREAM_PRODUCTS", "BTC-USD")
     kraken_symbols = _symbols("ORIOM7_KRAKEN_STREAM_SYMBOLS", "BTC/USD")
-    if len(binance_symbols) > 512:
-        raise RuntimeError("Binance supports at most 512 configured symbols in this combined-stream worker")
+    if len(binance_symbols) > 5:
+        raise RuntimeError("Binance L2 bootstrap uses one connection per symbol; limit this worker to 5 configured symbols")
     if len(coinbase_symbols) > 5:
         raise RuntimeError("Coinbase subscription plan: limit this worker to 5 products across four channels; reduce configured products")
     if not kraken_symbols:
