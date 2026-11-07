@@ -85,7 +85,7 @@ async def _emit_book(queue: asyncio.Queue, book: OrderBook, event_type: str = "o
 
 
 async def _run_binance_order_book(symbol: str, queue: asyncio.Queue) -> None:
-    """Buffer depth deltas, bridge a REST snapshot, then enforce U/u continuity."""
+    """Start the depth stream first, fetch snapshot, then bridge queued stream frames."""
     delay = 1.0
     symbol = symbol.upper()
     while True:
@@ -95,51 +95,31 @@ async def _run_binance_order_book(symbol: str, queue: asyncio.Queue) -> None:
             async with websockets.connect(url, ping_interval=20, ping_timeout=20,
                                           close_timeout=10, max_size=1_000_000,
                                           max_queue=2000) as socket:
-                buffer = []
+                book = None
                 async for message in socket:
                     frame = json.loads(message, parse_float=__import__("decimal").Decimal)
                     if frame.get("e") != "depthUpdate":
                         continue
-                    buffer.append(frame)
-                    if len(buffer) > 10000:
-                        raise ConnectionError("Binance depth bootstrap buffer overflow; restarting snapshot")
-                    if not buffer:
-                        continue
-                    async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
-                        response = await client.get(
-                            "https://data-api.binance.vision/api/v3/depth",
-                            params={"symbol": symbol, "limit": 1000},
-                        )
-                        response.raise_for_status()
-                        if len(response.content) > 2_000_000:
-                            raise ConnectionError("Binance depth snapshot exceeded response safety limit")
-                        snapshot = response.json(parse_float=__import__("decimal").Decimal)
-                    book = OrderBook("binance_spot", symbol, depth=1000)
-                    book.snapshot(snapshot.get("bids", []), snapshot.get("asks", []),
-                                  update_id=int(snapshot["lastUpdateId"]))
-                    pending = buffer
-                    buffer = []
-                    first_bridge = next((i for i, item in enumerate(pending)
-                                         if int(item["u"]) > book.update_id
-                                         and int(item["U"]) <= book.update_id + 1
-                                         and int(item["u"]) >= book.update_id + 1), None)
-                    if first_bridge is None:
-                        raise ConnectionError("Binance snapshot could not be bridged to buffered depth events")
-                    for item in pending[first_bridge:]:
-                        outcome = book.apply_binance(item)
-                        if outcome == "sequence_gap_resync_required":
-                            raise ConnectionError("Binance depth sequence gap; book invalidated")
-                    await _emit_book(queue, book, "order_book_snapshot")
-                    async for message in socket:
-                        frame = json.loads(message, parse_float=__import__("decimal").Decimal)
-                        if frame.get("e") != "depthUpdate":
-                            continue
-                        outcome = book.apply_binance(frame)
-                        if outcome == "sequence_gap_resync_required":
-                            METRICS["binance_order_book_gaps"] += 1
-                            raise ConnectionError("Binance depth sequence gap; resynchronising")
-                        if outcome == "applied":
-                            await _emit_book(queue, book)
+                    if book is None:
+                        async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
+                            response = await client.get(
+                                "https://data-api.binance.vision/api/v3/depth",
+                                params={"symbol": symbol, "limit": 1000},
+                            )
+                            response.raise_for_status()
+                            if len(response.content) > 2_000_000:
+                                raise ConnectionError("Binance depth snapshot exceeded response safety limit")
+                            snapshot = response.json(parse_float=__import__("decimal").Decimal)
+                        book = OrderBook("binance_spot", symbol, depth=1000)
+                        book.snapshot(snapshot.get("bids", []), snapshot.get("asks", []),
+                                      update_id=int(snapshot["lastUpdateId"]))
+                    outcome = book.apply_binance(frame)
+                    if outcome == "sequence_gap_resync_required":
+                        METRICS["binance_order_book_gaps"] += 1
+                        raise ConnectionError("Binance depth sequence gap; resynchronising")
+                    if outcome == "applied":
+                        await _emit_book(queue, book, "order_book_snapshot" if METRICS[f"binance_book_init_{symbol}"] == 0 else "order_book")
+                        METRICS[f"binance_book_init_{symbol}"] += 1
         except asyncio.CancelledError:
             raise
         except Exception as exc:
