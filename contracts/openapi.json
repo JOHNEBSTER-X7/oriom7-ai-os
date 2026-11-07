@@ -3212,6 +3212,113 @@
           }
         }
       }
+    },
+    "/market-data/providers": {
+      "get": {
+        "operationId": "listMarketDataProviders",
+        "summary": "List supported market-data provider integrations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider status, available market-data products and integration notes"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          }
+        }
+      }
+    },
+    "/market-data/binance/klines": {
+      "post": {
+        "operationId": "ingestBinanceSpotKlines",
+        "summary": "Fetch, normalise and persist public Binance Spot candles",
+        "description": "Fetches public Binance Spot klines from the official market-data-only REST host, validates and normalises OHLCV, then upserts to PostgreSQL. No exchange account or trading permissions are used.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "symbol",
+                  "interval"
+                ],
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 32,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "interval": {
+                    "type": "string",
+                    "enum": [
+                      "1m",
+                      "3m",
+                      "5m",
+                      "15m",
+                      "30m",
+                      "1h",
+                      "2h",
+                      "4h",
+                      "6h",
+                      "8h",
+                      "12h",
+                      "1d",
+                      "3d",
+                      "1w",
+                      "1M"
+                    ]
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000,
+                    "default": 500
+                  },
+                  "start_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "end_time": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Normalised candles, persistence counts, timestamps and open/closed-candle flags"
+          },
+          "401": {
+            "description": "Developer API authentication required"
+          },
+          "422": {
+            "description": "Invalid interval, time window or request parameters"
+          },
+          "429": {
+            "description": "Developer API quota exceeded"
+          },
+          "502": {
+            "description": "Provider response invalid or unavailable"
+          },
+          "503": {
+            "description": "Database migration or provider temporarily unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
