@@ -232,7 +232,10 @@ def kraken_checksum(bids: dict[Decimal, Decimal], asks: dict[Decimal, Decimal]) 
 def apply_kraken_frame(book: OrderBook, frame: dict[str, Any]) -> bool:
     if frame.get("channel") != "book" or not isinstance(frame.get("data"), list) or not frame["data"]:
         raise ValueError("Malformed Kraken book frame")
-    item = frame["data"][0]
+    item = next((entry for entry in frame["data"]
+                 if isinstance(entry, dict) and entry.get("symbol") == book.instrument_id), None)
+    if item is None:
+        raise ValueError("Kraken book frame does not contain the requested instrument")
     if frame.get("type") == "snapshot":
         book.snapshot(item.get("bids", []), item.get("asks", []),
                       exchange_time=item.get("timestamp"))
