@@ -160,12 +160,223 @@ async def market_data_providers(key: dict = Depends(require_api_key)):
     return {
         "object": "oriom7_market_data_provider_catalog",
         "providers": [
-            {"code": "binance_spot", "status": "connected_public_rest", "data": ["spot_klines", "exchange_symbols"], "authentication": "not_required_for_public_market_data", "documentation": "https://developers.binance.com/en/docs/products/spot/rest-api"},
-            {"code": "coinbase_exchange", "status": "planned", "data": ["candles", "products"], "authentication": "public_endpoints"},
-            {"code": "kraken_spot", "status": "planned", "data": ["ohlc", "asset_pairs"], "authentication": "public_endpoints"},
+            {"code": "binance_spot", "status": "connected_public_rest", "data": ["spot_klines", "exchange_instruments"], "authentication": "not_required_for_public_market_data", "documentation": "https://developers.binance.com/en/docs/products/spot/rest-api"},
+            {"code": "coinbase_exchange", "status": "connected_public_rest", "data": ["exchange_instruments"], "authentication": "not_required_for_public_market_data", "documentation": "https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproducts"},
+            {"code": "kraken_spot", "status": "connected_public_rest", "data": ["exchange_instruments"], "authentication": "not_required_for_public_market_data", "documentation": "https://docs.kraken.com/api/docs/rest-api/get-tradable-asset-pairs"},
         ],
-        "notes": ["Provider availability and instrument coverage vary by jurisdiction and product.", "Check exchange data licensing and redistribution terms before commercial use."],
+        "notes": ["Only public spot instrument metadata is synchronised in V2; candles remain Binance-only.", "Provider-specific symbols are preserved. Cross-provider asset equivalence is not inferred.", "Check exchange data licensing and redistribution terms before commercial use."],
     }
+
+
+class Instrument(BaseModel):
+    provider: str
+    venue: str
+    instrument_id: str
+    base_asset: str
+    quote_asset: str
+    display_symbol: str
+    asset_class: str = "crypto_spot"
+    status: str
+    tick_size: Decimal | None = None
+    lot_size: Decimal | None = None
+    min_order_size: Decimal | None = None
+    source_updated_at: datetime | None = None
+    metadata_sha256: str
+
+
+def _positive_decimal(value: object) -> Decimal | None:
+    if value in (None, "", "0", 0):
+        return None
+    try:
+        result = Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+    return result if result.is_finite() and result > 0 else None
+
+
+def parse_binance_instruments(payload: object) -> list[Instrument]:
+    if not isinstance(payload, dict) or not isinstance(payload.get("symbols"), list):
+        raise ValueError("Binance exchangeInfo response is malformed")
+    output = []
+    for item in payload["symbols"]:
+        if not isinstance(item, dict):
+            continue
+        filters = {f.get("filterType"): f for f in item.get("filters", []) if isinstance(f, dict)}
+        price = filters.get("PRICE_FILTER", {})
+        lot = filters.get("LOT_SIZE", {})
+        canonical = json.dumps(item, sort_keys=True, separators=(",", ":"))
+        output.append(Instrument(
+            provider="binance_spot", venue="BINANCE_SPOT",
+            instrument_id=str(item.get("symbol", "")),
+            base_asset=str(item.get("baseAsset", "")),
+            quote_asset=str(item.get("quoteAsset", "")),
+            display_symbol=str(item.get("symbol", "")),
+            status=str(item.get("status", "unknown")).lower(),
+            tick_size=_positive_decimal(price.get("tickSize")),
+            lot_size=_positive_decimal(lot.get("stepSize")),
+            min_order_size=_positive_decimal(lot.get("minQty")),
+            metadata_sha256=hashlib.sha256(canonical.encode()).hexdigest(),
+        ))
+    return _validate_instruments(output)
+
+
+def parse_coinbase_instruments(payload: object) -> list[Instrument]:
+    if not isinstance(payload, list):
+        raise ValueError("Coinbase products response is malformed")
+    output = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        canonical = json.dumps(item, sort_keys=True, separators=(",", ":"))
+        product_id = str(item.get("id", ""))
+        output.append(Instrument(
+            provider="coinbase_exchange", venue="COINBASE_EXCHANGE",
+            instrument_id=product_id,
+            base_asset=str(item.get("base_currency", "")),
+            quote_asset=str(item.get("quote_currency", "")),
+            display_symbol=product_id,
+            status=str(item.get("status", "unknown")).lower(),
+            tick_size=_positive_decimal(item.get("quote_increment")),
+            lot_size=_positive_decimal(item.get("base_increment")),
+            min_order_size=_positive_decimal(item.get("base_min_size")),
+            metadata_sha256=hashlib.sha256(canonical.encode()).hexdigest(),
+        ))
+    return _validate_instruments(output)
+
+
+def parse_kraken_instruments(payload: object) -> list[Instrument]:
+    if not isinstance(payload, dict) or payload.get("error") not in ([], None) or not isinstance(payload.get("result"), dict):
+        raise ValueError("Kraken AssetPairs response is malformed or contains provider errors")
+    output = []
+    for pair_key, item in payload["result"].items():
+        if not isinstance(item, dict):
+            continue
+        canonical = json.dumps(item, sort_keys=True, separators=(",", ":"))
+        output.append(Instrument(
+            provider="kraken_spot", venue="KRAKEN_SPOT",
+            instrument_id=str(pair_key),
+            base_asset=str(item.get("base", "")),
+            quote_asset=str(item.get("quote", "")),
+            display_symbol=str(item.get("wsname") or item.get("altname") or pair_key),
+            status=str(item.get("status", "unknown")).lower(),
+            tick_size=_positive_decimal(item.get("tick_size")),
+            lot_size=None,
+            min_order_size=_positive_decimal(item.get("ordermin")),
+            metadata_sha256=hashlib.sha256(canonical.encode()).hexdigest(),
+        ))
+    return _validate_instruments(output)
+
+
+def _validate_instruments(items: list[Instrument]) -> list[Instrument]:
+    seen = set()
+    for item in items:
+        if not item.instrument_id or not item.base_asset or not item.quote_asset:
+            raise ValueError("Provider instrument is missing its identity or base/quote asset")
+        key = (item.provider, item.instrument_id)
+        if key in seen:
+            raise ValueError("Provider returned duplicate instrument identifiers")
+        seen.add(key)
+    if len(items) > 20000:
+        raise ValueError("Provider instrument catalogue exceeds the 20,000 instrument safety limit")
+    return items
+
+
+async def fetch_instruments(provider: str) -> list[Instrument]:
+    endpoints = {
+        "binance_spot": ("https://data-api.binance.vision/api/v3/exchangeInfo", parse_binance_instruments),
+        "coinbase_exchange": ("https://api.exchange.coinbase.com/products", parse_coinbase_instruments),
+        "kraken_spot": ("https://api.kraken.com/0/public/AssetPairs", parse_kraken_instruments),
+    }
+    if provider not in endpoints:
+        raise HTTPException(status_code=422, detail="Unsupported provider")
+    url, parser = endpoints[provider]
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=False) as client:
+            response = await client.get(url, headers={"Accept": "application/json"})
+            response.raise_for_status()
+            if len(response.content) > 5_000_000:
+                raise HTTPException(status_code=502, detail="Instrument catalogue exceeded the 5 MB response limit")
+            payload = response.json()
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (418, 429):
+            raise HTTPException(status_code=503, detail="Exchange rate limit; retry later") from exc
+        raise HTTPException(status_code=502, detail=f"Exchange returned HTTP {exc.response.status_code}") from exc
+    except (httpx.HTTPError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=502, detail="Exchange instrument service unavailable or invalid JSON") from exc
+    try:
+        return parser(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=f"Invalid exchange instrument catalogue: {exc}") from exc
+
+
+async def persist_instruments(pool, instruments: list[Instrument]) -> int:
+    if not instruments:
+        return 0
+    sql = """
+        INSERT INTO market_instruments (
+            provider, venue, instrument_id, base_asset, quote_asset, display_symbol,
+            asset_class, status, tick_size, lot_size, min_order_size,
+            source_updated_at, metadata_sha256, first_seen_at, last_seen_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW(),NOW())
+        ON CONFLICT (provider, instrument_id) DO UPDATE SET
+            venue=EXCLUDED.venue, base_asset=EXCLUDED.base_asset,
+            quote_asset=EXCLUDED.quote_asset, display_symbol=EXCLUDED.display_symbol,
+            asset_class=EXCLUDED.asset_class, status=EXCLUDED.status,
+            tick_size=EXCLUDED.tick_size, lot_size=EXCLUDED.lot_size,
+            min_order_size=EXCLUDED.min_order_size,
+            source_updated_at=EXCLUDED.source_updated_at,
+            metadata_sha256=EXCLUDED.metadata_sha256, last_seen_at=NOW()
+    """
+    records = [(i.provider, i.venue, i.instrument_id, i.base_asset, i.quote_asset,
+                i.display_symbol, i.asset_class, i.status, i.tick_size, i.lot_size,
+                i.min_order_size, i.source_updated_at, i.metadata_sha256)
+               for i in instruments]
+    await pool.executemany(sql, records)
+    return len(records)
+
+
+@router.post("/instruments/sync")
+async def sync_market_instruments(provider: Literal["binance_spot", "coinbase_exchange", "kraken_spot"],
+                                  request: Request, key: dict = Depends(require_api_key)):
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Instrument registry requires DATABASE_URL and migration 018_market_instruments.sql")
+    instruments = await fetch_instruments(provider)
+    try:
+        stored = await persist_instruments(pool, instruments)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Instrument registry storage failed; verify migration 018 and database availability") from exc
+    await record_usage(request, key, "market_instrument_sync", len(instruments), 200,
+                       {"provider": provider, "stored": stored})
+    return {"object": "oriom7_market_instrument_sync", "provider": provider,
+            "received": len(instruments), "stored": stored,
+            "identity_policy": "provider_and_instrument_id",
+            "cross_provider_asset_equivalence_inferred": False}
+
+
+@router.get("/instruments")
+async def list_market_instruments(request: Request, provider: str | None = Query(default=None, max_length=40),
+                                  status: str | None = Query(default=None, max_length=40),
+                                  limit: int = Query(default=100, ge=1, le=1000),
+                                  key: dict = Depends(require_api_key)):
+    pool = getattr(request.app.state, "database_pool", None)
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Instrument registry requires DATABASE_URL and migration 018_market_instruments.sql")
+    clauses, args = [], []
+    if provider:
+        args.append(provider)
+        clauses.append(f"provider = ${len(args)}")
+    if status:
+        args.append(status)
+        clauses.append(f"status = ${len(args)}")
+    args.append(limit)
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    rows = await pool.fetch(
+        "SELECT provider, venue, instrument_id, base_asset, quote_asset, display_symbol, asset_class, status, tick_size, lot_size, min_order_size, metadata_sha256, first_seen_at, last_seen_at FROM market_instruments"
+        + where + f" ORDER BY provider, instrument_id LIMIT ${len(args)}", *args)
+    return {"object": "oriom7_market_instrument_list", "count": len(rows),
+            "instruments": [dict(row) for row in rows],
+            "identity_policy": "provider_and_instrument_id"}
 
 
 @router.post("/binance/klines")
