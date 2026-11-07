@@ -309,3 +309,33 @@ From `services/api`:
 - Binance Spot depth stream and snapshot synchronisation: official Spot WebSocket stream documentation.
 - Coinbase Exchange Level 2 and level2_batch channel: official Exchange WebSocket channel documentation.
 - Kraken Spot WebSocket v2 book and CRC32 checksum: official Book (Level 2) and Spot WebSocket v2 Book Checksum guide.
+
+
+## Market Intelligence V1: Liquidity, Flow, Volume and Regime Analytics
+
+### API
+- Added `services/api/market_intelligence.py` and registered `POST /v1/market-intelligence/analyse` in the FastAPI application.
+- Endpoint is API-key authenticated and metered as `market_intelligence_analysis`.
+- Caller supplies bounded order-book snapshots, trade prints with aggressor side, closing prices and venue books. This milestone analyses supplied data; it does not yet consume Redis Streams directly or maintain a durable time-series feature store.
+
+### Analytics implemented
+- Discrete order-book liquidity heatmap with bid/ask levels, distance from midpoint and notional value.
+- Liquidity-wall candidates with size multiple, persistence and disappearance ratios. Persistence is based on the number of snapshots where size remains above a median-relative threshold, not merely price-level presence.
+- Aggressor-flow notional, signed delta, buy/sell pressure and normalised order-flow imbalance.
+- Absorption candidate: strong signed aggressive notional flow with limited price response (<=5 bps).
+- Exhaustion candidate: strong signed aggressive notional flow with a large observed price move (>=50 bps).
+- Price-bucketed trade volume profile and point of control.
+- Rule-based 20-return-window regime labels: uptrend/downtrend/range and high/low volatility.
+- Cross-venue midpoint divergence and a simple fragmentation index from caller-supplied venue books.
+- Deterministic alert rules for aggressive-flow imbalance, absorption, exhaustion, ephemeral large liquidity, cross-venue divergence and high volatility.
+
+### Interpretation and limitations
+- These are deterministic, explainable research heuristics. They are not trained models, forecasts, investment advice or trading signals.
+- A large wall that disappears is not proof of spoofing. Reliable spoofing research needs event-level order add/cancel/execute histories, exchange-specific rules, timestamps and trade matching; snapshots alone are insufficient.
+- Absorption/exhaustion are candidate labels using fixed thresholds. They require book replenishment, aggressor classification quality and instrument/timeframe calibration.
+- The heatmap is a sequence of discrete snapshots, not a continuous historical depth surface.
+- Regime classification is a simple heuristic, not a statistical hidden-state model.
+- Cross-venue comparison assumes caller has already established instrument equivalence and timestamp comparability. It does not account for fees, transfers, funding, regional access, or settlement.
+- The response includes a rule-generated textual summary and LLM-ready context; it does not claim to call an LLM or generate forecasts.
+- No Redis consumer, stream-to-feature pipeline, persistent historical market-intelligence store, notification delivery integration or live exchange verification is included in this increment.
+- All output is research only; no account access, order routing or execution capability is added.
