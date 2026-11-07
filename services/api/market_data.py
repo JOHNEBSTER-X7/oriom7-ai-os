@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from commercial_api import record_usage, require_api_key
+from market_stream import stream_capabilities
 
 router = APIRouter(prefix="/v1/market-data", tags=["market-data"])
 BINANCE_PUBLIC_BASE = "https://data-api.binance.vision"
@@ -413,3 +414,9 @@ async def ingest_binance_klines(body: IngestRequest, request: Request,
             "Exchange coverage, regional availability and data redistribution rights must be reviewed for the intended use.",
         ],
     }
+
+
+@router.get("/streaming/capabilities")
+async def market_streaming_capabilities(key: dict = Depends(require_api_key)):
+    """Describe implemented public stream adapters without implying a worker is running."""
+    return stream_capabilities()
