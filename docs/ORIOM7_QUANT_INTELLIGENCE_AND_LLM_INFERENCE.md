@@ -148,3 +148,30 @@ Authenticated `POST /v1/quant/walk-forward` adds expanding-training, rolling-tes
 The embargo interval is excluded from the training slice and scored test slice. Historical bars in the embargo may still be used as signal warm-up before the test starts; this is valid for causal indicator state, but it is not a claim of a fully purged label-based cross-validation framework. This baseline uses non-overlapping test windows when `step_bars >= test_bars`; if the step is smaller, windows overlap and compounded aggregate return double-counts dates. Use non-overlapping windows for aggregate compounding.
 
 Parameter selection maximises in-sample total return across a candidate grid, so multiple-testing and overfitting risks remain. Fold counts and trade counts may be small; no statistical significance, probability of profitability or generalisation guarantee is claimed. Data remains caller-supplied OHLCV; execution uses open-price references and simplified fee/slippage assumptions. No exchange feed, broker connection or live execution is present.
+
+
+## Quant Engine V4: chronological ML feature pipeline and PyTorch baseline
+
+Added authenticated endpoints:
+- `POST /v1/quant/ml/dataset` builds a reproducible, chronological supervised dataset from caller-supplied OHLCV.
+- `POST /v1/quant/ml/train` trains a small PyTorch MLP baseline when the optional PyTorch runtime is installed.
+
+### Dataset construction
+- Uses 1-, 5-, 10- and 20-bar log returns, 20-bar realised volatility and close-versus-20-bar-SMA deviation.
+- Target is the next bar's close-to-close log return. Feature rows are timestamped separately from their future target timestamp.
+- Uses ordered 70% train / 15% validation / 15% test partitions without shuffling.
+- Z-score scaling statistics are calculated on the training partition only and then applied to validation and test rows.
+- Strict timestamp uniqueness/order and OHLC consistency validation; 100–5,000 input bars.
+
+### PyTorch training baseline
+- Small feed-forward regressor (6 → 16 → 8 → 1), ReLU activations, Adam optimiser and MSE objective.
+- Training partition updates model weights; validation MSE selects the best epoch; the held-out test partition is evaluated after model selection.
+- Deterministic seed is set and deterministic PyTorch algorithms are requested where supported.
+- Returns test MSE and directional accuracy, validation/training loss history and model configuration.
+- Model weights are not persisted; this is a request-scoped research baseline, not a production model registry.
+
+### Optional runtime
+The core API does not install PyTorch by default. Install the separate optional dependency set from `services/api/requirements-ml.txt` in a suitable CPU/GPU environment. The dataset endpoint works without PyTorch; the training endpoint returns HTTP 503 with setup guidance when PyTorch is unavailable. GPU drivers, CUDA compatibility, model serving, weights persistence, feature store, experiment tracking and scheduled retraining are not provisioned by this milestone.
+
+### Validation boundaries
+A single chronological holdout and a small MLP do not establish predictive validity, statistical significance or profitability. There is no hyperparameter search, nested walk-forward retraining, calibrated uncertainty, transaction-cost model, portfolio evaluation, market feed or execution. This is experimental research only, not financial advice or a trading instruction.
