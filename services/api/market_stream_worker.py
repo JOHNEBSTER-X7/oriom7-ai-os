@@ -39,25 +39,32 @@ def _binance_url(symbols: list[str]) -> str:
 async def _publish(redis_client: Any, queue: asyncio.Queue) -> None:
     while True:
         event = await queue.get()
-        try:
-            await redis_client.xadd(
-                STREAM_KEY,
-                {"event": json.dumps(event, separators=(",", ":"), ensure_ascii=True)},
-                maxlen=STREAM_MAXLEN,
-                approximate=True,
-            )
-            METRICS["published"] += 1
-        except Exception:
-            METRICS["publish_errors"] += 1
-            LOG.exception("Redis market event publish failed")
-        finally:
-            queue.task_done()
+        retry_delay = 1.0
+        while True:
+            try:
+                await redis_client.xadd(
+                    STREAM_KEY,
+                    {"event": json.dumps(event, separators=(",", ":"), ensure_ascii=True)},
+                    maxlen=STREAM_MAXLEN,
+                    approximate=True,
+                )
+                METRICS["published"] += 1
+                queue.task_done()
+                break
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                METRICS["publish_errors"] += 1
+                LOG.exception("Redis market event publish failed; retaining event and retrying in %.1fs", retry_delay)
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60.0)
 
 
 async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyncio.Queue) -> None:
     delay = 1.0
     sequences = SequenceGapTracker()
     while True:
+        connected_at = asyncio.get_running_loop().time()
         try:
             async with websockets.connect(
                 url, ping_interval=20, ping_timeout=20, close_timeout=10,
@@ -99,10 +106,13 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                             METRICS["queued"] += 1
                         except asyncio.QueueFull:
                             METRICS["queue_dropped"] += 1
+                raise ConnectionError("WebSocket connection closed by provider")
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             METRICS[f"{provider}_disconnects"] += 1
+            if asyncio.get_running_loop().time() - connected_at >= 60:
+                delay = 1.0
             LOG.warning("Provider disconnected provider=%s error=%s retry_in=%.1fs", provider, exc, delay)
             await asyncio.sleep(delay)
             delay = min(delay * 2, 60.0)
