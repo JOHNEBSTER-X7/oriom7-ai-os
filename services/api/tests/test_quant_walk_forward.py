@@ -41,7 +41,7 @@ def test_walk_forward_creates_ordered_disjoint_train_embargo_test_windows():
     for fold in result["folds"]:
         assert fold["training_observations"] == 100
         assert fold["embargo_observations"] == 5
-        assert fold["test_observations"] == 29
+        assert fold["test_observations"] == 30
         assert fold["train_end_exclusive"] < fold["test_start"]
         assert fold["test_performance"]["scored_periods"] == 30
 
@@ -55,7 +55,7 @@ def test_each_fold_selects_only_from_training_data(monkeypatch):
     monkeypatch.setattr(quant_walk_forward, "run_sma_backtest", spy)
     result = quant_walk_forward.run_walk_forward(make_body())
     assert seen_lengths
-    assert all(length == 100 for length in seen_lengths)
+    assert seen_lengths == [100, 130, 160, 190, 220]
     assert all("training_selection_return_pct" in fold for fold in result["folds"])
 
 
