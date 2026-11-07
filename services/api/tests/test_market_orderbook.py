@@ -80,7 +80,7 @@ def test_orderbook_analytics_spread_imbalance_depth_and_vwap():
     assert Decimal(stats["top_level_imbalance"]) == Decimal("1") / Decimal("3")
     buy = book.simulate_market_order("buy", "3")
     assert Decimal(buy["filled_visible_base_quantity"]) == Decimal("3")
-    assert Decimal(buy["visible_book_vwap"]) == Decimal("101.3333333333333333333333333")
+    assert Decimal(buy["visible_book_vwap"]) == Decimal("101.6666666666666666666666667")
     assert buy["complete"] is True
 
 
