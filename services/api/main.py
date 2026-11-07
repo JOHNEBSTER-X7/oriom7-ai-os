@@ -25,6 +25,7 @@ from oceangrid import router as oceangrid_router
 from quant_research import router as quant_research_router
 from quant_backtest import router as quant_backtest_router
 from quant_walk_forward import router as quant_walk_forward_router
+from quant_ml import router as quant_ml_router
 from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
@@ -100,6 +101,7 @@ app.include_router(oceangrid_router)
 app.include_router(quant_research_router)
 app.include_router(quant_backtest_router)
 app.include_router(quant_walk_forward_router)
+app.include_router(quant_ml_router)
 
 
 @app.get("/v1/status", tags=["system"])
