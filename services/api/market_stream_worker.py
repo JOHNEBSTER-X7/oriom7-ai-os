@@ -141,6 +141,10 @@ async def _run_provider(provider: str, url: str, symbols: list[str], queue: asyn
                 url, ping_interval=20, ping_timeout=20, close_timeout=10,
                 max_size=1_000_000, max_queue=1000,
             ) as socket:
+                for symbol in symbols:
+                    existing = BOOKS.get((provider, symbol))
+                    if existing is not None:
+                        existing.valid = False
                 METRICS[f"{provider}_connections"] += 1
                 LOG.info("Connected provider=%s symbols=%s", provider, len(symbols))
                 if provider == "coinbase_exchange":
