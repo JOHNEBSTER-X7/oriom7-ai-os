@@ -13,7 +13,7 @@ def kline(open_ms, close_ms, close="101"):
 
 
 def test_parser_normalises_and_marks_open_candle():
-    now = datetime(2025, 1, 1, 0, 2, tzinfo=timezone.utc)
+    now = datetime(2025, 1, 1, 0, 1, 30, tzinfo=timezone.utc)
     rows = [kline(1735689600000, 1735689659999), kline(1735689660000, 1735689719999)]
     candles = market_data.parse_binance_klines(rows, "btcusdt", "1m", now)
     assert candles[0].symbol == "BTCUSDT"
