@@ -148,6 +148,16 @@ class OrderBook:
             return False
         return True
 
+    def top_levels(self, limit: int = 25) -> dict[str, list[list[str]]]:
+        if not self.valid:
+            raise RuntimeError("Order book is invalid; resynchronise before reading levels")
+        if limit < 1 or limit > self.depth:
+            raise ValueError("Requested levels must be between 1 and configured book depth")
+        return {
+            "bids": [[str(price), str(qty)] for price, qty in sorted(self.bids.items(), reverse=True)[:limit]],
+            "asks": [[str(price), str(qty)] for price, qty in sorted(self.asks.items())[:limit]],
+        }
+
     def analytics(self) -> dict[str, Any]:
         if not self.valid:
             raise RuntimeError("Order book is invalid; resynchronise before analytics")
