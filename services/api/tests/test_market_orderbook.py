@@ -157,3 +157,14 @@ def test_kraken_wrong_incremental_checksum_invalidates_book():
     }]}
     assert apply_kraken_frame(book, frame) is False
     assert book.valid is False
+
+
+def test_top_levels_returns_bounded_sorted_depth():
+    book = OrderBook("venue", "X-Y", depth=3)
+    book.snapshot([["100", "1"], ["102", "1"], ["101", "1"]],
+                  [["105", "1"], ["103", "1"], ["104", "1"]])
+    levels = book.top_levels(2)
+    assert levels["bids"] == [["102", "1"], ["101", "1"]]
+    assert levels["asks"] == [["103", "1"], ["104", "1"]]
+    with pytest.raises(ValueError):
+        book.top_levels(4)
