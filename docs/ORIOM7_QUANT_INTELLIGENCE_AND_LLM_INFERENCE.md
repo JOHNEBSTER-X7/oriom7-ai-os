@@ -242,3 +242,40 @@ Provider access, instrument coverage, geo-availability, redistribution rights an
 - Instrument sync is connected to public exchange REST endpoints in code, but provider-backed live sync and the PostgreSQL migration have not been represented as completed until staging credentials/environment and database migration validation are run.
 - Binance remains the only connected candle-ingestion adapter in V2. Coinbase and Kraken candle ingestion, WebSocket feeds, order books, trades, scheduled refresh, stale-record reconciliation and canonical cross-venue asset mapping remain future milestones.
 - Public API access does not grant unrestricted commercial redistribution rights. Review each exchange's current terms, regional availability, attribution and licensing requirements before resale or redistribution.
+
+
+## Market Data Fabric V3: public WebSocket trade and ticker streaming
+
+### Architecture delivered
+- Added `services/api/market_stream.py` with a provider-neutral event envelope, venue-specific parsers, SHA-256 raw-message fingerprints and a reusable monotonic sequence-gap tracker.
+- Added standalone `services/api/market_stream_worker.py`; streaming is deliberately isolated from the FastAPI request lifecycle.
+- Added optional dependencies in `services/api/requirements-streaming.txt` (`websockets` and `redis`); the core API dependency set is unchanged.
+- Added authenticated `GET /v1/market-data/streaming/capabilities` to expose supported adapters and limitations. It explicitly reports that the worker is optional and is not started by the API.
+- Added the capability route to OpenAPI and unit tests for Binance, Coinbase and Kraken event normalisation, sequence-gap utility and endpoint response.
+
+### Public feed adapters
+- Binance Spot: market-data-only WebSocket host `wss://data-stream.binance.vision`; combined `@trade` and `@bookTicker` streams for configured symbols.
+- Coinbase Exchange: `wss://ws-feed.exchange.coinbase.com`; public `ticker`, `heartbeat` and `matches` subscriptions for configured product IDs.
+- Kraken Spot WebSocket v2: `wss://ws.kraken.com/v2`; public `trade` and `ticker` subscriptions for configured symbols.
+- No API keys, account scopes, order placement, private user channels or withdrawal permissions are used.
+
+### Canonical event pipeline
+- Normalises provider events into versioned envelopes containing provider, venue, provider-native instrument ID, event type, exchange timestamp where supplied, local receive timestamp, sequence metadata, bounded structured event data and raw-message SHA-256.
+- A bounded in-process asyncio queue applies backpressure. When full, the worker increments a drop counter instead of allowing unbounded memory growth.
+- A Redis publisher writes events to the configurable Redis Stream (default `oriom7:market:events`) with approximate MAXLEN retention (default 100,000 entries).
+- The worker uses WebSocket ping/pong, bounded message sizes/queues, reconnect loops and exponential backoff up to 60 seconds. A 60-second log reports queue depth and in-memory counters.
+- Redis is required by the standalone worker. It fails at startup if `REDIS_URL` is absent or Redis cannot be reached; it does not silently discard events.
+
+### Running the optional worker
+From `services/api`:
+1. Install core and development dependencies as appropriate, then `pip install -r requirements-streaming.txt`.
+2. Set `REDIS_URL` to a Redis instance dedicated or provisioned for the ORIOM7 stream.
+3. Optionally configure `ORIOM7_BINANCE_STREAM_SYMBOLS` (comma-separated, default `BTCUSDT`), `ORIOM7_COINBASE_STREAM_PRODUCTS` (default `BTC-USD`), `ORIOM7_KRAKEN_STREAM_SYMBOLS` (default `BTC/USD`), `ORIOM7_MARKET_REDIS_STREAM`, `ORIOM7_MARKET_REDIS_MAXLEN` and `ORIOM7_MARKET_STREAM_QUEUE_SIZE`.
+4. Run `python market_stream_worker.py` as a separately supervised process.
+
+### Explicit V3 boundaries
+- This increment streams public trades, ticker/top-of-book updates and heartbeats. Binance `bookTicker` is best-bid/best-ask only, not a depth book.
+- Full L2 order-book snapshots/deltas, checksums, snapshot reconciliation, sequence-gap recovery, trade-to-candle aggregation, durable dead-letter handling, consumer-group workers and production deployment/supervision are not included yet.
+- Sequence diagnostics are implemented as a reusable utility and tested, but trade/ticker identifiers are not treated as contiguous book-update sequences. No false claim of order-book gap detection is made in this V3 increment.
+- The worker has not been started against a live Redis instance or verified against live exchange connections in CI. Tests use deterministic provider message fixtures.
+- Review each venue's current feed terms, geographic availability, rate limits and redistribution rights before commercial use.
