@@ -87,3 +87,76 @@ def test_request_rejects_invalid_interval():
         assert False, "unsupported interval must fail"
     except ValueError:
         pass
+
+
+def test_coinbase_instrument_normalisation_preserves_provider_symbol():
+    result = market_data.parse_coinbase_instruments([{
+        "id": "BTC-USD", "base_currency": "BTC", "quote_currency": "USD",
+        "quote_increment": "0.01", "base_increment": "0.00000001",
+        "base_min_size": "0.0001", "status": "online",
+    }])
+    assert len(result) == 1
+    assert result[0].provider == "coinbase_exchange"
+    assert result[0].instrument_id == "BTC-USD"
+    assert result[0].tick_size == market_data.Decimal("0.01")
+
+
+def test_kraken_instrument_normalisation_preserves_internal_and_display_symbols():
+    result = market_data.parse_kraken_instruments({"error": [], "result": {
+        "XXBTZUSD": {"altname": "XBTUSD", "wsname": "XBT/USD",
+                     "base": "XXBT", "quote": "ZUSD", "status": "online",
+                     "tick_size": "0.1", "ordermin": "0.0001"}
+    }})
+    assert result[0].instrument_id == "XXBTZUSD"
+    assert result[0].display_symbol == "XBT/USD"
+    assert result[0].base_asset == "XXBT"
+    assert result[0].quote_asset == "ZUSD"
+
+
+def test_binance_instrument_normalisation_reads_filters():
+    result = market_data.parse_binance_instruments({"symbols": [{
+        "symbol": "BTCUSDT", "baseAsset": "BTC", "quoteAsset": "USDT",
+        "status": "TRADING", "filters": [
+            {"filterType": "PRICE_FILTER", "tickSize": "0.01"},
+            {"filterType": "LOT_SIZE", "stepSize": "0.00001", "minQty": "0.0001"}
+        ]
+    }]})
+    assert result[0].tick_size == market_data.Decimal("0.01")
+    assert result[0].lot_size == market_data.Decimal("0.00001")
+    assert result[0].status == "trading"
+
+
+def test_instrument_registry_sync_requires_migration_018(monkeypatch):
+    app = FastAPI()
+    app.include_router(market_data.router)
+    app.state.database_pool = None
+    app.dependency_overrides[commercial_api.require_api_key] = lambda: {"owner_id": "acct"}
+    monkeypatch.setattr(market_data, "fetch_instruments", AsyncMock(return_value=[]))
+    response = TestClient(app).post("/v1/market-data/instruments/sync?provider=coinbase_exchange")
+    assert response.status_code == 503
+    assert "migration 018" in response.json()["detail"]
+
+
+def test_instrument_registry_sync_persists_and_meters(monkeypatch):
+    class Pool:
+        async def executemany(self, sql, records):
+            self.sql = sql
+            self.records = records
+    pool = Pool()
+    app = FastAPI()
+    app.include_router(market_data.router)
+    app.state.database_pool = pool
+    app.dependency_overrides[commercial_api.require_api_key] = lambda: {"owner_id": "acct"}
+    instruments = market_data.parse_coinbase_instruments([{
+        "id": "BTC-USD", "base_currency": "BTC", "quote_currency": "USD",
+        "status": "online"
+    }])
+    monkeypatch.setattr(market_data, "fetch_instruments", AsyncMock(return_value=instruments))
+    usage = AsyncMock()
+    monkeypatch.setattr(market_data, "record_usage", usage)
+    response = TestClient(app).post("/v1/market-data/instruments/sync?provider=coinbase_exchange")
+    assert response.status_code == 200
+    assert response.json()["stored"] == 1
+    assert len(pool.records) == 1
+    assert pool.records[0][0] == "coinbase_exchange"
+    usage.assert_awaited_once()
