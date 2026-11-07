@@ -6,6 +6,7 @@ import {
   type AccessibilityProfile,
 } from "../../../packages/accessibility-engine/src/profile";
 import { useAccessibility } from "./AccessibilityProvider";
+import AccessibilityTools from "./AccessibilityTools";
 
 type Status = { message: string; kind: "idle" | "success" | "error" };
 
@@ -131,6 +132,8 @@ export default function AccessibilitySettings() {
         <p className="preview-text">ORIOM7 applies your display preferences across this application. Your selected settings can be combined and changed whenever you need.</p>
         <p className="muted">Your source citations and important warnings remain available when content is simplified.</p>
       </div>
+
+      <AccessibilityTools />
 
       <div className="actions">
         <button className="primary-button" type="button" onClick={save} disabled={!ready}>Save preferences</button>

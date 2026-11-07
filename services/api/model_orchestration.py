@@ -85,6 +85,51 @@ class ResponsesAPIProvider:
         )
 
 
+
+
+class ChatCompletionsProvider:
+    """OpenAI-compatible chat-completions adapter for vLLM and compatible servers."""
+
+    def __init__(self, name: str, base_url: str, api_key: str, model: str):
+        self.name, self.base_url, self.api_key, self.model = name, base_url.rstrip("/"), api_key, model
+
+    async def generate(self, prompt: str, instructions: str, max_output_tokens: int) -> ModelResult:
+        try:
+            async with httpx.AsyncClient(timeout=90.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {"role": "system", "content": instructions},
+                            {"role": "user", "content": prompt},
+                        ],
+                        "max_tokens": max_output_tokens,
+                        "stream": False,
+                    },
+                )
+            response.raise_for_status()
+            data = response.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise ProviderUnavailable(self.name) from exc
+        choices = data.get("choices") or []
+        message = choices[0].get("message", {}) if choices else {}
+        answer = message.get("content")
+        if not isinstance(answer, str) or not answer.strip():
+            raise ProviderUnavailable(self.name)
+        usage = data.get("usage") or {}
+        input_tokens, output_tokens = usage.get("prompt_tokens"), usage.get("completion_tokens")
+        total_tokens = usage.get("total_tokens")
+        return ModelResult(
+            self.name, str(data.get("model") or self.model), answer.strip(),
+            input_tokens if isinstance(input_tokens, int) else None,
+            output_tokens if isinstance(output_tokens, int) else None,
+            total_tokens if isinstance(total_tokens, int) else None,
+            None, data.get("id"),
+        )
+
+
 class ModelOrchestrator:
     def __init__(self, providers: list[ModelProvider]):
         self.providers = providers
@@ -127,6 +172,9 @@ def build_orchestrator_from_env() -> ModelOrchestrator:
         "deepseek": {"key": os.getenv("DEEPSEEK_API_KEY"), "model": os.getenv("ORIOM7_DEEPSEEK_MODEL"),
                      "url": os.getenv("ORIOM7_DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
                      "in": _rate("ORIOM7_DEEPSEEK_INPUT_USD_PER_MILLION"), "out": _rate("ORIOM7_DEEPSEEK_OUTPUT_USD_PER_MILLION")},
+        "vllm": {"key": os.getenv("ORIOM7_VLLM_API_KEY", "oriom7-local"),
+                 "model": os.getenv("ORIOM7_VLLM_MODEL"),
+                 "url": os.getenv("ORIOM7_VLLM_BASE_URL"), "in": None, "out": None},
     }
     preferred = [os.getenv("ORIOM7_MODEL_PRIMARY", "openai").lower(),
                  os.getenv("ORIOM7_MODEL_FALLBACK", "deepseek").lower(), "openai", "deepseek"]
@@ -134,5 +182,9 @@ def build_orchestrator_from_env() -> ModelOrchestrator:
     for name in dict.fromkeys(preferred):
         cfg = configs.get(name)
         if cfg and cfg["key"] and cfg["model"]:
-            providers.append(ResponsesAPIProvider(name, cfg["url"], cfg["key"], cfg["model"], cfg["in"], cfg["out"]))
+            providers.append(
+                ChatCompletionsProvider(name, cfg["url"], cfg["key"], cfg["model"])
+                if name == "vllm"
+                else ResponsesAPIProvider(name, cfg["url"], cfg["key"], cfg["model"], cfg["in"], cfg["out"])
+            )
     return ModelOrchestrator(providers)

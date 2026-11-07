@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import MultimodalIntake from "./MultimodalIntake";
 
 type SearchResult = {
   id: string; title: string; url: string; snippet: string; source_type: string;
@@ -147,6 +148,7 @@ export default function ResearchWorkspace() {
 
       <section className="research-search-card" aria-labelledby="research-search-title">
         <h2 id="research-search-title">Start an investigation</h2>
+        <MultimodalIntake onTextExtracted={(text, source) => setQuery(`${source}:\n${text}`.slice(0, 2000))} />
         <form className="research-form" onSubmit={runResearch}>
           <label htmlFor="research-query">Research question or subject</label>
           <textarea id="research-query" value={query} onChange={event => setQuery(event.target.value)}

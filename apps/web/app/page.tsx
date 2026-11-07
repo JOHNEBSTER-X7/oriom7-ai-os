@@ -8,7 +8,7 @@ export default function HomePage() {
         <header className="site-header">
           <a className="brand" href="/" aria-label="ORIOM7 home">ORIOM7</a>
           <span className="header-caption">Universal AI search</span>
-          <a className="workspace-link" href="/research">Research workspace</a>
+          <a className="workspace-link" href="/account">Account</a><a className="workspace-link" href="/developer">Developer portal</a><a className="workspace-link" href="/research">Research workspace</a>
         </header>
         <section className="intro">
           <p className="eyebrow">ORIOM7 · ACCESSIBILITY</p>

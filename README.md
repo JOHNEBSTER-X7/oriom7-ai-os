@@ -20,6 +20,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 
 ## Repository map
 - `docs/` — architecture, specifications, implementation plan, universal language/voice access, accessibility/inclusion and adaptive accessibility.
+- `docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md` — commercial developer API foundation, readiness status and production launch gates.
 - `packages/accessibility-engine/` — typed preference model, JSON Schema, resolver and contract test cases.
 - `contracts/` — machine-readable API contract.
 - `apps/web/` — frontend implementation notes.
@@ -83,3 +84,40 @@ The `/research/review` workspace lets explicitly authorised human reviewers insp
 ## Autonomous research agents
 
 ORIOM7 now queues user-initiated research for a separate PostgreSQL-backed worker. It uses specialist planning, evidence-retrieval and synthesis stages, stores run history, retries bounded failures and supports opt-in recurring schedules. Candidate graph assertions still require human review. Apply migration 010 and run `python worker.py` alongside the API. See [Autonomous Research Agents](docs/AUTONOMOUS_RESEARCH_AGENTS.md).
+
+## Multidimensional vector retrieval
+
+ORIOM7's existing pgvector semantic-search path now supports configurable embedding dimensions and multiple embedding models per document. The default remains 1,536 dimensions. HNSW indexing is used up to 2,000 dimensions; higher dimensions use exact cosine ranking. See [Vector Retrieval and Embeddings](docs/VECTOR_RETRIEVAL_AND_EMBEDDINGS.md).
+
+## Commercial developer API foundation
+
+The commercial developer API now includes hashed developer API keys, OIDC-backed account identity, Stripe checkout/webhook foundations, subscription-derived monthly quotas, usage metering, a preview text-embedding endpoint, a provider-backed translation endpoint and a provider-backed OCR/document extraction endpoint. Translation and OCR remain planned until operators configure and evaluate their HTTPS providers. OCR accepts PDF, PNG, JPEG and TIFF files up to 15 MB, validates file signatures, forwards uploads to the configured provider, does not persist originals and meters successful extraction by pages. Speech, text-to-speech, durable document storage, malware scanning and structured table/field extraction remain future work. Live billing and public production readiness are not implied. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+
+
+## Identity and commercial billing foundation
+
+The account workspace now includes authenticated account profiles, organisation creation and owner membership, a plan catalogue, subscription/invoice read models and a monthly usage-ledger endpoint. Migration 013 adds the underlying account, organisation, subscription, invoice, payment-event and usage tables. All private routes reuse the existing trusted `authenticated_subject` dependency. No password-based login or payment provider is activated; checkout is disabled, paid pricing is pending, and usage-ledger metering/quota enforcement remains integration work. See [Identity and Commercial Billing Engine V1](docs/IDENTITY_AND_COMMERCIAL_BILLING_ENGINE_V1.md).
+
+
+## OIDC identity, organisation management and Stripe billing
+
+The identity and commercial milestone now includes a generic managed OIDC authorization-code + PKCE web sign-in flow, RS256/JWKS access-token verification in the API, secure HttpOnly access-token cookies, organisation invitations and role management, Stripe Checkout Sessions, timestamp-verified/idempotent Stripe webhooks, subscription/invoice synchronization, and subscription-derived monthly API request quotas.
+
+Apply database migrations 001–015. Configure OIDC issuer, API audience, JWKS endpoint and confidential web-client settings before enabling sign-in. Configure Stripe test-mode secret/webhook keys, Builder/Business Price IDs and trusted HTTPS return URLs before checkout becomes available. No credentials are included and live billing is not enabled by this repository alone.
+
+Organisation invitation tokens are hashed and expire after seven days, but automated email delivery is not configured; the token must currently be delivered securely out-of-band. Email verification and account recovery are handled by the selected OIDC provider. See [Identity, Organisation and Commercial Billing V1](docs/IDENTITY_AND_COMMERCIAL_BILLING_ENGINE_V1.md) for exact environment variables, migration order, integration boundaries and production launch gates.
+
+
+## Speech Intelligence V1
+
+The API now contains provider-backed speech-to-text and text-to-speech adapters. Transcription accepts bounded audio uploads, validates basic media signatures, returns provider transcript metadata and optional timestamped segments/speaker labels, and meters audio seconds. Synthesis accepts bounded text and returns provider-generated audio bytes while metering input characters. Both providers are operator-configured through trusted HTTPS endpoints; no provider credentials are exposed to clients. Speech products remain planned until configured, tested and evaluated. There is no proprietary speech engine, built-in diarisation, streaming synthesis or durable audio storage yet. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+
+
+### Real-Time Voice Intelligence V1
+
+An authenticated `POST /v1/assistant/voice-turn` pipeline connects speech transcription, the existing assistant orchestrator and accessibility profile, and text-to-speech. Clients may pass up to 12 previous user/assistant messages for request-scoped conversational context. Synthesized audio is returned in the response body; transcript and answer are returned in bounded base64 response headers. This is sequential request/response processing, not duplex streaming, and conversation history is not durably stored. See [Commercial Developer API Platform V1](docs/COMMERCIAL_DEVELOPER_API_PLATFORM_V1.md).
+
+
+## Visual Intelligence V1
+
+ORIOM7 now includes a provider-backed visual question-answering API foundation for JPEG, PNG and WebP images. Users can ask questions about photographs, charts, diagrams and scenes from the research workspace. The provider must be configured by the operator; images are not stored by ORIOM7's endpoint but are forwarded to that provider. This is an integration preview, not an ORIOM7-hosted vision model. See [Visual Intelligence V1](docs/VISUAL_INTELLIGENCE_V1.md).

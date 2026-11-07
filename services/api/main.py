@@ -12,6 +12,24 @@ from ingestion import router as ingestion_router
 from semantic_index import PostgresVectorIndex, build_embedding_provider_from_env
 from knowledge_graph import router as knowledge_graph_router
 from research_agents import router as research_agents_router
+from commercial_api import router as commercial_api_router
+from account_billing import router as account_billing_router
+from billing import router as billing_router
+from translation_api import router as translation_router, build_translation_provider_from_env
+from ocr_api import router as ocr_router, build_ocr_provider_from_env
+from speech_api import router as speech_router, build_speech_provider_from_env, build_tts_provider_from_env
+from voice_intelligence import router as voice_intelligence_router
+from vision_api import build_visual_provider_from_env, router as vision_router
+from visual_search import build_visual_embedding_provider_from_env, router as visual_search_router
+from oceangrid import router as oceangrid_router
+from quant_research import router as quant_research_router
+from quant_backtest import router as quant_backtest_router
+from quant_walk_forward import router as quant_walk_forward_router
+from quant_ml import router as quant_ml_router
+from quant_risk import router as quant_risk_router
+from market_data import router as market_data_router
+from market_intelligence import router as market_intelligence_router
+from oidc_auth import OIDCAuthenticationMiddleware, OIDCVerifier, OIDCConfigurationError
 
 
 @asynccontextmanager
@@ -19,7 +37,21 @@ async def lifespan(application: FastAPI):
     database_url = os.getenv("DATABASE_URL")
     environment = os.getenv("ORIOM7_ENV", "development").lower()
     pool = None
+    try:
+        application.state.oidc_verifier = OIDCVerifier.from_env()
+        if environment == "production" and application.state.oidc_verifier is None:
+            raise OIDCConfigurationError("OIDC issuer, API audience and JWKS URL are required in production.")
+        if environment == "production" and os.getenv("ORIOM7_ALLOW_DEV_USER_HEADER") == "true":
+            raise OIDCConfigurationError("Development identity headers must remain disabled in production.")
+    except OIDCConfigurationError as exc:
+        raise RuntimeError(str(exc)) from exc
     application.state.model_orchestrator = build_orchestrator_from_env()
+    application.state.translation_provider = build_translation_provider_from_env()
+    application.state.ocr_provider = build_ocr_provider_from_env()
+    application.state.speech_provider = build_speech_provider_from_env()
+    application.state.tts_provider = build_tts_provider_from_env()
+    application.state.vision_provider = build_visual_provider_from_env()
+    application.state.visual_embedding_provider = build_visual_embedding_provider_from_env()
 
     if database_url:
         try:
@@ -29,8 +61,8 @@ async def lifespan(application: FastAPI):
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
         application.state.database_pool = pool
         application.state.accessibility_profile_store = PostgresProfileStore(pool)
-        embedding_provider = build_embedding_provider_from_env() if os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None
-        semantic_index = PostgresVectorIndex(pool, embedding_provider) if embedding_provider else None
+        embedding_provider = build_embedding_provider_from_env()
+        semantic_index = PostgresVectorIndex(pool, embedding_provider) if embedding_provider and os.getenv("ORIOM7_SEMANTIC_SEARCH_ENABLED", "false").lower() == "true" else None
         application.state.embedding_provider = embedding_provider
         application.state.retrieval_service = RetrievalService(
             PostgresLexicalIndex(pool), build_external_search_providers_from_env(), semantic_index
@@ -39,7 +71,7 @@ async def lifespan(application: FastAPI):
         if environment == "production":
             raise RuntimeError("DATABASE_URL is required in production; refusing ephemeral profile storage.")
         application.state.accessibility_profile_store = MemoryProfileStore()
-        application.state.embedding_provider = None
+        application.state.embedding_provider = build_embedding_provider_from_env()
         application.state.retrieval_service = RetrievalService(None, build_external_search_providers_from_env())
 
     try:
@@ -49,7 +81,8 @@ async def lifespan(application: FastAPI):
             await pool.close()
 
 
-app = FastAPI(title="ORIOM7 API", version="1.1.0", lifespan=lifespan)
+app = FastAPI(title="ORIOM7 API", version="1.2.0", lifespan=lifespan)
+app.add_middleware(OIDCAuthenticationMiddleware)
 app.include_router(accessibility_router)
 app.include_router(assistant_accessibility_router)
 app.include_router(generation_router)
@@ -58,6 +91,23 @@ app.include_router(search_router)
 app.include_router(ingestion_router)
 app.include_router(knowledge_graph_router)
 app.include_router(research_agents_router)
+app.include_router(commercial_api_router)
+app.include_router(account_billing_router)
+app.include_router(billing_router)
+app.include_router(translation_router)
+app.include_router(ocr_router)
+app.include_router(speech_router)
+app.include_router(voice_intelligence_router)
+app.include_router(vision_router)
+app.include_router(visual_search_router)
+app.include_router(oceangrid_router)
+app.include_router(quant_research_router)
+app.include_router(quant_backtest_router)
+app.include_router(quant_walk_forward_router)
+app.include_router(quant_ml_router)
+app.include_router(quant_risk_router)
+app.include_router(market_data_router)
+app.include_router(market_intelligence_router)
 
 
 @app.get("/v1/status", tags=["system"])
