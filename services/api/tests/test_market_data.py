@@ -160,3 +160,65 @@ def test_instrument_registry_sync_persists_and_meters(monkeypatch):
     assert len(pool.records) == 1
     assert pool.records[0][0] == "coinbase_exchange"
     usage.assert_awaited_once()
+
+
+from market_stream import SequenceGapTracker, normalise_stream_message
+
+
+def test_binance_trade_stream_normalises_to_canonical_event():
+    events = normalise_stream_message("binance_spot", {
+        "stream": "btcusdt@trade",
+        "data": {"e": "trade", "E": 1735689600123, "T": 1735689600000,
+                 "s": "BTCUSDT", "t": 99, "p": "42000.10", "q": "0.2", "m": True}
+    })
+    assert len(events) == 1
+    event = events[0]
+    assert event["provider"] == "binance_spot"
+    assert event["instrument_id"] == "BTCUSDT"
+    assert event["event_type"] == "trade"
+    assert event["data"]["aggressor_side"] == "sell"
+    assert event["data"]["price"] == "42000.10"
+    assert len(event["raw_sha256"]) == 64
+
+
+def test_coinbase_ticker_stream_normalises_product_and_sequence():
+    events = normalise_stream_message("coinbase_exchange", {
+        "type": "ticker", "product_id": "BTC-USD", "sequence": 123,
+        "time": "2026-11-07T10:00:00Z", "price": "50000",
+        "best_bid": "49999", "best_ask": "50001", "last_size": "0.01"
+    })
+    assert len(events) == 1
+    assert events[0]["instrument_id"] == "BTC-USD"
+    assert events[0]["sequence"] == 123
+    assert events[0]["data"]["best_ask"] == "50001"
+
+
+def test_kraken_trade_stream_expands_batch_into_events():
+    events = normalise_stream_message("kraken_spot", {
+        "channel": "trade", "type": "update", "data": [
+            {"symbol": "BTC/USD", "price": 50000, "qty": 0.1,
+             "side": "buy", "trade_id": 42, "timestamp": "2026-11-07T10:00:00.123Z"},
+            {"symbol": "ETH/USD", "price": 2000, "qty": 1,
+             "side": "sell", "trade_id": 43, "timestamp": "2026-11-07T10:00:01.123Z"}
+        ]
+    })
+    assert len(events) == 2
+    assert events[0]["instrument_id"] == "BTC/USD"
+    assert events[1]["data"]["side"] == "sell"
+
+
+def test_sequence_tracker_reports_gap_and_isolates_instruments():
+    tracker = SequenceGapTracker()
+    assert tracker.observe("coinbase_exchange", "BTC-USD", 10)["sequence_checked"] is False
+    assert tracker.observe("coinbase_exchange", "BTC-USD", 11)["sequence_gap"] is False
+    gap = tracker.observe("coinbase_exchange", "BTC-USD", 13)
+    assert gap["sequence_gap"] is True
+    assert gap["previous_sequence"] == 11
+    assert tracker.observe("coinbase_exchange", "ETH-USD", 500)["sequence_gap"] is False
+
+
+def test_stream_capabilities_are_explicit_about_worker_state():
+    result = market_stream.stream_capabilities()
+    assert result["status"] == "worker_optional_not_started_by_api"
+    assert all(provider["status"] == "adapter_implemented" for provider in result["providers"])
+    assert any("order-book" in item for item in result["limitations"])
