@@ -106,3 +106,11 @@ Set `ORIOM7_MODEL_PRIMARY=vllm` to select it as primary, or `ORIOM7_MODEL_FALLBA
 
 ## Readiness boundary
 The quantitative endpoint and vLLM adapter are code foundations. No market feed, PyTorch training cluster, vLLM server, GPU fleet, feature store, backtester, portfolio risk engine or broker execution is connected by this change. Validate each subsystem with licensed data, reproducible tests, security review and operational monitoring before production use.
+
+## Implementation references
+- vLLM documentation: https://docs.vllm.ai/en/stable/ — PagedAttention, continuous batching, chunked prefill, prefix caching, quantization, speculative decoding, parallelism, streaming and OpenAI-compatible serving.
+- PyTorch compiler documentation: https://docs.pytorch.org/docs/stable/torch.compiler.html — `torch.compile` and compiler/runtime optimisation.
+- PyTorch scaled dot-product attention: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention — backend selection and fused attention implementations.
+- Machine Learning Mastery, Faster LLM Inference: https://machinelearningmastery.com/faster-llm-inference/ — conceptual and practical learning guide informing this roadmap.
+
+Runtime features must be benchmarked on the exact model, accelerator, driver, precision and workload. Quantization or compilation can change numerical outputs and may reduce quality; no setting should be enabled globally without regression tests.
