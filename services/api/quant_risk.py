@@ -125,7 +125,8 @@ def run_portfolio_risk(body: PortfolioRiskRequest) -> dict:
     }
     stress = []
     for scenario in body.stress_scenarios:
-        pnl = sum(weight * scenario.shocks.get(symbol, scenario.shocks.get(symbol.lower(), 0.0))
+        normalised_shocks = {key.upper(): value for key, value in scenario.shocks.items()}
+        pnl = sum(weight * normalised_shocks.get(symbol, 0.0)
                   for symbol, weight in zip(symbols, weights))
         stress.append({"name": scenario.name, "portfolio_return_pct": round(pnl * 100, 6),
                        "portfolio_loss_pct": round(max(0.0, -pnl) * 100, 6)})
