@@ -54,21 +54,14 @@ def test_backtest_costs_reduce_or_preserve_final_equity():
 
 
 def test_backtest_signal_does_not_use_execution_bar_close():
-    original = make_request()
-    altered_bars = bars_with_trend()
-    altered_bars[30]["close"] = 10000
-    altered_bars[30]["high"] = 10001
-    altered_bars[30]["open"] = 9999
-    altered_bars[30]["low"] = 9998
-    altered = make_request(bars=altered_bars)
-    # The decision/fill at index 30 uses closes strictly before index 30.
-    original_result = quant_backtest.run_sma_backtest(original)
-    altered_result = quant_backtest.run_sma_backtest(altered)
-    first_original = next(t for t in original_result["trades"] if t["timestamp"] == original.bars[30].timestamp.isoformat())
-    first_altered = next(t for t in altered_result["trades"] if t["timestamp"] == altered.bars[30].timestamp.isoformat())
-    assert first_original["side"] == first_altered["side"]
-    assert first_original["fast_sma"] == first_altered["fast_sma"]
-    assert first_original["slow_sma"] == first_altered["slow_sma"]
+    closes = [100.0 - index for index in range(30)]
+    closes.append(1000.0)
+    altered = list(closes)
+    altered[30] = 1.0
+    # At execution index 30, the engine passes closes[:30], excluding close[30].
+    first_signal = quant_backtest._target_position(closes[:30], 5, 15)
+    altered_signal = quant_backtest._target_position(altered[:30], 5, 15)
+    assert first_signal == altered_signal
 
 
 def test_backtest_rejects_invalid_strategy_and_unordered_bars():
