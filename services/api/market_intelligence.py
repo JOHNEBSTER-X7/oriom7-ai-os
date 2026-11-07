@@ -114,8 +114,9 @@ def flow_pressure(trades: list[dict[str, Any]]) -> dict[str, Any]:
         raise ValueError("Provide between 1 and 100000 trades")
     buy = sell = Decimal(0)
     by_time: dict[str, Decimal] = defaultdict(Decimal)
+    ordered = sorted(trades, key=lambda item: _iso(item["timestamp"]))
     prices = []
-    for trade in trades:
+    for trade in ordered:
         qty, price = D(trade["quantity"], allow_zero=False), D(trade["price"], allow_zero=False)
         side = str(trade["aggressor_side"]).lower()
         if side not in ("buy", "sell"):
@@ -131,14 +132,20 @@ def flow_pressure(trades: list[dict[str, Any]]) -> dict[str, Any]:
         prices.append(price)
     total = buy + sell
     delta = buy - sell
+    imbalance = delta / total if total else Decimal(0)
+    price_change = prices[-1] - prices[0]
+    price_change_bps = price_change / prices[0] * Decimal(10000)
+    absorption = abs(imbalance) >= Decimal("0.6") and abs(price_change_bps) <= Decimal("5")
+    exhaustion = abs(imbalance) >= Decimal("0.6") and abs(price_change_bps) >= Decimal("50")
     return {
         "buy_aggressor_notional": str(buy), "sell_aggressor_notional": str(sell),
         "signed_notional_delta": str(delta),
         "buy_sell_pressure_ratio": str(buy / sell) if sell else None,
-        "normalised_order_flow_imbalance": str(delta / total) if total else "0",
+        "normalised_order_flow_imbalance": str(imbalance),
         "trade_count": len(trades), "first_price": str(prices[0]), "last_price": str(prices[-1]),
-        "price_change": str(prices[-1] - prices[0]),
-        "absorption_candidate": bool(abs(delta) > 0 and prices[-1] == prices[0]),
+        "price_change": str(price_change), "price_change_bps": str(price_change_bps),
+        "absorption_candidate": absorption, "exhaustion_candidate": exhaustion,
+        "interpretation": "Research candidate only; trade direction, price response, book replenishment and time window require contextual validation.",
     }
 
 
