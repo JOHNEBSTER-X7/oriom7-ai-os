@@ -71,26 +71,36 @@ def liquidity_wall_analysis(snapshots: list[dict[str, Any]], multiplier: Decimal
     if len(snapshots) < 2 or len(snapshots) > 500:
         raise ValueError("Wall persistence analysis requires 2 to 500 snapshots")
     seen: dict[tuple[str,str], list[Decimal]] = defaultdict(list)
+    snapshots_seen = {"bid": [], "ask": []}
     all_sizes = {"bid": [], "ask": []}
     for snap in snapshots:
         bids, asks = _snapshot_levels(snap)
         for side, levels in (("bid", bids), ("ask", asks)):
-            for price, qty in levels:
-                seen[(side, str(price))].append(qty)
+            current = {str(price): qty for price, qty in levels}
+            for price, qty in current.items():
                 all_sizes[side].append(qty)
+            for key in list(seen):
+                if key[0] == side and key[1] not in current:
+                    seen[key].append(Decimal(0))
+            for price, qty in current.items():
+                key = (side, price)
+                if key not in seen:
+                    seen[key] = [Decimal(0)] * (len(snapshots_seen[side]))
+                seen[key].append(qty)
+            snapshots_seen[side].append(True)
     walls = []
     for (side, price), sizes in seen.items():
         baseline = median(all_sizes[side]) if all_sizes[side] else Decimal(0)
         peak = max(sizes)
         if baseline <= 0 or peak < baseline * multiplier:
             continue
-        present = len(sizes)
-        persistence = Decimal(present) / Decimal(len(snapshots))
-        disappeared = max(0, len(snapshots) - present)
+        qualifying = sum(1 for size in sizes if size >= baseline * multiplier)
+        persistence = Decimal(qualifying) / Decimal(len(snapshots))
+        disappeared = len(snapshots) - qualifying
         walls.append({
             "side": side, "price": price, "peak_quantity": str(peak),
             "median_side_quantity": str(baseline), "size_multiple": str(peak / baseline),
-            "observed_in_snapshots": present, "persistence_ratio": str(persistence),
+            "observed_in_snapshots": qualifying, "persistence_ratio": str(persistence),
             "disappearance_ratio": str(Decimal(disappeared) / Decimal(len(snapshots))),
             "research_flag": "large_ephemeral_liquidity" if persistence < Decimal("0.5") else "persistent_large_liquidity",
         })
