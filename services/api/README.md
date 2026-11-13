@@ -150,7 +150,7 @@ Endpoints:
 - `GET /v1/labs/equipment` — list registered equipment.
 - `PATCH /v1/labs/equipment/{equipment_id}` — update equipment register status.
 
-Apply `migrations/008_lab_os.sql` after migrations 001–007. The API requires
+Apply `migrations/011_lab_os.sql` after migrations 001–007. The API requires
 the existing trusted authentication middleware and a configured PostgreSQL
 `DATABASE_URL`; there is deliberately no in-memory fallback for laboratory
 records. User identity is derived from trusted middleware, never from request
