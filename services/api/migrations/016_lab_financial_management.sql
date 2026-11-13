@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS lab_financial_transactions (
   FOREIGN KEY(budget_id, owner_subject) REFERENCES lab_budgets(budget_id, owner_subject) ON DELETE RESTRICT,
   FOREIGN KEY(grant_id, owner_subject) REFERENCES lab_funding_grants(grant_id, owner_subject) ON DELETE RESTRICT,
   FOREIGN KEY(cost_centre_id, owner_subject) REFERENCES lab_cost_centres(cost_centre_id, owner_subject) ON DELETE RESTRICT,
-  FOREIGN KEY(equipment_id) REFERENCES lab_equipment(equipment_id) ON DELETE RESTRICT,
-  FOREIGN KEY(inventory_item_id) REFERENCES lab_inventory_items(item_id) ON DELETE RESTRICT,
+  FOREIGN KEY(equipment_id, owner_subject) REFERENCES lab_equipment(equipment_id, owner_subject) ON DELETE RESTRICT,
+  FOREIGN KEY(inventory_item_id, owner_subject) REFERENCES lab_inventory_items(item_id, owner_subject) ON DELETE RESTRICT,
   CHECK(experiment_id IS NULL OR project_id IS NOT NULL)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS lab_financial_invoice_unique
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS lab_asset_depreciation (
   method TEXT NOT NULL DEFAULT 'straight_line' CHECK(method = 'straight_line'),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(owner_subject, equipment_id),
-  FOREIGN KEY(equipment_id) REFERENCES lab_equipment(equipment_id) ON DELETE RESTRICT,
+  FOREIGN KEY(equipment_id, owner_subject) REFERENCES lab_equipment(equipment_id, owner_subject) ON DELETE RESTRICT,
   CHECK(residual_value <= acquisition_cost)
 );
 
