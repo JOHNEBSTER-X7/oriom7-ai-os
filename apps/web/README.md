@@ -19,3 +19,19 @@ The first page contains an interactive accessibility preference screen with disp
 The controls configure preferences; they do not themselves provide microphone capture, speech synthesis, switch-device support or full screen-reader certification. Those capabilities require the corresponding adapters and testing.
 
 Keep provider credentials and orchestration logic server-side; never embed secrets in client bundles.
+
+## LAB OS workspace
+
+The `/labs` route provides the initial research-operations workspace:
+- Create and select research projects.
+- Register experiment plans and hypotheses.
+- Record controlled status transitions through append-only events.
+- Register and view laboratory equipment metadata.
+
+The same-origin proxy is `/api/labs/[...path]`; it forwards the existing session cookie
+or bearer token to the FastAPI service. Set `ORIOM7_API_URL` to the API origin and
+configure trusted authentication middleware there. The persistent LAB OS endpoints
+also require PostgreSQL migration `011_lab_os.sql`.
+
+The UI records plans and inventory only. It does not run experiments, control
+instruments, book physical facilities, or verify scientific results.
