@@ -12,6 +12,7 @@ function targetPath(segments: string[], search: string): string | null {
   if (/^quality\/(inspections|nonconformances|capa|compliance-documents|analytics)$/i.test(path)) return base + path + search;
   if (/^quality\/capa\/[0-9a-f-]{36}(\/events)?$/i.test(path)) return base + path + search;
   if (/^quality\/compliance-documents\/[0-9a-f-]{36}\/review$/i.test(path)) return base + path + search;
+  if (/^finance\/(cost-centres|budgets|grants|transactions|depreciation|analytics)$/i.test(path)) return base + path + search;
   if (/^projects\/[0-9a-f-]{36}$/i.test(path)) return base + path + search;
   if (/^projects\/[0-9a-f-]{36}\/(experiments|notebook)$/i.test(path)) return base + path + search;
   if (/^experiments\/[0-9a-f-]{36}(\/events)?$/i.test(path)) return base + path + search;
