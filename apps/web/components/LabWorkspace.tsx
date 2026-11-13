@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import LabInventoryPanel from "./LabInventoryPanel";
 
 type Project = {
   project_id: string; title: string; description: string | null; discipline: string;
@@ -452,6 +453,7 @@ export default function LabWorkspace() {
         </article>
 
       </section>
+      <LabInventoryPanel />
     </div>
   );
 }
