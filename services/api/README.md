@@ -199,3 +199,10 @@ Apply `migrations/014_lab_inventory_procurement.sql` after migrations 011–013.
 Goods receipts update the item balance, lot balance, purchase-order received quantity and append-only stock movement ledger in one database transaction. Issues require an accepted, unexpired lot and cannot reduce stock below zero. Rejected, quarantined or pending lots cannot be issued for normal use. Corrections are represented by compensating ledger entries; the movement ledger cannot be edited or deleted.
 
 The inventory valuation is a weighted-average estimate based on recorded receipt costs and does not replace accounting valuation policy. Supplier entries are user-supplied records, not verified suppliers. Chemical hazard classifications and Safety Data Sheet references are metadata only; the API does not authorize purchasing, handling, storage or disposal of hazardous or controlled materials.
+
+
+## LAB quality, compliance and analytics
+
+Apply `migrations/015_lab_quality_compliance.sql` after migrations 011–014. The authenticated `/v1/labs/quality` API records lot inspections, non-conformances, corrective and preventive actions (CAPA), CAPA event history and supplier compliance-document references. Failed or conditional inspections quarantine the lot; a passing inspection records acceptance. CAPA verification is permitted only after the action is marked completed. Inspection evidence and CAPA events are append-only.
+
+Quality analytics include inspection outcomes, open and overdue CAPA actions, document review/expiry counts and supplier inspection pass/fail/conditional scorecards. These are operational indicators, not accredited quality statistics or supplier certification. Compliance-document references are metadata; the service does not validate the referenced file, determine legal compliance or provide a validated QMS.
