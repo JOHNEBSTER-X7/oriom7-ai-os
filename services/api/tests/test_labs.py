@@ -130,3 +130,85 @@ def test_notebook_entry_rejects_unknown_entry_type_and_oversized_content():
         NotebookEntryCreate(
             entry_type="note", title="Valid title", content="x" * 20001,
         )
+
+
+def test_calibration_validates_outcome_and_date_order():
+    from datetime import date
+    from labs import CalibrationCreate
+
+    calibration = CalibrationCreate(
+        calibrated_on=date(2026, 10, 1), due_on=date(2027, 10, 1),
+        outcome="pass", performed_by="Accredited Calibration Ltd",
+        certificate_reference="CERT-2026-001",
+    )
+    assert calibration.outcome == "pass"
+
+    with pytest.raises(ValidationError):
+        CalibrationCreate(
+            calibrated_on=date(2026, 10, 1), due_on=date(2026, 9, 30),
+            outcome="pass", performed_by="Calibration provider",
+        )
+
+    with pytest.raises(ValidationError):
+        CalibrationCreate(
+            calibrated_on=date(2026, 10, 1), outcome="unknown",
+            performed_by="Calibration provider",
+        )
+
+
+def test_maintenance_requires_timezone_and_valid_schedule():
+    from datetime import datetime, timezone, timedelta
+    from labs import MaintenanceCreate
+
+    record = MaintenanceCreate(
+        maintenance_type="preventive", description="Annual preventative inspection",
+        performed_by="Engineering team",
+        performed_at=datetime(2026, 11, 1, 10, tzinfo=timezone.utc),
+        next_due_at=datetime(2027, 11, 1, 10, tzinfo=timezone.utc),
+    )
+    assert record.maintenance_type == "preventive"
+
+    with pytest.raises(ValidationError):
+        MaintenanceCreate(
+            maintenance_type="repair", description="Repair spindle",
+            performed_by="Engineer",
+            performed_at=datetime(2026, 11, 1, 10),
+        )
+
+    with pytest.raises(ValidationError):
+        MaintenanceCreate(
+            maintenance_type="repair", description="Repair spindle",
+            performed_by="Engineer",
+            performed_at=datetime(2026, 11, 1, 10, tzinfo=timezone.utc),
+            next_due_at=datetime(2026, 10, 1, 10, tzinfo=timezone.utc),
+        )
+
+
+def test_equipment_booking_requires_timezone_and_positive_window():
+    from datetime import datetime, timezone
+    from labs import EquipmentBookingCreate, EquipmentBookingStatusUpdate
+
+    booking = EquipmentBookingCreate(
+        purpose="Optical bench research session", booked_by="Research team",
+        starts_at=datetime(2026, 12, 1, 9, tzinfo=timezone.utc),
+        ends_at=datetime(2026, 12, 1, 11, tzinfo=timezone.utc),
+    )
+    assert booking.ends_at > booking.starts_at
+    assert EquipmentBookingStatusUpdate(status="cancelled").status == "cancelled"
+
+    with pytest.raises(ValidationError):
+        EquipmentBookingCreate(
+            purpose="Optical bench research session", booked_by="Research team",
+            starts_at=datetime(2026, 12, 1, 9, tzinfo=timezone.utc),
+            ends_at=datetime(2026, 12, 1, 9, tzinfo=timezone.utc),
+        )
+
+    with pytest.raises(ValidationError):
+        EquipmentBookingCreate(
+            purpose="Optical bench research session", booked_by="Research team",
+            starts_at=datetime(2026, 12, 1, 9),
+            ends_at=datetime(2026, 12, 1, 11),
+        )
+
+    with pytest.raises(ValidationError):
+        EquipmentBookingStatusUpdate(status="rescheduled")
