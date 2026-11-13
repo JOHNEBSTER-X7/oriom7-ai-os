@@ -5,6 +5,7 @@ hazardous-material handling, storage, disposal or regulatory compliance.
 """
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -43,12 +44,20 @@ class ItemCreate(BaseModel):
     safety_data_sheet_reference: str | None = Field(default=None, max_length=1000)
     storage_requirements: str | None = Field(default=None, max_length=2000)
 
-    @field_validator("sku", "name", "category", "unit", "currency")
+    @field_validator("sku", "name", "category", "unit")
     @classmethod
-    def normalise(cls, value: str) -> str:
-        value = _text(value).upper() if len(value) == 3 else _text(value)
+    def normalise_text(cls, value: str) -> str:
+        value = _text(value)
         if not value:
             raise ValueError("field cannot be blank")
+        return value
+
+    @field_validator("currency")
+    @classmethod
+    def normalise_currency(cls, value: str) -> str:
+        value = _text(value).upper()
+        if len(value) != 3 or not value.isalpha():
+            raise ValueError("currency must be a three-letter code")
         return value
 
 
@@ -123,6 +132,23 @@ class PurchaseOrderCreate(BaseModel):
     @classmethod
     def clean_currency(cls, value: str) -> str:
         return _text(value).upper()
+
+
+class StockIssueCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    lot_id: uuid.UUID
+    movement_type: Literal["issue", "write_off"] = "issue"
+    quantity: Decimal = Field(gt=0, max_digits=18, decimal_places=4)
+    reason: str = Field(min_length=3, max_length=1000)
+    recorded_by: str = Field(min_length=2, max_length=160)
+
+    @field_validator("reason", "recorded_by")
+    @classmethod
+    def clean_movement_text(cls, value: str) -> str:
+        value = _text(value)
+        if not value:
+            raise ValueError("field cannot be blank")
+        return value
 
 
 class GoodsReceiptCreate(BaseModel):
@@ -216,7 +242,7 @@ async def create_requisition(payload: RequisitionCreate, request: Request, subje
                 """INSERT INTO lab_inventory_requisitions(owner_subject,requested_by,purpose,needed_by,lines)
                    VALUES($1,$2,$3,$4,$5::jsonb) RETURNING requisition_id::text,requested_by,purpose,status,needed_by,lines,created_at""",
                 subject,payload.requested_by,payload.purpose,payload.needed_by,
-                __import__("json").dumps([{"item_id":str(x.item_id),"quantity":str(x.quantity)} for x in payload.lines]))
+                json.dumps([{"item_id":str(x.item_id),"quantity":str(x.quantity)} for x in payload.lines]))
     return dict(row)
 
 
@@ -299,6 +325,50 @@ async def receive_goods(payload: GoodsReceiptCreate, request: Request, subject: 
             new_status="received" if remaining else ("part_received" if any_received else "issued")
             await con.execute("UPDATE lab_inventory_purchase_orders SET status=$2,updated_at=now() WHERE purchase_order_id=$1",line["purchase_order_id"],new_status)
     return {"lot_id":lot["lot_id"],"item_id":str(line["item_id"]),"quantity_received":str(payload.quantity),"inspection_status":payload.inspection_status,"purchase_order_status":new_status}
+
+
+
+@router.post("/items/{item_id}/issues", status_code=status.HTTP_201_CREATED)
+async def issue_stock(item_id: uuid.UUID, payload: StockIssueCreate, request: Request, subject: str = Depends(authenticated_subject)):
+    """Issue stock against a traceable lot; write-offs use the same append-only ledger."""
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        async with con.transaction():
+            item = await con.fetchrow(
+                "SELECT item_id,quantity_on_hand FROM lab_inventory_items WHERE item_id=$1 AND owner_subject=$2 AND status='active' FOR UPDATE",
+                item_id, subject,
+            )
+            if item is None:
+                raise HTTPException(404, detail={"code": "inventory_item_not_found_or_inactive"})
+            lot = await con.fetchrow(
+                """SELECT lot_id,quantity_remaining,inspection_status,expiry_date,unit_cost
+                   FROM lab_inventory_lots WHERE lot_id=$1 AND item_id=$2 AND owner_subject=$3 FOR UPDATE""",
+                payload.lot_id, item_id, subject,
+            )
+            if lot is None:
+                raise HTTPException(404, detail={"code": "inventory_lot_not_found"})
+            if payload.quantity > lot["quantity_remaining"] or payload.quantity > item["quantity_on_hand"]:
+                raise HTTPException(409, detail={"code": "inventory_insufficient_stock"})
+            if payload.movement_type == "issue" and lot["inspection_status"] != "accepted":
+                raise HTTPException(409, detail={"code": "inventory_lot_not_released"})
+            if payload.movement_type == "issue" and lot["expiry_date"] is not None and lot["expiry_date"] < date.today():
+                raise HTTPException(409, detail={"code": "inventory_lot_expired"})
+            await con.execute(
+                "UPDATE lab_inventory_lots SET quantity_remaining=quantity_remaining-$2 WHERE lot_id=$1",
+                payload.lot_id, payload.quantity,
+            )
+            await con.execute(
+                "UPDATE lab_inventory_items SET quantity_on_hand=quantity_on_hand-$2,updated_at=now() WHERE item_id=$1 AND owner_subject=$3",
+                item_id, payload.quantity, subject,
+            )
+            movement = await con.fetchrow(
+                """INSERT INTO lab_inventory_movements(item_id,lot_id,owner_subject,movement_type,quantity_delta,unit_cost,reason,recorded_by)
+                   VALUES($1,$2,$3,$4,-$5,$6,$7,$8) RETURNING movement_id::text,created_at""",
+                item_id, payload.lot_id, subject, payload.movement_type, payload.quantity,
+                lot["unit_cost"], payload.reason, payload.recorded_by,
+            )
+    return {"movement_id": movement["movement_id"], "item_id": str(item_id), "lot_id": str(payload.lot_id),
+            "movement_type": payload.movement_type, "quantity_delta": str(-payload.quantity), "created_at": movement["created_at"].isoformat()}
 
 
 @router.get("/summary")
