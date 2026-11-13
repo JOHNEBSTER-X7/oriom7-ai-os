@@ -163,7 +163,6 @@ class GoodsReceiptCreate(BaseModel):
     quantity: Decimal = Field(gt=0, max_digits=18, decimal_places=4)
     lot_code: str = Field(min_length=1, max_length=120)
     expiry_date: date | None = None
-    unit_cost: Decimal = Field(ge=0, max_digits=18, decimal_places=4)
     inspection_status: Literal["pending", "accepted", "rejected", "quarantined"] = "pending"
     certificate_reference: str | None = Field(default=None, max_length=1000)
     recorded_by: str = Field(min_length=2, max_length=160)
@@ -190,16 +189,14 @@ async def create_item(payload: ItemCreate, request: Request, subject: str = Depe
             found = await con.fetchval("SELECT 1 FROM lab_inventory_suppliers WHERE supplier_id=$1 AND owner_subject=$2", payload.preferred_supplier_id, subject)
             if not found:
                 raise HTTPException(404, detail={"code": "inventory_supplier_not_found"})
-        try:
-            row = await con.fetchrow(
-                """INSERT INTO lab_inventory_items(owner_subject,sku,name,category,description,unit,reorder_level,currency,preferred_supplier_id,hazard_classification,safety_data_sheet_reference,storage_requirements)
-                   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-                   RETURNING item_id::text,sku,name,category,description,unit,reorder_level,quantity_on_hand,average_unit_cost,currency,preferred_supplier_id::text,hazard_classification,safety_data_sheet_reference,storage_requirements,status""",
-                subject,payload.sku,payload.name,payload.category,payload.description,payload.unit,payload.reorder_level,payload.currency,payload.preferred_supplier_id,payload.hazard_classification,payload.safety_data_sheet_reference,payload.storage_requirements)
-        except Exception as exc:
-            if "lab_inventory_items_owner_sku_key" in str(exc):
-                raise HTTPException(409, detail={"code": "inventory_sku_exists"}) from exc
-            raise
+        row = await con.fetchrow(
+            """INSERT INTO lab_inventory_items(owner_subject,sku,name,category,description,unit,reorder_level,currency,preferred_supplier_id,hazard_classification,safety_data_sheet_reference,storage_requirements)
+               VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+               ON CONFLICT (owner_subject,sku) DO NOTHING
+               RETURNING item_id::text,sku,name,category,description,unit,reorder_level,quantity_on_hand,average_unit_cost,currency,preferred_supplier_id::text,hazard_classification,safety_data_sheet_reference,storage_requirements,status""",
+            subject,payload.sku,payload.name,payload.category,payload.description,payload.unit,payload.reorder_level,payload.currency,payload.preferred_supplier_id,payload.hazard_classification,payload.safety_data_sheet_reference,payload.storage_requirements)
+        if row is None:
+            raise HTTPException(409, detail={"code": "inventory_sku_exists"})
     return _item(row)
 
 
@@ -222,8 +219,11 @@ async def create_supplier(payload: SupplierCreate, request: Request, subject: st
         row=await con.fetchrow(
             """INSERT INTO lab_inventory_suppliers(owner_subject,name,contact_name,email,phone,website,address,compliance_reference,notes)
                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+               ON CONFLICT (owner_subject,lower(name)) DO NOTHING
                RETURNING supplier_id::text,name,contact_name,email,phone,website,address,compliance_reference,notes,created_at""",
             subject,payload.name,payload.contact_name,payload.email,payload.phone,payload.website,payload.address,payload.compliance_reference,payload.notes)
+        if row is None:
+            raise HTTPException(409, detail={"code": "inventory_supplier_exists"})
     return _supplier(row)
 
 
@@ -274,8 +274,12 @@ async def create_purchase_order(payload: PurchaseOrderCreate, request: Request, 
                     raise HTTPException(404,detail={"code":"inventory_item_not_found"})
             po=await con.fetchrow(
                 """INSERT INTO lab_inventory_purchase_orders(owner_subject,supplier_id,requisition_id,order_number,currency,expected_at,notes)
-                   VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING purchase_order_id::text,order_number,status,currency,expected_at,created_at""",
+                   VALUES($1,$2,$3,$4,$5,$6,$7)
+                   ON CONFLICT (owner_subject,order_number) DO NOTHING
+                   RETURNING purchase_order_id::text,order_number,status,currency,expected_at,created_at""",
                 subject,payload.supplier_id,payload.requisition_id,payload.order_number,payload.currency,payload.expected_at,payload.notes)
+            if po is None:
+                raise HTTPException(409, detail={"code": "inventory_purchase_order_number_exists"})
             for line in payload.lines:
                 await con.execute("""INSERT INTO lab_inventory_purchase_order_lines(purchase_order_id,item_id,owner_subject,quantity_ordered,unit_cost)
                                      VALUES($1,$2,$3,$4,$5)""",uuid.UUID(po["purchase_order_id"]),line.item_id,subject,line.quantity,line.unit_cost)
@@ -315,15 +319,18 @@ async def receive_goods(payload: GoodsReceiptCreate, request: Request, subject: 
             lot=await con.fetchrow(
                 """INSERT INTO lab_inventory_lots(item_id,owner_subject,lot_code,supplier_id,expiry_date,quantity_received,quantity_remaining,unit_cost,currency,inspection_status,certificate_reference)
                    VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,$9,$10)
+                   ON CONFLICT (item_id,owner_subject,lot_code) DO NOTHING
                    RETURNING lot_id::text""",
-                line["item_id"],subject,payload.lot_code,line["supplier_id"],payload.expiry_date,payload.quantity,payload.unit_cost,payload.certificate_reference and line["currency"] or line["currency"],payload.inspection_status,payload.certificate_reference)
+                line["item_id"],subject,payload.lot_code,line["supplier_id"],payload.expiry_date,payload.quantity,line["unit_cost"],line["currency"],payload.inspection_status,payload.certificate_reference)
+            if lot is None:
+                raise HTTPException(409, detail={"code": "inventory_lot_code_exists"})
             await con.execute(
                 """INSERT INTO lab_inventory_movements(item_id,lot_id,owner_subject,movement_type,quantity_delta,unit_cost,reference,reason,recorded_by)
                    VALUES($1,$2,$3,'receipt',$4,$5,$6,$7,$8)""",
-                line["item_id"],uuid.UUID(lot["lot_id"]),subject,payload.quantity,payload.unit_cost,str(line["purchase_order_id"]),payload.reason,payload.recorded_by)
+                line["item_id"],uuid.UUID(lot["lot_id"]),subject,payload.quantity,line["unit_cost"],str(line["purchase_order_id"]),payload.reason,payload.recorded_by)
             new_qty=item["quantity_on_hand"]+payload.quantity
             old_value=item["quantity_on_hand"]*item["average_unit_cost"]
-            new_cost=(old_value+payload.quantity*payload.unit_cost)/new_qty if new_qty else Decimal("0")
+            new_cost=(old_value+payload.quantity*line["unit_cost"])/new_qty if new_qty else Decimal("0")
             await con.execute("UPDATE lab_inventory_items SET quantity_on_hand=$2,average_unit_cost=$3,updated_at=now() WHERE item_id=$1 AND owner_subject=$4",line["item_id"],new_qty,new_cost,subject)
             await con.execute("UPDATE lab_inventory_purchase_order_lines SET quantity_received=quantity_received+$2 WHERE line_id=$1",payload.line_id,payload.quantity)
             remaining=await con.fetchval("SELECT bool_and(quantity_received>=quantity_ordered) FROM lab_inventory_purchase_order_lines WHERE purchase_order_id=$1",line["purchase_order_id"])
