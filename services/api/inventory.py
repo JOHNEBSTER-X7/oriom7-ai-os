@@ -242,8 +242,11 @@ async def create_requisition(payload: RequisitionCreate, request: Request, subje
     async with pool.acquire() as con:
         async with con.transaction():
             for line in payload.lines:
-                if not await con.fetchval("SELECT 1 FROM lab_inventory_items WHERE item_id=$1 AND owner_subject=$2 AND status='active'",line.item_id,subject):
+                item_currency = await con.fetchval("SELECT currency FROM lab_inventory_items WHERE item_id=$1 AND owner_subject=$2 AND status='active'",line.item_id,subject)
+                if item_currency is None:
                     raise HTTPException(404,detail={"code":"inventory_item_not_found"})
+                if item_currency != payload.currency:
+                    raise HTTPException(422,detail={"code":"inventory_currency_mismatch","message":"Purchase order currency must match each item's stock valuation currency."})
             row=await con.fetchrow(
                 """INSERT INTO lab_inventory_requisitions(owner_subject,requested_by,purpose,needed_by,lines)
                    VALUES($1,$2,$3,$4,$5::jsonb) RETURNING requisition_id::text,requested_by,purpose,status,needed_by,lines,created_at""",
@@ -420,7 +423,7 @@ async def inventory_summary(request: Request, subject: str = Depends(authenticat
         row=await con.fetchrow(
             """SELECT count(*)::int AS total_items,
                  count(*) FILTER(WHERE quantity_on_hand<=reorder_level)::int AS low_stock_items,
-                 COALESCE(sum(quantity_on_hand*average_unit_cost),0)::numeric(18,2)::text AS inventory_value,
+                 COALESCE((SELECT jsonb_object_agg(currency, value) FROM (SELECT currency, sum(quantity_on_hand*average_unit_cost)::numeric(18,2)::text AS value FROM lab_inventory_items WHERE owner_subject=$1 GROUP BY currency) values_by_currency),'{}'::jsonb) AS inventory_value_by_currency,
                  (SELECT count(*)::int FROM lab_inventory_lots WHERE owner_subject=$1 AND quantity_remaining>0 AND expiry_date<CURRENT_DATE) AS expired_lots,
                  (SELECT count(*)::int FROM lab_inventory_lots WHERE owner_subject=$1 AND quantity_remaining>0 AND expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE+30) AS expiring_30_days,
                  (SELECT count(*)::int FROM lab_inventory_purchase_orders WHERE owner_subject=$1 AND status IN ('issued','part_received')) AS open_purchase_orders
