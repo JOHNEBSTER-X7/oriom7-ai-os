@@ -97,3 +97,8 @@ run physical experiments, certify scientific results or replace laboratory safet
 systems. Apply `services/api/migrations/011_lab_os.sql` after migrations 001–010.
 See [LAB OS API documentation](services/api/README.md#oriom7-lab-os-foundation)
 and the [laboratories programme](docs/ORIOM7_GLOBAL_RESEARCH_DIGITAL_AND_PHYSICAL_LABORATORIES_PROGRAMME.md).
+
+
+### ORIOM7 Digital Notebook
+
+The LAB OS now includes an authenticated, append-only project notebook for hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Entries can be linked to an experiment in the same project and are attributed to the trusted authenticated subject. Apply `services/api/migrations/019_lab_digital_notebook.sql` after migration 018. The notebook is an auditable application record, not a validated regulated LIMS or electronic-signature system. See [LAB OS API documentation](services/api/README.md#oriom7-digital-notebook).
