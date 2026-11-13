@@ -560,7 +560,7 @@ async def update_equipment_status(
                     equipment_id, subject,
                 )
                 if latest_calibration and (
-                    latest_calibration["outcome"] == "fail"
+                    latest_calibration["outcome"] in {"fail", "conditional"}
                     or (latest_calibration["due_on"] is not None and latest_calibration["due_on"] < date.today())
                 ):
                     raise HTTPException(409, detail={"code": "lab_equipment_calibration_block"})
