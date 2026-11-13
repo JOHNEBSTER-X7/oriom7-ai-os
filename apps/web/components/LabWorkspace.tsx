@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import LabInventoryPanel from "./LabInventoryPanel";
 import LabQualityPanel from "./LabQualityPanel";
+import LabFinancePanel from "./LabFinancePanel";
 
 type Project = {
   project_id: string; title: string; description: string | null; discipline: string;
@@ -456,6 +457,7 @@ export default function LabWorkspace() {
       </section>
       <LabInventoryPanel />
       <LabQualityPanel />
+      <LabFinancePanel projectId={selectedProjectId} />
     </div>
   );
 }
