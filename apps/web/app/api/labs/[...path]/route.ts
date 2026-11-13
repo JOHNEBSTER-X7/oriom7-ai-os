@@ -7,6 +7,7 @@ function targetPath(segments: string[], search: string): string | null {
   const path = segments.join("/");
   if (path === "projects") return `/v1/labs/projects${search}`;
   if (path === "equipment") return `/v1/labs/equipment${search}`;
+  if (path === "equipment/summary") return `/v1/labs/equipment/summary${search}`;
   if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
   if (new RegExp(`^projects/${UUID}/experimentsimport { NextRequest, NextResponse } from "next/server";
 
