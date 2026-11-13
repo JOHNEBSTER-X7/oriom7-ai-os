@@ -224,3 +224,21 @@ def test_equipment_booking_rejects_past_start_time():
             purpose="Retrospective equipment booking", booked_by="Research team",
             starts_at=past, ends_at=past + timedelta(hours=1),
         )
+
+
+def test_calibration_and_completed_maintenance_reject_future_dates():
+    from datetime import date, datetime, timedelta, timezone
+    from labs import CalibrationCreate, MaintenanceCreate
+
+    with pytest.raises(ValidationError):
+        CalibrationCreate(
+            calibrated_on=date.today() + timedelta(days=1),
+            outcome="pass", performed_by="Calibration provider",
+        )
+
+    with pytest.raises(ValidationError):
+        MaintenanceCreate(
+            maintenance_type="inspection", description="Future inspection",
+            performed_by="Technician",
+            performed_at=datetime.now(timezone.utc) + timedelta(days=1),
+        )
