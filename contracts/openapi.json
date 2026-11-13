@@ -2139,6 +2139,22 @@
           }
         }
       }
+    },
+    "/labs/equipment/summary": {
+      "get": {
+        "operationId": "getEquipmentManagerSummary",
+        "summary": "Get equipment health and workload metrics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped asset, calibration, maintenance and booking counters"
+          }
+        }
+      }
     }
   },
   "components": {
