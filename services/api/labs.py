@@ -553,19 +553,16 @@ async def update_equipment_status(
             if equipment is None:
                 raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
             if payload.status in {"available", "in_use"}:
-                failed_calibration = await con.fetchval(
-                    """SELECT 1 FROM lab_equipment_calibrations
-                       WHERE equipment_id=$1 AND owner_subject=$2 AND outcome='fail'
+                latest_calibration = await con.fetchrow(
+                    """SELECT outcome, due_on FROM lab_equipment_calibrations
+                       WHERE equipment_id=$1 AND owner_subject=$2
                        ORDER BY calibrated_on DESC, created_at DESC LIMIT 1""",
                     equipment_id, subject,
                 )
-                overdue_calibration = await con.fetchval(
-                    """SELECT 1 FROM lab_equipment_calibrations
-                       WHERE equipment_id=$1 AND owner_subject=$2 AND due_on < CURRENT_DATE
-                       ORDER BY calibrated_on DESC, created_at DESC LIMIT 1""",
-                    equipment_id, subject,
-                )
-                if failed_calibration or overdue_calibration:
+                if latest_calibration and (
+                    latest_calibration["outcome"] == "fail"
+                    or (latest_calibration["due_on"] is not None and latest_calibration["due_on"] < date.today())
+                ):
                     raise HTTPException(409, detail={"code": "lab_equipment_calibration_block"})
             if payload.status in {"maintenance", "retired"}:
                 active_booking = await con.fetchval(
