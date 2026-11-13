@@ -33,8 +33,7 @@ or bearer token to the FastAPI service. Set `ORIOM7_API_URL` to the API origin a
 configure trusted authentication middleware there. The persistent LAB OS endpoints
 also require PostgreSQL migration `011_lab_os.sql`.
 
-The UI records plans and inventory only. It does not run experiments, control
-instruments, book physical facilities, or verify scientific results.
+The UI records research plans and notebook entries, manages equipment assets, calibration and maintenance histories, and books equipment time slots. It does not run experiments, control instruments, book physical facilities, or verify scientific results.
 
 
 The LAB OS workspace now includes a Digital Notebook for project-level or experiment-linked notes, hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Notebook entries are append-only and require database migration `012_lab_digital_notebook.sql` after migration 011. This is not a validated regulated LIMS or electronic-signature system.
