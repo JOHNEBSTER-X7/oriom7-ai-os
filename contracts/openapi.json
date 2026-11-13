@@ -1051,6 +1051,513 @@
           }
         }
       }
+    },
+    "/v1/labs/projects": {
+      "post": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Create an authenticated user's research project",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabProjectCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "Persistent lab database unavailable"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "List authenticated user's research projects",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          },
+          {
+            "name": "discipline",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User-scoped project list"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/v1/labs/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Retrieve an owned research project",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project details"
+          },
+          "404": {
+            "description": "Project not found for this user"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Update project lifecycle status",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabProjectStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated"
+          },
+          "404": {
+            "description": "Project not found for this user"
+          }
+        }
+      }
+    },
+    "/v1/labs/projects/{project_id}/experiments": {
+      "post": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Register an experiment plan under an owned project",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabExperimentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Experiment registered"
+          },
+          "404": {
+            "description": "Project not found for this user"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "List experiments for an owned project",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment list"
+          },
+          "404": {
+            "description": "Project not found for this user"
+          }
+        }
+      }
+    },
+    "/v1/labs/experiments/{experiment_id}": {
+      "get": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Retrieve an owned experiment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment details"
+          },
+          "404": {
+            "description": "Experiment not found for this user"
+          }
+        }
+      }
+    },
+    "/v1/labs/experiments/{experiment_id}/events": {
+      "post": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Append an immutable experiment event",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabExperimentEventCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event appended"
+          },
+          "404": {
+            "description": "Experiment not found for this user"
+          },
+          "409": {
+            "description": "Invalid status transition"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Read an owned experiment's append-only event history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment event history"
+          },
+          "404": {
+            "description": "Experiment not found for this user"
+          }
+        }
+      }
+    },
+    "/v1/labs/equipment": {
+      "post": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Register laboratory equipment metadata",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabEquipmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Equipment registered"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "List authenticated user's equipment register",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "available",
+                "in_use",
+                "maintenance",
+                "retired"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equipment list"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/v1/labs/equipment/{equipment_id}": {
+      "patch": {
+        "tags": [
+          "laboratory-operations"
+        ],
+        "summary": "Update equipment register status (does not actuate equipment)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabEquipmentStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Equipment register updated"
+          },
+          "404": {
+            "description": "Equipment not found for this user"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1059,6 +1566,196 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "LabProjectCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 160
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "discipline": {
+            "type": "string",
+            "enum": [
+              "ai",
+              "semiconductors",
+              "computing",
+              "robotics",
+              "automotive",
+              "networking",
+              "cybersecurity",
+              "materials",
+              "energy",
+              "aerospace",
+              "biotechnology",
+              "healthcare",
+              "manufacturing",
+              "agriculture",
+              "mining",
+              "fintech",
+              "commerce",
+              "other"
+            ],
+            "default": "other"
+          },
+          "objectives": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        }
+      },
+      "LabProjectStatusUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "planning",
+              "active",
+              "paused",
+              "completed",
+              "archived"
+            ]
+          }
+        }
+      },
+      "LabExperimentCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 160
+          },
+          "hypothesis": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "protocol": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "configuration": {
+            "type": "object",
+            "default": {},
+            "description": "JSON object, maximum 16 KB"
+          }
+        }
+      },
+      "LabExperimentEventCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_type",
+          "summary"
+        ],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "note",
+              "protocol_update",
+              "status_change",
+              "measurement",
+              "result_summary",
+              "deviation",
+              "review"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          },
+          "data": {
+            "type": "object",
+            "default": {},
+            "description": "JSON object, maximum 16 KB. Status-change events require data.status."
+          }
+        }
+      },
+      "LabEquipmentCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "category"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "category": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "manufacturer": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "asset_tag": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "metadata": {
+            "type": "object",
+            "default": {},
+            "description": "JSON object, maximum 16 KB"
+          }
+        }
+      },
+      "LabEquipmentStatusUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "in_use",
+              "maintenance",
+              "retired"
+            ]
+          }
+        }
       }
     }
   }
