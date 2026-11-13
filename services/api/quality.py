@@ -64,6 +64,14 @@ class NonconformanceCreate(BaseModel):
     assigned_to: str | None = Field(default=None, max_length=160)
     due_date: date | None = None
 
+    @field_validator("title", "description")
+    @classmethod
+    def clean_nonconformance_text(cls, value: str) -> str:
+        value = _clean(value)
+        if len(value) < 3:
+            raise ValueError("field must contain at least three non-space characters")
+        return value
+
 
 class CapaCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -74,12 +82,28 @@ class CapaCreate(BaseModel):
     due_date: date | None = None
     recorded_by: str = Field(min_length=2, max_length=160)
 
+    @field_validator("description", "assigned_to", "recorded_by")
+    @classmethod
+    def clean_capa_text(cls, value: str) -> str:
+        value = _clean(value)
+        if not value:
+            raise ValueError("field cannot be blank")
+        return value
+
 
 class CapaStatusUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     status: Literal["planned", "in_progress", "completed", "verified"]
     recorded_by: str = Field(min_length=2, max_length=160)
     note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("recorded_by")
+    @classmethod
+    def clean_recorder(cls, value: str) -> str:
+        value = _clean(value)
+        if not value:
+            raise ValueError("recorded_by cannot be blank")
+        return value
 
 
 class ComplianceDocumentCreate(BaseModel):
@@ -91,6 +115,14 @@ class ComplianceDocumentCreate(BaseModel):
     issued_at: date | None = None
     expires_at: date | None = None
     notes: str | None = Field(default=None, max_length=4000)
+
+    @field_validator("document_type", "document_name", "reference")
+    @classmethod
+    def clean_document_text(cls, value: str) -> str:
+        value = _clean(value)
+        if not value:
+            raise ValueError("field cannot be blank")
+        return value
 
     @field_validator("expires_at")
     @classmethod
@@ -106,6 +138,14 @@ class ComplianceReviewUpdate(BaseModel):
     review_status: Literal["accepted", "rejected", "superseded"]
     reviewed_by: str = Field(min_length=2, max_length=160)
     notes: str | None = Field(default=None, max_length=4000)
+
+    @field_validator("reviewed_by")
+    @classmethod
+    def clean_reviewer(cls, value: str) -> str:
+        value = _clean(value)
+        if not value:
+            raise ValueError("reviewed_by cannot be blank")
+        return value
 
 
 @router.post("/inspections", status_code=status.HTTP_201_CREATED)
@@ -141,7 +181,7 @@ async def create_inspection(payload: InspectionCreate, request: Request, subject
                        VALUES($1,$2,$3,$4,$5) RETURNING nonconformance_id::text,status,severity""",
                     subject,uuid.UUID(row["inspection_id"]),f"{payload.outcome.title()} inspection: {lot['sku']} / {lot['lot_code']}",
                     payload.notes or f"Inspection outcome was {payload.outcome}; investigate before release.", "major" if payload.outcome=="fail" else "minor")
-    return {"inspection":dict(row),"nonconformance":dict(ncr) if ncr else None,"lot_status":"quarantined" if ncr else lot["inspection_status"]}
+    return {"inspection":dict(row),"nonconformance":dict(ncr) if ncr else None,"lot_status":"quarantined" if ncr else "accepted"}
 
 
 @router.get("/inspections")
@@ -222,10 +262,9 @@ async def update_capa(action_id: uuid.UUID, payload: CapaStatusUpdate, request: 
                    WHERE action_id=$1 AND owner_subject=$2 FOR UPDATE""",action_id,subject)
             if row is None:
                 raise HTTPException(404,detail={"code":"quality_capa_action_not_found"})
-            if row["status"]=="verified" and payload.status!="verified":
-                raise HTTPException(409,detail={"code":"quality_verified_action_is_terminal"})
-            if row["status"]!="completed" and payload.status=="verified":
-                raise HTTPException(409,detail={"code":"quality_action_must_be_completed_before_verification"})
+            allowed_next = {"planned": "in_progress", "in_progress": "completed", "completed": "verified", "verified": None}
+            if payload.status != allowed_next[row["status"]]:
+                raise HTTPException(409,detail={"code":"quality_invalid_capa_transition","expected_next_status":allowed_next[row["status"]]})
             updated=await con.fetchrow(
                 """UPDATE lab_quality_capa_actions SET status=$2,updated_at=now()
                    WHERE action_id=$1 AND owner_subject=$3
