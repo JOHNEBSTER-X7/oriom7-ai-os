@@ -5,147 +5,22 @@ const UUID = "[0-9a-f-]{36}";
 
 function targetPath(segments: string[], search: string): string | null {
   const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (path === "equipment/summary") return `/v1/labs/equipment/summary${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/experimentsimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/notebookimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}/events$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^equipment/${UUID}import { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/experimentsimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/notebookimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}/events$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^equipment/${UUID}/(calibrations|maintenance|bookings)import { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/experimentsimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/notebookimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}/events$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^equipment/bookings/${UUID}import { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/experimentsimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^projects/${UUID}/notebookimport { NextRequest, NextResponse } from "next/server";
-
-type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
-
-function targetPath(segments: string[], search: string): string | null {
-  const path = segments.join("/");
-  if (path === "projects") return `/v1/labs/projects${search}`;
-  if (path === "equipment") return `/v1/labs/equipment${search}`;
-  if (new RegExp(`^projects/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-  if (new RegExp(`^experiments/${UUID}/events$`, "i").test(path)) return `/v1/labs/${path}${search}`;
-, "i").test(path)) return `/v1/labs/${path}${search}`;
+  const base = "/v1/labs/";
+  if (path === "projects" || path === "equipment" || path === "equipment/summary") return base + path + search;
+  if (/^projects\/[0-9a-f-]{36}$/i.test(path)) return base + path + search;
+  if (/^projects\/[0-9a-f-]{36}\/(experiments|notebook)$/i.test(path)) return base + path + search;
+  if (/^experiments\/[0-9a-f-]{36}(\/events)?$/i.test(path)) return base + path + search;
+  if (/^equipment\/[0-9a-f-]{36}$/i.test(path)) return base + path + search;
+  if (/^equipment\/[0-9a-f-]{36}\/(calibrations|maintenance|bookings)$/i.test(path)) return base + path + search;
+  if (/^equipment\/bookings\/[0-9a-f-]{36}$/i.test(path)) return base + path + search;
   return null;
 }
 
 async function forward(request: NextRequest, context: RouteContext, method: "GET" | "POST" | "PATCH") {
   const apiOrigin = process.env.ORIOM7_API_URL;
   if (!apiOrigin) return NextResponse.json({ error: "ORIOM7_API_URL is not configured." }, { status: 503 });
-  const { path } = await context.params;
-  const target = targetPath(path, request.nextUrl.search);
+  const params = await context.params;
+  const target = targetPath(params.path, request.nextUrl.search);
   if (!target) return NextResponse.json({ error: "Unknown laboratory endpoint." }, { status: 404 });
 
   const headers = new Headers({ Accept: "application/json" });
