@@ -295,3 +295,43 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .agent-history ul { list-style: none; padding: 0; display: grid; gap: 8px; }
 .agent-history li { display: grid; gap: 4px; border-bottom: 1px solid var(--border); padding: 9px 0; }
 .agent-history li button { justify-self: start; text-align: left; color: var(--accent); background: transparent; border: 0; padding: 5px 0; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* ORIOM7 LAB OS */
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.lab-grid > article:last-child { grid-column: 1 / -1; }
+.lab-workspace input, .lab-workspace select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #777;
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.lab-list { display: grid; gap: 10px; margin-top: 20px; }
+.lab-list-item {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+button.lab-list-item { cursor: pointer; }
+.lab-list-item.selected { border: 2px solid var(--accent); }
+.lab-list-item span { color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
+.lab-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.lab-actions .secondary-button { min-height: 40px; padding: 7px 12px; }
+@media (max-width: 760px) {
+  .lab-grid { grid-template-columns: 1fr; }
+  .lab-grid > article:last-child { grid-column: auto; }
+}
