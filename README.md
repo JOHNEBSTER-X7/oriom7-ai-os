@@ -112,3 +112,8 @@ The LAB OS equipment register now supports calibration history, maintenance and 
 ## LAB OS inventory and procurement
 
 The LAB OS now includes an inventory and procurement module for laboratory consumables, reagents, components and other research materials. It records suppliers, stock thresholds, requisitions, purchase orders, goods receipts, batch/lot and expiry data, stock issues/write-offs and inventory valuation. Apply migrations 011–014 in order. Inventory movements are append-only and quantities are transactionally maintained. Supplier identity and compliance are not independently verified; hazardous-material metadata is not authorization to buy, handle, store or dispose of regulated materials.
+
+
+## LAB OS quality, compliance and analytics
+
+Migration 015 adds owner-scoped laboratory quality inspections, non-conformance records, CAPA actions and immutable CAPA event history, plus supplier compliance-document references and expiry tracking. The quality workspace records lot inspection outcomes, quarantines failed/conditional lots, releases passing lots, tracks corrective/preventive actions, and reports supplier inspection scorecards and quality/compliance indicators. Apply migrations 011–015 in order. These features provide management traceability, not accredited certification, independently verified compliance, or a validated QMS.
