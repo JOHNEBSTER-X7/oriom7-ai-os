@@ -54,3 +54,7 @@ The stock movement ledger is append-only. Goods receipts and stock issues are tr
 The `/labs` workspace includes lot inspection records, automatic quarantine and non-conformance creation for failed/conditional results, CAPA tracking and status history, compliance-document review/expiry monitoring, inspection history and supplier quality scorecards. Apply migration `015_lab_quality_compliance.sql` after 011–014.
 
 A passing inspection records lot acceptance; failed and conditional inspections quarantine the lot. CAPA actions must reach completed before they can be verified. Document references are not independently authenticated, and this module is not a validated QMS or legal compliance service.
+
+
+### LAB OS migration order
+Run migrations 011, 012, 013, 014 and 015 sequentially. The quality and compliance workspace depends on inventory suppliers and lot records created by migration 014.
