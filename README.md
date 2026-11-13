@@ -27,6 +27,8 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - `infra/` — deployment guidance.
 - `data/` — data and indexing design.
 - `research/hardware/` — exploratory hardware research.
+- `services/api/labs.py` — authenticated ORIOM7 LAB OS project, experiment, event and equipment APIs.
+- `services/api/migrations/011_lab_os.sql` — persistent LAB OS schema.
 - `services/api/knowledge_graph.py` — evidence-linked entity and relationship API.
 
 ## Product specifications
@@ -41,6 +43,8 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
 - [Architecture Decisions](docs/architecture/ADRS.md)
 - [OpenAPI contract](contracts/openapi.json)
+- [Global Technology Intelligence & Proprietary Product Development Programme](docs/GLOBAL_TECHNOLOGY_INTELLIGENCE_AND_PRODUCT_DEVELOPMENT_PROGRAMME.md)
+- [Global Research, Digital & Physical Laboratories Programme](docs/ORIOM7_GLOBAL_RESEARCH_DIGITAL_AND_PHYSICAL_LABORATORIES_PROGRAMME.md)
 
 ## Status and scope
 This repository establishes the architecture baseline; it does not claim that a global search index, agent catalogue, proprietary models, cloud or silicon already exist. Targets such as 195+ countries/languages, 120+ agents and 300+ tools are ambitions, not current capabilities. Language support must be evaluated per language, dialect and task before it is advertised. Accessibility must be tested with assistive technologies and disabled users; automated scans alone are insufficient.
@@ -83,3 +87,13 @@ The `/research/review` workspace lets explicitly authorised human reviewers insp
 ## Autonomous research agents
 
 ORIOM7 now queues user-initiated research for a separate PostgreSQL-backed worker. It uses specialist planning, evidence-retrieval and synthesis stages, stores run history, retries bounded failures and supports opt-in recurring schedules. Candidate graph assertions still require human review. Apply migration 010 and run `python worker.py` alongside the API. See [Autonomous Research Agents](docs/AUTONOMOUS_RESEARCH_AGENTS.md).
+
+## ORIOM7 LAB OS foundation
+
+The first authenticated LAB OS API slice supports user-scoped research projects,
+experiment plans, append-only experiment events and laboratory equipment metadata.
+It is a digital research-management foundation only: it does not actuate equipment,
+run physical experiments, certify scientific results or replace laboratory safety
+systems. Apply `services/api/migrations/011_lab_os.sql` after migrations 001–010.
+See [LAB OS API documentation](services/api/README.md#oriom7-lab-os-foundation)
+and the [laboratories programme](docs/ORIOM7_GLOBAL_RESEARCH_DIGITAL_AND_PHYSICAL_LABORATORIES_PROGRAMME.md).
