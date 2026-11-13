@@ -788,6 +788,13 @@ class EquipmentBookingCreate(BaseModel):
             raise ValueError("datetime must include a timezone")
         return value
 
+    @field_validator("starts_at")
+    @classmethod
+    def require_future_booking(cls, value: datetime):
+        if value <= datetime.now(timezone.utc):
+            raise ValueError("starts_at must be in the future")
+        return value
+
     @field_validator("ends_at")
     @classmethod
     def validate_booking_window(cls, value: datetime, info):
@@ -860,6 +867,12 @@ async def add_equipment_calibration(
             )
             if equipment is None:
                 raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+            if payload.outcome == "fail":
+                # A failed calibration removes the asset from normal availability.
+                await con.execute(
+                    "UPDATE lab_equipment SET status='maintenance', updated_at=now() WHERE equipment_id=$1 AND owner_subject=$2",
+                    equipment_id, subject,
+                )
             row = await con.fetchrow(
                 """INSERT INTO lab_equipment_calibrations
                    (calibration_id, equipment_id, owner_subject, calibrated_on, due_on,
