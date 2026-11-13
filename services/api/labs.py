@@ -158,12 +158,15 @@ async def _pool(request: Request):
 
 
 def _project(row: Any) -> dict[str, Any]:
+    objectives = row["objectives"]
+    if isinstance(objectives, str):
+        objectives = json.loads(objectives)
     return {
         "project_id": row["project_id"],
         "title": row["title"],
         "description": row["description"],
         "discipline": row["discipline"],
-        "objectives": row["objectives"],
+        "objectives": objectives,
         "status": row["status"],
         "created_at": row["created_at"].isoformat(),
         "updated_at": row["updated_at"].isoformat(),
@@ -218,11 +221,11 @@ async def create_project(
         row = await con.fetchrow(
             """INSERT INTO lab_projects
                (project_id, owner_subject, title, description, discipline, objectives)
-               VALUES ($1::uuid, $2, $3, $4, $5, $6)
+               VALUES ($1::uuid, $2, $3, $4, $5, $6::jsonb)
                RETURNING project_id::text, title, description, discipline, objectives,
                          status, created_at, updated_at""",
             project_id, subject, payload.title, payload.description,
-            payload.discipline, payload.objectives,
+            payload.discipline, json.dumps(payload.objectives),
         )
     return _project(row)
 
