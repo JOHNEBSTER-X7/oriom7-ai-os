@@ -14,6 +14,7 @@ from knowledge_graph import router as knowledge_graph_router
 from research_agents import router as research_agents_router
 from labs import router as labs_router
 from inventory import router as inventory_router
+from quality import router as quality_router
 
 
 @asynccontextmanager
@@ -62,6 +63,7 @@ app.include_router(knowledge_graph_router)
 app.include_router(research_agents_router)
 app.include_router(labs_router)
 app.include_router(inventory_router)
+app.include_router(quality_router)
 
 
 @app.get("/v1/status", tags=["system"])
