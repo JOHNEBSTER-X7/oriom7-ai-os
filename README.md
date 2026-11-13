@@ -107,3 +107,8 @@ The LAB OS now includes an authenticated, append-only project notebook for hypot
 ### ORIOM7 Equipment Manager
 
 The LAB OS equipment register now supports calibration history, maintenance and inspection records, and time-window bookings. Confirmed overlapping bookings are rejected using a transaction that locks the equipment asset; assets marked maintenance or retired cannot be booked. Apply `services/api/migrations/013_equipment_manager.sql` after migration 012. Calibration and maintenance records are append-only and do not constitute external certification or a safety approval.
+
+
+## LAB OS inventory and procurement
+
+The LAB OS now includes an inventory and procurement module for laboratory consumables, reagents, components and other research materials. It records suppliers, stock thresholds, requisitions, purchase orders, goods receipts, batch/lot and expiry data, stock issues/write-offs and inventory valuation. Apply migrations 011–014 in order. Inventory movements are append-only and quantities are transactionally maintained. Supplier identity and compliance are not independently verified; hazardous-material metadata is not authorization to buy, handle, store or dispose of regulated materials.
