@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import date, datetime, timezone
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -699,3 +700,366 @@ async def list_notebook_entries(
         "items": [_notebook_entry(row) for row in rows],
         "total": total, "limit": limit, "offset": offset,
     }
+
+
+# ORIOM7 EQUIPMENT MANAGER ----------------------------------------------------
+CalibrationOutcome = Literal["pass", "fail", "conditional"]
+MaintenanceType = Literal["preventive", "corrective", "inspection", "repair", "other"]
+BookingStatus = Literal["confirmed", "cancelled", "completed"]
+
+
+class CalibrationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    calibrated_on: date
+    due_on: date | None = None
+    outcome: CalibrationOutcome
+    performed_by: str = Field(min_length=2, max_length=160)
+    certificate_reference: str | None = Field(default=None, max_length=1000)
+    notes: str | None = Field(default=None, max_length=4000)
+
+    @field_validator("performed_by")
+    @classmethod
+    def clean_calibration_performer(cls, value: str) -> str:
+        value = _clean_text(value)
+        if len(value) < 2:
+            raise ValueError("performed_by must contain at least two non-space characters")
+        return value
+
+    @field_validator("due_on")
+    @classmethod
+    def validate_calibration_due_date(cls, value: date | None, info):
+        calibrated_on = info.data.get("calibrated_on")
+        if value is not None and calibrated_on is not None and value < calibrated_on:
+            raise ValueError("due_on cannot precede calibrated_on")
+        return value
+
+
+class MaintenanceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    maintenance_type: MaintenanceType
+    description: str = Field(min_length=3, max_length=4000)
+    performed_by: str = Field(min_length=2, max_length=160)
+    performed_at: datetime
+    next_due_at: datetime | None = None
+
+    @field_validator("description", "performed_by")
+    @classmethod
+    def clean_maintenance_text(cls, value: str) -> str:
+        value = _clean_text(value)
+        if not value:
+            raise ValueError("field cannot be blank")
+        return value
+
+    @field_validator("performed_at", "next_due_at")
+    @classmethod
+    def require_timezone(cls, value: datetime | None):
+        if value is not None and value.tzinfo is None:
+            raise ValueError("datetime must include a timezone")
+        return value
+
+    @field_validator("next_due_at")
+    @classmethod
+    def validate_maintenance_due(cls, value: datetime | None, info):
+        performed_at = info.data.get("performed_at")
+        if value is not None and performed_at is not None and value < performed_at:
+            raise ValueError("next_due_at cannot precede performed_at")
+        return value
+
+
+class EquipmentBookingCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    purpose: str = Field(min_length=3, max_length=1000)
+    booked_by: str = Field(min_length=2, max_length=160)
+    starts_at: datetime
+    ends_at: datetime
+
+    @field_validator("purpose", "booked_by")
+    @classmethod
+    def clean_booking_text(cls, value: str) -> str:
+        value = _clean_text(value)
+        if not value:
+            raise ValueError("field cannot be blank")
+        return value
+
+    @field_validator("starts_at", "ends_at")
+    @classmethod
+    def require_booking_timezone(cls, value: datetime):
+        if value.tzinfo is None:
+            raise ValueError("datetime must include a timezone")
+        return value
+
+    @field_validator("ends_at")
+    @classmethod
+    def validate_booking_window(cls, value: datetime, info):
+        starts_at = info.data.get("starts_at")
+        if starts_at is not None and value <= starts_at:
+            raise ValueError("ends_at must be later than starts_at")
+        return value
+
+
+class EquipmentBookingStatusUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["cancelled", "completed"]
+
+
+def _calibration(row: Any) -> dict[str, Any]:
+    return {
+        "calibration_id": row["calibration_id"],
+        "equipment_id": row["equipment_id"],
+        "calibrated_on": row["calibrated_on"].isoformat(),
+        "due_on": row["due_on"].isoformat() if row["due_on"] else None,
+        "outcome": row["outcome"],
+        "performed_by": row["performed_by"],
+        "certificate_reference": row["certificate_reference"],
+        "notes": row["notes"],
+        "created_at": row["created_at"].isoformat(),
+    }
+
+
+def _maintenance(row: Any) -> dict[str, Any]:
+    return {
+        "maintenance_id": row["maintenance_id"],
+        "equipment_id": row["equipment_id"],
+        "maintenance_type": row["maintenance_type"],
+        "description": row["description"],
+        "performed_by": row["performed_by"],
+        "performed_at": row["performed_at"].isoformat(),
+        "next_due_at": row["next_due_at"].isoformat() if row["next_due_at"] else None,
+        "created_at": row["created_at"].isoformat(),
+    }
+
+
+def _booking(row: Any) -> dict[str, Any]:
+    return {
+        "booking_id": row["booking_id"],
+        "equipment_id": row["equipment_id"],
+        "purpose": row["purpose"],
+        "booked_by": row["booked_by"],
+        "starts_at": row["starts_at"].isoformat(),
+        "ends_at": row["ends_at"].isoformat(),
+        "status": row["status"],
+        "created_at": row["created_at"].isoformat(),
+        "updated_at": row["updated_at"].isoformat(),
+    }
+
+
+@router.post("/equipment/{equipment_id}/calibrations", status_code=status.HTTP_201_CREATED)
+async def add_equipment_calibration(
+    equipment_id: uuid.UUID,
+    payload: CalibrationCreate,
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    calibration_id = str(uuid.uuid4())
+    async with pool.acquire() as con:
+        async with con.transaction():
+            equipment = await con.fetchrow(
+                "SELECT equipment_id FROM lab_equipment WHERE equipment_id=$1 AND owner_subject=$2 FOR UPDATE",
+                equipment_id, subject,
+            )
+            if equipment is None:
+                raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+            row = await con.fetchrow(
+                """INSERT INTO lab_equipment_calibrations
+                   (calibration_id, equipment_id, owner_subject, calibrated_on, due_on,
+                    outcome, performed_by, certificate_reference, notes)
+                   VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9)
+                   RETURNING calibration_id::text, equipment_id::text, calibrated_on,
+                             due_on, outcome, performed_by, certificate_reference, notes, created_at""",
+                calibration_id, equipment_id, subject, payload.calibrated_on, payload.due_on,
+                payload.outcome, payload.performed_by, payload.certificate_reference, payload.notes,
+            )
+    return _calibration(row)
+
+
+@router.get("/equipment/{equipment_id}/calibrations")
+async def list_equipment_calibrations(
+    equipment_id: uuid.UUID,
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0, le=100000),
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        exists = await con.fetchval(
+            "SELECT 1 FROM lab_equipment WHERE equipment_id=$1 AND owner_subject=$2",
+            equipment_id, subject,
+        )
+        if not exists:
+            raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+        rows = await con.fetch(
+            """SELECT calibration_id::text, equipment_id::text, calibrated_on, due_on,
+                      outcome, performed_by, certificate_reference, notes, created_at
+               FROM lab_equipment_calibrations WHERE equipment_id=$1 AND owner_subject=$2
+               ORDER BY calibrated_on DESC, created_at DESC LIMIT $3 OFFSET $4""",
+            equipment_id, subject, limit, offset,
+        )
+        total = await con.fetchval(
+            "SELECT count(*) FROM lab_equipment_calibrations WHERE equipment_id=$1 AND owner_subject=$2",
+            equipment_id, subject,
+        )
+    return {"items": [_calibration(row) for row in rows], "total": total, "limit": limit, "offset": offset}
+
+
+@router.post("/equipment/{equipment_id}/maintenance", status_code=status.HTTP_201_CREATED)
+async def add_equipment_maintenance(
+    equipment_id: uuid.UUID,
+    payload: MaintenanceCreate,
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    maintenance_id = str(uuid.uuid4())
+    async with pool.acquire() as con:
+        async with con.transaction():
+            equipment = await con.fetchrow(
+                "SELECT equipment_id FROM lab_equipment WHERE equipment_id=$1 AND owner_subject=$2 FOR UPDATE",
+                equipment_id, subject,
+            )
+            if equipment is None:
+                raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+            row = await con.fetchrow(
+                """INSERT INTO lab_equipment_maintenance
+                   (maintenance_id, equipment_id, owner_subject, maintenance_type,
+                    description, performed_by, performed_at, next_due_at)
+                   VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8)
+                   RETURNING maintenance_id::text, equipment_id::text, maintenance_type,
+                             description, performed_by, performed_at, next_due_at, created_at""",
+                maintenance_id, equipment_id, subject, payload.maintenance_type,
+                payload.description, payload.performed_by, payload.performed_at, payload.next_due_at,
+            )
+    return _maintenance(row)
+
+
+@router.get("/equipment/{equipment_id}/maintenance")
+async def list_equipment_maintenance(
+    equipment_id: uuid.UUID,
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0, le=100000),
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        exists = await con.fetchval(
+            "SELECT 1 FROM lab_equipment WHERE equipment_id=$1 AND owner_subject=$2",
+            equipment_id, subject,
+        )
+        if not exists:
+            raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+        rows = await con.fetch(
+            """SELECT maintenance_id::text, equipment_id::text, maintenance_type,
+                      description, performed_by, performed_at, next_due_at, created_at
+               FROM lab_equipment_maintenance WHERE equipment_id=$1 AND owner_subject=$2
+               ORDER BY performed_at DESC LIMIT $3 OFFSET $4""",
+            equipment_id, subject, limit, offset,
+        )
+        total = await con.fetchval(
+            "SELECT count(*) FROM lab_equipment_maintenance WHERE equipment_id=$1 AND owner_subject=$2",
+            equipment_id, subject,
+        )
+    return {"items": [_maintenance(row) for row in rows], "total": total, "limit": limit, "offset": offset}
+
+
+@router.post("/equipment/{equipment_id}/bookings", status_code=status.HTTP_201_CREATED)
+async def create_equipment_booking(
+    equipment_id: uuid.UUID,
+    payload: EquipmentBookingCreate,
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    booking_id = str(uuid.uuid4())
+    async with pool.acquire() as con:
+        async with con.transaction():
+            equipment = await con.fetchrow(
+                """SELECT status FROM lab_equipment
+                   WHERE equipment_id=$1 AND owner_subject=$2 FOR UPDATE""",
+                equipment_id, subject,
+            )
+            if equipment is None:
+                raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+            if equipment["status"] in {"maintenance", "retired"}:
+                raise HTTPException(409, detail={"code": "lab_equipment_unavailable"})
+            conflict = await con.fetchval(
+                """SELECT 1 FROM lab_equipment_bookings
+                   WHERE equipment_id=$1 AND owner_subject=$2 AND status='confirmed'
+                     AND starts_at < $4 AND ends_at > $3
+                   LIMIT 1""",
+                equipment_id, subject, payload.starts_at, payload.ends_at,
+            )
+            if conflict:
+                raise HTTPException(409, detail={"code": "lab_equipment_booking_conflict"})
+            row = await con.fetchrow(
+                """INSERT INTO lab_equipment_bookings
+                   (booking_id, equipment_id, owner_subject, purpose, booked_by, starts_at, ends_at)
+                   VALUES ($1::uuid, $2, $3, $4, $5, $6, $7)
+                   RETURNING booking_id::text, equipment_id::text, purpose, booked_by,
+                             starts_at, ends_at, status, created_at, updated_at""",
+                booking_id, equipment_id, subject, payload.purpose, payload.booked_by,
+                payload.starts_at, payload.ends_at,
+            )
+    return _booking(row)
+
+
+@router.get("/equipment/{equipment_id}/bookings")
+async def list_equipment_bookings(
+    equipment_id: uuid.UUID,
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0, le=100000),
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        exists = await con.fetchval(
+            "SELECT 1 FROM lab_equipment WHERE equipment_id=$1 AND owner_subject=$2",
+            equipment_id, subject,
+        )
+        if not exists:
+            raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+        rows = await con.fetch(
+            """SELECT booking_id::text, equipment_id::text, purpose, booked_by,
+                      starts_at, ends_at, status, created_at, updated_at
+               FROM lab_equipment_bookings WHERE equipment_id=$1 AND owner_subject=$2
+               ORDER BY starts_at DESC LIMIT $3 OFFSET $4""",
+            equipment_id, subject, limit, offset,
+        )
+        total = await con.fetchval(
+            "SELECT count(*) FROM lab_equipment_bookings WHERE equipment_id=$1 AND owner_subject=$2",
+            equipment_id, subject,
+        )
+    return {"items": [_booking(row) for row in rows], "total": total, "limit": limit, "offset": offset}
+
+
+@router.patch("/equipment/bookings/{booking_id}")
+async def update_equipment_booking_status(
+    booking_id: uuid.UUID,
+    payload: EquipmentBookingStatusUpdate,
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        async with con.transaction():
+            row = await con.fetchrow(
+                """SELECT booking_id::text, equipment_id::text, purpose, booked_by,
+                          starts_at, ends_at, status, created_at, updated_at
+                   FROM lab_equipment_bookings
+                   WHERE booking_id=$1 AND owner_subject=$2 FOR UPDATE""",
+                booking_id, subject,
+            )
+            if row is None:
+                raise HTTPException(404, detail={"code": "lab_equipment_booking_not_found"})
+            if row["status"] != "confirmed":
+                raise HTTPException(409, detail={"code": "lab_equipment_booking_not_active"})
+            updated = await con.fetchrow(
+                """UPDATE lab_equipment_bookings SET status=$3, updated_at=now()
+                   WHERE booking_id=$1 AND owner_subject=$2
+                   RETURNING booking_id::text, equipment_id::text, purpose, booked_by,
+                             starts_at, ends_at, status, created_at, updated_at""",
+                booking_id, subject, payload.status,
+            )
+    return _booking(updated)
