@@ -134,6 +134,12 @@ class PurchaseOrderCreate(BaseModel):
         return _text(value).upper()
 
 
+class LotInspectionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    inspection_status: Literal["pending", "accepted", "rejected", "quarantined"]
+    certificate_reference: str | None = Field(default=None, max_length=1000)
+
+
 class StockIssueCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     lot_id: uuid.UUID
@@ -326,6 +332,35 @@ async def receive_goods(payload: GoodsReceiptCreate, request: Request, subject: 
             await con.execute("UPDATE lab_inventory_purchase_orders SET status=$2,updated_at=now() WHERE purchase_order_id=$1",line["purchase_order_id"],new_status)
     return {"lot_id":lot["lot_id"],"item_id":str(line["item_id"]),"quantity_received":str(payload.quantity),"inspection_status":payload.inspection_status,"purchase_order_status":new_status}
 
+
+
+
+@router.get("/lots")
+async def list_lots(request: Request, item_id: uuid.UUID | None = None, limit: int = Query(200, ge=1, le=500), subject: str = Depends(authenticated_subject)):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        rows = await con.fetch(
+            """SELECT l.lot_id::text,l.item_id::text,i.sku,i.name,l.lot_code,l.expiry_date,
+                      l.quantity_received,l.quantity_remaining,l.unit_cost,l.currency,
+                      l.inspection_status,l.certificate_reference,l.received_at
+               FROM lab_inventory_lots l JOIN lab_inventory_items i ON i.item_id=l.item_id AND i.owner_subject=l.owner_subject
+               WHERE l.owner_subject=$1 AND ($2::uuid IS NULL OR l.item_id=$2)
+               ORDER BY l.received_at DESC LIMIT $3""", subject, item_id, limit)
+    return {"items": [dict(r) for r in rows], "total": len(rows)}
+
+
+@router.patch("/lots/{lot_id}/inspection")
+async def update_lot_inspection(lot_id: uuid.UUID, payload: LotInspectionUpdate, request: Request, subject: str = Depends(authenticated_subject)):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        row = await con.fetchrow(
+            """UPDATE lab_inventory_lots SET inspection_status=$3,certificate_reference=COALESCE($4,certificate_reference)
+               WHERE lot_id=$1 AND owner_subject=$2
+               RETURNING lot_id::text,item_id::text,lot_code,inspection_status,certificate_reference,quantity_remaining""",
+            lot_id, subject, payload.inspection_status, payload.certificate_reference)
+    if row is None:
+        raise HTTPException(404, detail={"code": "inventory_lot_not_found"})
+    return dict(row)
 
 
 @router.post("/items/{item_id}/issues", status_code=status.HTTP_201_CREATED)
