@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
-const UUID = "[0-9a-f-]{36}";
 
 function targetPath(segments: string[], search: string): string | null {
   const path = segments.join("/");
