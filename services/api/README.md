@@ -206,3 +206,7 @@ The inventory valuation is a weighted-average estimate based on recorded receipt
 Apply `migrations/015_lab_quality_compliance.sql` after migrations 011–014. The authenticated `/v1/labs/quality` API records lot inspections, non-conformances, corrective and preventive actions (CAPA), CAPA event history and supplier compliance-document references. Failed or conditional inspections quarantine the lot; a passing inspection records acceptance. CAPA verification is permitted only after the action is marked completed. Inspection evidence and CAPA events are append-only.
 
 Quality analytics include inspection outcomes, open and overdue CAPA actions, document review/expiry counts and supplier inspection pass/fail/conditional scorecards. These are operational indicators, not accredited quality statistics or supplier certification. Compliance-document references are metadata; the service does not validate the referenced file, determine legal compliance or provide a validated QMS.
+
+
+### LAB OS database migration sequence
+Apply the LAB OS schema migrations in order: `011_lab_os.sql`, `012_lab_digital_notebook.sql`, `013_equipment_manager.sql`, `014_lab_inventory_procurement.sql`, then `015_lab_quality_compliance.sql`. Validate the complete sequence against a disposable or staging PostgreSQL database before production use.
