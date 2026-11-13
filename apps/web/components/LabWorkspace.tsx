@@ -177,7 +177,7 @@ export default function LabWorkspace() {
             <label htmlFor="lab-project-discipline">Research discipline</label>
             <select id="lab-project-discipline" value={discipline} onChange={e => setDiscipline(e.target.value)}>
               {["ai","semiconductors","computing","robotics","automotive","networking","cybersecurity","materials","energy","aerospace","biotechnology","healthcare","manufacturing","agriculture","mining","fintech","commerce","other"].map(item =>
-                <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+                <option key={item} value={item}>{item.replace(/_/g, " ")}</option>)}
             </select>
             <button className="primary-button" type="submit" disabled={busy || !projectTitle.trim()}>{busy ? "Saving…" : "Create project"}</button>
           </form>
