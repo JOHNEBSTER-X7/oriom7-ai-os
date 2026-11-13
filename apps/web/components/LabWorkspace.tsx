@@ -12,7 +12,7 @@ type Experiment = {
   created_at: string; updated_at: string;
 };
 type NotebookEntry = { entry_id: string; entry_type: string; title: string; content: string; experiment_id: string | null; created_at: string };
-type EquipmentSummary = { total_assets: number; available_assets: number; in_use_assets: number; maintenance_assets: number; retired_assets: number; calibration_attention_assets: number; active_bookings: number; maintenance_due_30_days: number };
+type EquipmentSummary = { total_assets: number; available_assets: number; in_use_assets: number; maintenance_assets: number; retired_assets: number; calibration_attention_assets: number; active_bookings: number; maintenance_due_30_days: number; overdue_maintenance_assets: number };
 type Equipment = {
   equipment_id: string; name: string; category: string; manufacturer: string | null;
   model: string | null; asset_tag: string | null; location: string | null;
@@ -307,7 +307,7 @@ export default function LabWorkspace() {
       <section className="equipment-manager-panel" aria-label="Equipment management">
         <div className="workspace-section-heading"><div><p className="eyebrow">04 · EQUIPMENT MANAGEMENT</p><h2>Calibration, maintenance and bookings</h2></div></div>
         {equipmentSummary && <div className="equipment-metrics" aria-label="Equipment metrics">
-          {[[ "Total assets", equipmentSummary.total_assets ], [ "Available", equipmentSummary.available_assets ], [ "In use", equipmentSummary.in_use_assets ], [ "In maintenance", equipmentSummary.maintenance_assets ], [ "Calibration attention", equipmentSummary.calibration_attention_assets ], [ "Active bookings", equipmentSummary.active_bookings ], [ "Maintenance due in 30 days", equipmentSummary.maintenance_due_30_days ]].map(([label,value]) => <div className="equipment-metric" key={String(label)}><span>{label}</span><strong>{value}</strong></div>)}
+          {[[ "Total assets", equipmentSummary.total_assets ], [ "Available", equipmentSummary.available_assets ], [ "In use", equipmentSummary.in_use_assets ], [ "In maintenance", equipmentSummary.maintenance_assets ], [ "Calibration attention", equipmentSummary.calibration_attention_assets ], [ "Active bookings", equipmentSummary.active_bookings ], [ "Maintenance due in 30 days", equipmentSummary.maintenance_due_30_days ], [ "Overdue maintenance", equipmentSummary.overdue_maintenance_assets ]].map(([label,value]) => <div className="equipment-metric" key={String(label)}><span>{label}</span><strong>{value}</strong></div>)}
         </div>}
         <div className="equipment-manager-layout">
           <div className="lab-list" aria-label="Select an equipment asset">
