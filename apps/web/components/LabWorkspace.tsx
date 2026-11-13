@@ -93,7 +93,8 @@ export default function LabWorkspace() {
   }, []);
 
   useEffect(() => {
-    if (!selectedProjectId) { setExperiments([]); return; }
+    setNotebookExperimentId("");
+    if (!selectedProjectId) { setExperiments([]); setNotebookEntries([]); return; }
     Promise.all([loadExperiments(selectedProjectId), loadNotebook(selectedProjectId)]).catch(err => {
       setError(true); setMessage(err instanceof Error ? err.message : "Could not load experiments.");
     });
