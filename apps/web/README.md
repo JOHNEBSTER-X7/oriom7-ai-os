@@ -40,3 +40,10 @@ The LAB OS workspace now includes a Digital Notebook for project-level or experi
 
 
 The Equipment Manager provides asset selection/status, calibration records and due dates, maintenance history, and equipment bookings with conflict rejection. Apply `013_equipment_manager.sql` after `012_lab_digital_notebook.sql`. Records remain owner-scoped; calibration and maintenance entries are append-only.
+
+
+## LAB inventory and procurement
+
+The `/labs` workspace now includes inventory and procurement controls for stock item registration, supplier records, purchase requisitions, purchase orders, goods receipts, lot tracking, stock on hand and procurement metrics. Apply API migration `014_lab_inventory_procurement.sql` after 011–013.
+
+The stock movement ledger is append-only. Goods receipts and stock issues are traceable to batch/lot records; normal issues require accepted, unexpired lots. Hazard classifications and Safety Data Sheet references are informational records only and do not authorize hazardous-material handling or purchasing.
