@@ -893,7 +893,7 @@ async def add_equipment_calibration(
             )
             if equipment is None:
                 raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
-            if payload.outcome == "fail":
+            if payload.outcome in {"fail", "conditional"}:
                 # A failed calibration removes the asset from normal availability
                 # and cancels its future confirmed reservations.
                 await con.execute(
@@ -1126,7 +1126,7 @@ async def equipment_manager_summary(
                  count(*) FILTER (WHERE e.status='in_use')::int AS in_use_assets,
                  count(*) FILTER (WHERE e.status='maintenance')::int AS maintenance_assets,
                  count(*) FILTER (WHERE e.status='retired')::int AS retired_assets,
-                 count(*) FILTER (WHERE latest.outcome='fail'
+                 count(*) FILTER (WHERE latest.outcome IN ('fail','conditional')
                     OR (latest.due_on IS NOT NULL AND latest.due_on < CURRENT_DATE))::int
                     AS calibration_attention_assets,
                  (SELECT count(*)::int FROM lab_equipment_bookings b
