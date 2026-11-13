@@ -101,4 +101,9 @@ and the [laboratories programme](docs/ORIOM7_GLOBAL_RESEARCH_DIGITAL_AND_PHYSICA
 
 ### ORIOM7 Digital Notebook
 
-The LAB OS now includes an authenticated, append-only project notebook for hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Entries can be linked to an experiment in the same project and are attributed to the trusted authenticated subject. Apply `services/api/migrations/019_lab_digital_notebook.sql` after migration 018. The notebook is an auditable application record, not a validated regulated LIMS or electronic-signature system. See [LAB OS API documentation](services/api/README.md#oriom7-digital-notebook).
+The LAB OS now includes an authenticated, append-only project notebook for hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Entries can be linked to an experiment in the same project and are attributed to the trusted authenticated subject. Apply `services/api/migrations/012_lab_digital_notebook.sql` after migration 011. The notebook is an auditable application record, not a validated regulated LIMS or electronic-signature system. See [LAB OS API documentation](services/api/README.md#oriom7-digital-notebook).
+
+
+### ORIOM7 Equipment Manager
+
+The LAB OS equipment register now supports calibration history, maintenance and inspection records, and time-window bookings. Confirmed overlapping bookings are rejected using a transaction that locks the equipment asset; assets marked maintenance or retired cannot be booked. Apply `services/api/migrations/013_equipment_manager.sql` after migration 012. Calibration and maintenance records are append-only and do not constitute external certification or a safety approval.
