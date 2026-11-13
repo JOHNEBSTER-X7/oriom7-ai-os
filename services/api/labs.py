@@ -903,7 +903,7 @@ async def add_equipment_calibration(
                 await con.execute(
                     """UPDATE lab_equipment_bookings SET status='cancelled', updated_at=now()
                        WHERE equipment_id=$1 AND owner_subject=$2
-                         AND status='confirmed' AND starts_at > now()""",
+                         AND status='confirmed' AND ends_at > now()""",
                     equipment_id, subject,
                 )
             row = await con.fetchrow(
@@ -1132,10 +1132,21 @@ async def equipment_manager_summary(
                  (SELECT count(*)::int FROM lab_equipment_bookings b
                   WHERE b.owner_subject=$1 AND b.status='confirmed' AND b.ends_at > now())
                     AS active_bookings,
-                 (SELECT count(*)::int FROM lab_equipment_maintenance m
-                  WHERE m.owner_subject=$1 AND m.next_due_at >= now()
-                    AND m.next_due_at < now() + interval '30 days')
-                    AS maintenance_due_30_days
+                 (SELECT count(*)::int FROM (
+                    SELECT DISTINCT ON (m.equipment_id) m.equipment_id, m.next_due_at
+                    FROM lab_equipment_maintenance m WHERE m.owner_subject=$1
+                    ORDER BY m.equipment_id, m.performed_at DESC
+                  ) latest_maintenance
+                  WHERE latest_maintenance.next_due_at >= now()
+                    AND latest_maintenance.next_due_at < now() + interval '30 days')
+                    AS maintenance_due_30_days,
+                 (SELECT count(*)::int FROM (
+                    SELECT DISTINCT ON (m.equipment_id) m.equipment_id, m.next_due_at
+                    FROM lab_equipment_maintenance m WHERE m.owner_subject=$1
+                    ORDER BY m.equipment_id, m.performed_at DESC
+                  ) latest_maintenance
+                  WHERE latest_maintenance.next_due_at < now())
+                    AS overdue_maintenance_assets
                FROM lab_equipment e
                LEFT JOIN LATERAL (
                  SELECT c.outcome, c.due_on
