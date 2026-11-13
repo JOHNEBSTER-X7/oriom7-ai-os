@@ -22,7 +22,7 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - `docs/` — architecture, specifications, implementation plan, universal language/voice access, accessibility/inclusion and adaptive accessibility.
 - `packages/accessibility-engine/` — typed preference model, JSON Schema, resolver and contract test cases.
 - `contracts/` — machine-readable API contract.
-- `apps/web/` — frontend implementation notes.
+- `apps/web/` — Next.js frontend, including the `/labs` LAB OS workspace.
 - `services/api/` — FastAPI service, accessibility endpoints and provider-independent model orchestration.
 - `infra/` — deployment guidance.
 - `data/` — data and indexing design.
