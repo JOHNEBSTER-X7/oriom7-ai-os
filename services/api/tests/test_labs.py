@@ -212,3 +212,15 @@ def test_equipment_booking_requires_timezone_and_positive_window():
 
     with pytest.raises(ValidationError):
         EquipmentBookingStatusUpdate(status="rescheduled")
+
+
+def test_equipment_booking_rejects_past_start_time():
+    from datetime import datetime, timedelta, timezone
+    from labs import EquipmentBookingCreate
+
+    past = datetime.now(timezone.utc) - timedelta(hours=1)
+    with pytest.raises(ValidationError):
+        EquipmentBookingCreate(
+            purpose="Retrospective equipment booking", booked_by="Research team",
+            starts_at=past, ends_at=past + timedelta(hours=1),
+        )
