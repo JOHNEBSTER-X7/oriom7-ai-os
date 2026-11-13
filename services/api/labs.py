@@ -751,6 +751,13 @@ class CalibrationCreate(BaseModel):
             raise ValueError("performed_by must contain at least two non-space characters")
         return value
 
+    @field_validator("calibrated_on")
+    @classmethod
+    def calibration_cannot_be_future_dated(cls, value: date):
+        if value > date.today():
+            raise ValueError("calibrated_on cannot be in the future")
+        return value
+
     @field_validator("due_on")
     @classmethod
     def validate_calibration_due_date(cls, value: date | None, info):
@@ -781,6 +788,13 @@ class MaintenanceCreate(BaseModel):
     def require_timezone(cls, value: datetime | None):
         if value is not None and value.tzinfo is None:
             raise ValueError("datetime must include a timezone")
+        return value
+
+    @field_validator("performed_at")
+    @classmethod
+    def maintenance_cannot_be_future_dated(cls, value: datetime):
+        if value > datetime.now(timezone.utc):
+            raise ValueError("performed_at cannot be in the future")
         return value
 
     @field_validator("next_due_at")
