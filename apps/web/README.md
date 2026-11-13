@@ -57,4 +57,10 @@ A passing inspection records lot acceptance; failed and conditional inspections 
 
 
 ### LAB OS migration order
-Run migrations 011, 012, 013, 014 and 015 sequentially. The quality and compliance workspace depends on inventory suppliers and lot records created by migration 014.
+Run migrations 011, 012, 013, 014, 015 and 016 sequentially. The quality and compliance workspace depends on inventory suppliers and lot records created by migration 014.
+
+
+
+## LAB financial management and project costing
+
+The API finance module provides cost centres, project/experiment budgets, grant registers and utilisation, transaction ledger entries, equipment depreciation assumptions and budget-versus-actual analytics. API migration `016_lab_financial_management.sql` follows migration 015. Financial totals remain separated by currency. The current UI integration is pending; these endpoints are accessible through the same-origin LAB API proxy. This is management information, not statutory accounting or verified grant reporting.
