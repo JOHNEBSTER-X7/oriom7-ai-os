@@ -1,6 +1,9 @@
 -- ORIOM7 DIGITAL NOTEBOOK: project-linked, user-attributed append-only research records.
 -- Apply after migration 018.
 
+CREATE UNIQUE INDEX IF NOT EXISTS lab_experiments_notebook_project_owner_idx
+    ON lab_experiments (experiment_id, project_id, owner_subject);
+
 CREATE TABLE IF NOT EXISTS lab_notebook_entries (
     entry_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL,
@@ -17,8 +20,8 @@ CREATE TABLE IF NOT EXISTS lab_notebook_entries (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     FOREIGN KEY (project_id, owner_subject)
         REFERENCES lab_projects (project_id, owner_subject) ON DELETE RESTRICT,
-    FOREIGN KEY (experiment_id, owner_subject)
-        REFERENCES lab_experiments (experiment_id, owner_subject) ON DELETE RESTRICT
+    FOREIGN KEY (experiment_id, project_id, owner_subject)
+        REFERENCES lab_experiments (experiment_id, project_id, owner_subject) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS lab_notebook_project_timeline_idx
