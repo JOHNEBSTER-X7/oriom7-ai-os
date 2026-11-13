@@ -33,3 +33,17 @@ def test_purchase_order_and_goods_receipt_validation():
     assert receipt.inspection_status == "pending"
     with pytest.raises(ValidationError):
         GoodsReceiptCreate(line_id=uuid.uuid4(), quantity="-1", lot_code="LOT-001", unit_cost="2", recorded_by="Technician")
+
+def test_stock_issue_requires_lot_and_positive_quantity():
+    from inventory import StockIssueCreate
+    import uuid
+    issue = StockIssueCreate(lot_id=uuid.uuid4(), quantity="0.25", reason="Research sample usage", recorded_by="Lab technician")
+    assert issue.movement_type == "issue"
+    with pytest.raises(ValidationError):
+        StockIssueCreate(lot_id=uuid.uuid4(), quantity="0", reason="Research sample usage", recorded_by="Lab technician")
+
+
+def test_inventory_currency_is_a_three_letter_code():
+    from inventory import ItemCreate
+    with pytest.raises(ValidationError):
+        ItemCreate(sku="SKU-1", name="Sample vial", category="consumables", unit="each", currency="US")
