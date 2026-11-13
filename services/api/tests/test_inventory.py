@@ -29,10 +29,10 @@ def test_purchase_order_and_goods_receipt_validation():
     import uuid
     po = PurchaseOrderCreate(supplier_id=uuid.uuid4(), order_number="PO-2026-001", lines=[{"item_id":str(uuid.uuid4()),"quantity":"5","unit_cost":"2.25"}])
     assert po.currency == "USD"
-    receipt = GoodsReceiptCreate(line_id=uuid.uuid4(), quantity="2", lot_code="LOT-001", unit_cost="2.25", recorded_by="Receiving technician")
+    receipt = GoodsReceiptCreate(line_id=uuid.uuid4(), quantity="2", lot_code="LOT-001", recorded_by="Receiving technician")
     assert receipt.inspection_status == "pending"
     with pytest.raises(ValidationError):
-        GoodsReceiptCreate(line_id=uuid.uuid4(), quantity="-1", lot_code="LOT-001", unit_cost="2", recorded_by="Technician")
+        GoodsReceiptCreate(line_id=uuid.uuid4(), quantity="-1", lot_code="LOT-001", recorded_by="Technician")
 
 def test_stock_issue_requires_lot_and_positive_quantity():
     from inventory import StockIssueCreate
