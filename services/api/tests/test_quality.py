@@ -42,3 +42,23 @@ def test_compliance_document_dates_and_review_values():
                                  reference="DOC-002", issued_at="2027-01-01", expires_at="2026-01-01")
     with pytest.raises(ValidationError):
         ComplianceReviewUpdate(review_status="verified", reviewed_by="Reviewer")
+
+def test_inspection_outcomes_and_sample_defect_relationship():
+    from quality import InspectionCreate
+    common = {"lot_id":uuid.uuid4(),"inspection_type":"Incoming inspection","sample_size":5,"performed_by":"Quality technician"}
+    assert InspectionCreate(**common,outcome="fail",defects_count=1).outcome == "fail"
+    assert InspectionCreate(**common,outcome="conditional").outcome == "conditional"
+    with pytest.raises(ValidationError):
+        InspectionCreate(**common,outcome="pass",defects_count=6)
+
+
+def test_capa_cannot_be_verified_without_completion_is_api_gate_not_payload_enum():
+    from quality import CapaStatusUpdate
+    # Payload enum permits the desired target; transition ordering is enforced in the API transaction.
+    assert CapaStatusUpdate(status="verified",recorded_by="Quality manager").status == "verified"
+
+
+def test_compliance_review_requires_a_decision_maker():
+    from quality import ComplianceReviewUpdate
+    with pytest.raises(ValidationError):
+        ComplianceReviewUpdate(review_status="accepted",reviewed_by=" ")
