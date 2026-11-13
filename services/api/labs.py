@@ -545,15 +545,44 @@ async def update_equipment_status(
 ):
     pool = await _pool(request)
     async with pool.acquire() as con:
-        row = await con.fetchrow(
-            """UPDATE lab_equipment SET status=$3, updated_at=now()
-               WHERE equipment_id=$1 AND owner_subject=$2
-               RETURNING equipment_id::text, name, category, manufacturer, model,
-                         asset_tag, location, status, metadata, created_at, updated_at""",
-            equipment_id, subject, payload.status,
-        )
-    if row is None:
-        raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+        async with con.transaction():
+            equipment = await con.fetchrow(
+                "SELECT equipment_id FROM lab_equipment WHERE equipment_id=$1 AND owner_subject=$2 FOR UPDATE",
+                equipment_id, subject,
+            )
+            if equipment is None:
+                raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
+            if payload.status in {"available", "in_use"}:
+                failed_calibration = await con.fetchval(
+                    """SELECT 1 FROM lab_equipment_calibrations
+                       WHERE equipment_id=$1 AND owner_subject=$2 AND outcome='fail'
+                       ORDER BY calibrated_on DESC, created_at DESC LIMIT 1""",
+                    equipment_id, subject,
+                )
+                overdue_calibration = await con.fetchval(
+                    """SELECT 1 FROM lab_equipment_calibrations
+                       WHERE equipment_id=$1 AND owner_subject=$2 AND due_on < CURRENT_DATE
+                       ORDER BY calibrated_on DESC, created_at DESC LIMIT 1""",
+                    equipment_id, subject,
+                )
+                if failed_calibration or overdue_calibration:
+                    raise HTTPException(409, detail={"code": "lab_equipment_calibration_block"})
+            if payload.status in {"maintenance", "retired"}:
+                active_booking = await con.fetchval(
+                    """SELECT 1 FROM lab_equipment_bookings
+                       WHERE equipment_id=$1 AND owner_subject=$2
+                         AND status='confirmed' AND ends_at > now() LIMIT 1""",
+                    equipment_id, subject,
+                )
+                if active_booking:
+                    raise HTTPException(409, detail={"code": "lab_equipment_has_active_bookings"})
+            row = await con.fetchrow(
+                """UPDATE lab_equipment SET status=$3, updated_at=now()
+                   WHERE equipment_id=$1 AND owner_subject=$2
+                   RETURNING equipment_id::text, name, category, manufacturer, model,
+                             asset_tag, location, status, metadata, created_at, updated_at""",
+                equipment_id, subject, payload.status,
+            )
     return _equipment(row)
 
 
