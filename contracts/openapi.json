@@ -2563,6 +2563,16 @@
           "422": {
             "description": "Validation error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabQualityInspectionCreate"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -2602,6 +2612,16 @@
           "422": {
             "description": "Validation error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabQualityNonconformanceCreate"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -2640,6 +2660,16 @@
           },
           "422": {
             "description": "Validation error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabQualityCapaCreate"
+              }
+            }
           }
         }
       },
@@ -2690,6 +2720,16 @@
           },
           "409": {
             "description": "Invalid verification transition"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabQualityCapaStatusUpdate"
+              }
+            }
           }
         }
       }
@@ -2743,6 +2783,16 @@
           "422": {
             "description": "Validation error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabComplianceDocumentCreate"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -2789,6 +2839,16 @@
           },
           "404": {
             "description": "Document not found or already reviewed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabComplianceReviewUpdate"
+              }
+            }
           }
         }
       }
@@ -3004,6 +3064,236 @@
               "maintenance",
               "retired"
             ]
+          }
+        }
+      },
+      "LabQualityInspectionCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lot_id",
+          "inspection_type",
+          "outcome",
+          "sample_size",
+          "performed_by"
+        ],
+        "properties": {
+          "lot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inspection_type": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "conditional"
+            ]
+          },
+          "sample_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "defects_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "performed_by": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "evidence_reference": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "LabQualityNonconformanceCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "description"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 180
+          },
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 4000
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "minor",
+              "major",
+              "critical"
+            ],
+            "default": "major"
+          },
+          "assigned_to": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "LabQualityCapaCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "nonconformance_id",
+          "action_type",
+          "description",
+          "assigned_to",
+          "recorded_by"
+        ],
+        "properties": {
+          "nonconformance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action_type": {
+            "type": "string",
+            "enum": [
+              "correction",
+              "corrective",
+              "preventive"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 4000
+          },
+          "assigned_to": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "recorded_by": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          }
+        }
+      },
+      "LabQualityCapaStatusUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "recorded_by"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_progress",
+              "completed",
+              "verified"
+            ]
+          },
+          "recorded_by": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      },
+      "LabComplianceDocumentCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "document_type",
+          "document_name",
+          "reference"
+        ],
+        "properties": {
+          "supplier_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "document_type": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "document_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 180
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 1000
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        }
+      },
+      "LabComplianceReviewUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "review_status",
+          "reviewed_by"
+        ],
+        "properties": {
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected",
+              "superseded"
+            ]
+          },
+          "reviewed_by": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000
           }
         }
       }
