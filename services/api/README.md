@@ -190,3 +190,12 @@ Apply `migrations/013_equipment_manager.sql` after migration 012. The Equipment 
 - `GET /v1/labs/equipment/summary` — owner-scoped asset, calibration, maintenance and booking counters.
 
 All operations are scoped to the authenticated owner. Booking creation locks the equipment row and rejects overlapping confirmed reservations; equipment in maintenance or retired status cannot be booked. A failed or conditional calibration automatically moves the asset into maintenance and cancels its active/future confirmed bookings. An asset cannot be returned to available/in-use while its latest calibration has failed, is conditional, or is overdue. Equipment cannot be moved into maintenance/retired while a confirmed booking remains active. Calibration and maintenance history is append-only. Calibration records are evidence supplied by the operator, not independent accreditation or certification. The booking system does not control instruments, guarantee room/facility availability, or replace local safety and authorisation checks.
+
+
+## LAB inventory and procurement
+
+Apply `migrations/014_lab_inventory_procurement.sql` after migrations 011–013. The authenticated `/v1/labs/inventory` API provides owner-scoped stock items, supplier records, purchase requisitions, purchase orders, goods receipts, lot/batch tracking, traceable issues/write-offs and stock valuation.
+
+Goods receipts update the item balance, lot balance, purchase-order received quantity and append-only stock movement ledger in one database transaction. Issues require an accepted, unexpired lot and cannot reduce stock below zero. Rejected, quarantined or pending lots cannot be issued for normal use. Corrections are represented by compensating ledger entries; the movement ledger cannot be edited or deleted.
+
+The inventory valuation is a weighted-average estimate based on recorded receipt costs and does not replace accounting valuation policy. Supplier entries are user-supplied records, not verified suppliers. Chemical hazard classifications and Safety Data Sheet references are metadata only; the API does not authorize purchasing, handling, storage or disposal of hazardous or controlled materials.
