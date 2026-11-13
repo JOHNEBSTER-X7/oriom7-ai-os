@@ -355,3 +355,8 @@ button.lab-list-item { cursor: pointer; }
 .equipment-subpanel textarea { width: 100%; border: 1px solid #777; border-radius: 9px; padding: 10px 12px; background: var(--surface); color: var(--text); font: inherit; resize: vertical; }
 @media (max-width: 900px) { .equipment-manager-layout { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .equipment-manager-grid { grid-template-columns: 1fr; } .equipment-status-row { grid-template-columns: 1fr; } }
+
+.equipment-metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(135px,1fr)); gap: 10px; margin: 18px 0 24px; }
+.equipment-metric { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--page); }
+.equipment-metric span { color: var(--muted); font-size: .82rem; }
+.equipment-metric strong { font-size: 1.55rem; }
