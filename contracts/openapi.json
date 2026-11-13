@@ -2868,6 +2868,527 @@
           }
         }
       }
+    },
+    "/v1/labs/finance/cost-centres": {
+      "get": {
+        "operationId": "listLabCostCentres",
+        "summary": "List owner-scoped laboratory cost centres",
+        "responses": {
+          "200": {
+            "description": "Cost centres"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLabCostCentre",
+        "summary": "Create a cost centre",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "code",
+                  "name"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 160
+                  },
+                  "description": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "Duplicate code"
+          }
+        }
+      }
+    },
+    "/v1/labs/finance/budgets": {
+      "get": {
+        "operationId": "listLabBudgets",
+        "summary": "List budgets with recorded actuals",
+        "responses": {
+          "200": {
+            "description": "Budgets and actual spend"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLabBudget",
+        "summary": "Create a project budget",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "period_start",
+                  "period_end",
+                  "currency",
+                  "approved_amount"
+                ],
+                "properties": {
+                  "project_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cost_centre_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 160
+                  },
+                  "period_start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "period_end": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "approved_amount": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,4})?$"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "approved"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "422": {
+            "description": "Invalid budget"
+          }
+        }
+      }
+    },
+    "/v1/labs/finance/grants": {
+      "get": {
+        "operationId": "listLabGrants",
+        "summary": "List funding grants and utilisation",
+        "responses": {
+          "200": {
+            "description": "Grant register"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLabGrant",
+        "summary": "Register a funding grant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "funder_name",
+                  "currency",
+                  "awarded_amount"
+                ],
+                "properties": {
+                  "project_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "funder_name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 180
+                  },
+                  "grant_reference": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "awarded_amount": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,4})?$"
+                  },
+                  "start_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "end_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "restrictions": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "prospective",
+                      "awarded",
+                      "active",
+                      "completed",
+                      "withdrawn"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "Duplicate grant reference"
+          }
+        }
+      }
+    },
+    "/v1/labs/finance/transactions": {
+      "get": {
+        "operationId": "listLabFinancialTransactions",
+        "summary": "List project financial transactions",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLabFinancialTransaction",
+        "summary": "Append an expense, credit or adjustment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "category",
+                  "description",
+                  "amount",
+                  "currency",
+                  "transaction_date",
+                  "recorded_by"
+                ],
+                "properties": {
+                  "project_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "experiment_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "budget_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "grant_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cost_centre_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "equipment_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "inventory_item_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "transaction_type": {
+                    "type": "string",
+                    "enum": [
+                      "expense",
+                      "credit",
+                      "adjustment"
+                    ]
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,4})?$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "transaction_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "supplier_name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "invoice_reference": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "recorded_by": {
+                    "type": "string"
+                  },
+                  "source_reference": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded"
+          },
+          "409": {
+            "description": "Duplicate invoice reference"
+          }
+        }
+      }
+    },
+    "/v1/labs/finance/depreciation": {
+      "get": {
+        "operationId": "listLabAssetDepreciation",
+        "summary": "List straight-line equipment depreciation assumptions",
+        "responses": {
+          "200": {
+            "description": "Depreciation schedules"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLabAssetDepreciation",
+        "summary": "Register an equipment depreciation assumption",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "equipment_id",
+                  "acquisition_date",
+                  "acquisition_cost",
+                  "currency",
+                  "useful_life_months"
+                ],
+                "properties": {
+                  "equipment_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "acquisition_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "acquisition_cost": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,4})?$"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "useful_life_months": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1200
+                  },
+                  "residual_value": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,4})?$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "404": {
+            "description": "Equipment not found"
+          },
+          "409": {
+            "description": "Schedule already exists"
+          }
+        }
+      }
+    },
+    "/v1/labs/finance/analytics": {
+      "get": {
+        "operationId": "getLabFinanceAnalytics",
+        "summary": "Return budget, project and currency-separated cost analytics",
+        "responses": {
+          "200": {
+            "description": "Finance analytics"
+          }
+        }
+      }
     }
   },
   "components": {
