@@ -1102,3 +1102,41 @@ async def update_equipment_booking_status(
                 booking_id, subject, payload.status,
             )
     return _booking(updated)
+
+
+@router.get("/equipment/summary")
+async def equipment_manager_summary(
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    """Return owner-scoped equipment health and workload counters."""
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        row = await con.fetchrow(
+            """SELECT
+                 count(*)::int AS total_assets,
+                 count(*) FILTER (WHERE e.status='available')::int AS available_assets,
+                 count(*) FILTER (WHERE e.status='in_use')::int AS in_use_assets,
+                 count(*) FILTER (WHERE e.status='maintenance')::int AS maintenance_assets,
+                 count(*) FILTER (WHERE e.status='retired')::int AS retired_assets,
+                 count(*) FILTER (WHERE latest.outcome='fail'
+                    OR (latest.due_on IS NOT NULL AND latest.due_on < CURRENT_DATE))::int
+                    AS calibration_attention_assets,
+                 (SELECT count(*)::int FROM lab_equipment_bookings b
+                  WHERE b.owner_subject=$1 AND b.status='confirmed' AND b.ends_at > now())
+                    AS active_bookings,
+                 (SELECT count(*)::int FROM lab_equipment_maintenance m
+                  WHERE m.owner_subject=$1 AND m.next_due_at >= now()
+                    AND m.next_due_at < now() + interval '30 days')
+                    AS maintenance_due_30_days
+               FROM lab_equipment e
+               LEFT JOIN LATERAL (
+                 SELECT c.outcome, c.due_on
+                 FROM lab_equipment_calibrations c
+                 WHERE c.equipment_id=e.equipment_id AND c.owner_subject=e.owner_subject
+                 ORDER BY c.calibrated_on DESC, c.created_at DESC LIMIT 1
+               ) latest ON TRUE
+               WHERE e.owner_subject=$1""",
+            subject,
+        )
+    return dict(row)
