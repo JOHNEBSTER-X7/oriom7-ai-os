@@ -47,3 +47,10 @@ The Equipment Manager provides asset selection/status, calibration records and d
 The `/labs` workspace now includes inventory and procurement controls for stock item registration, supplier records, purchase requisitions, purchase orders, goods receipts, lot tracking, stock on hand and procurement metrics. Apply API migration `014_lab_inventory_procurement.sql` after 011–013.
 
 The stock movement ledger is append-only. Goods receipts and stock issues are traceable to batch/lot records; normal issues require accepted, unexpired lots. Hazard classifications and Safety Data Sheet references are informational records only and do not authorize hazardous-material handling or purchasing.
+
+
+## LAB quality, compliance and analytics
+
+The `/labs` workspace includes lot inspection records, automatic quarantine and non-conformance creation for failed/conditional results, CAPA tracking and status history, compliance-document review/expiry monitoring, inspection history and supplier quality scorecards. Apply migration `015_lab_quality_compliance.sql` after 011–014.
+
+A passing inspection records lot acceptance; failed and conditional inspections quarantine the lot. CAPA actions must reach completed before they can be verified. Document references are not independently authenticated, and this module is not a validated QMS or legal compliance service.
