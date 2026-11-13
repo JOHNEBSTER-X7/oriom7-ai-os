@@ -305,7 +305,20 @@ export default function LabWorkspace() {
 
 
       <section className="equipment-manager-panel" aria-label="Equipment management">
-        <div className="workspace-section-heading"><div><p className="eyebrow">04 · EQUIPMENT MANAGEMENT</p><h2>Calibration, maintenance and bookings</h2></div></div>
+        <div className="workspace-section-heading"><div><p className="eyebrow">03 · EQUIPMENT MANAGEMENT</p><h2>Calibration, maintenance and bookings</h2></div></div>
+        <form className="equipment-register-form" onSubmit={registerEquipment}>
+          <label htmlFor="lab-equipment-name">Equipment name</label>
+          <input id="lab-equipment-name" value={equipmentName} onChange={e => setEquipmentName(e.target.value)} maxLength={160} required />
+          <label htmlFor="lab-equipment-category">Category</label>
+          <select id="lab-equipment-category" value={equipmentCategory} onChange={e => setEquipmentCategory(e.target.value)}>
+            {["electronics","compute","robotics","mechanical","optical","telecommunications","materials","energy","environmental","other"].map(item => <option key={item}>{item}</option>)}
+          </select>
+          <label htmlFor="lab-equipment-asset-tag">Asset tag (optional)</label>
+          <input id="lab-equipment-asset-tag" value={equipmentAssetTag} onChange={e => setEquipmentAssetTag(e.target.value)} maxLength={100} />
+          <label htmlFor="lab-equipment-location">Location (optional)</label>
+          <input id="lab-equipment-location" value={equipmentLocation} onChange={e => setEquipmentLocation(e.target.value)} maxLength={200} />
+          <button className="primary-button" type="submit" disabled={busy || !equipmentName.trim()}>Register equipment</button>
+        </form>
         {equipmentSummary && <div className="equipment-metrics" aria-label="Equipment metrics">
           {[[ "Total assets", equipmentSummary.total_assets ], [ "Available", equipmentSummary.available_assets ], [ "In use", equipmentSummary.in_use_assets ], [ "In maintenance", equipmentSummary.maintenance_assets ], [ "Calibration attention", equipmentSummary.calibration_attention_assets ], [ "Active bookings", equipmentSummary.active_bookings ], [ "Maintenance due in 30 days", equipmentSummary.maintenance_due_30_days ], [ "Overdue maintenance", equipmentSummary.overdue_maintenance_assets ]].map(([label,value]) => <div className="equipment-metric" key={String(label)}><span>{label}</span><strong>{value}</strong></div>)}
         </div>}
@@ -438,29 +451,6 @@ export default function LabWorkspace() {
           </> : <p className="muted">Create or select a project to register experiment plans.</p>}
         </article>
 
-        <article className="research-search-card">
-          <p className="eyebrow">03 · EQUIPMENT REGISTER</p>
-          <h2>Laboratory equipment</h2>
-          <form className="research-form" onSubmit={registerEquipment}>
-            <label htmlFor="lab-equipment-name">Equipment name</label>
-            <input id="lab-equipment-name" value={equipmentName} onChange={e => setEquipmentName(e.target.value)} maxLength={160} required />
-            <label htmlFor="lab-equipment-category">Category</label>
-            <select id="lab-equipment-category" value={equipmentCategory} onChange={e => setEquipmentCategory(e.target.value)}>
-              {["electronics","compute","robotics","mechanical","optical","telecommunications","materials","energy","environmental","other"].map(item => <option key={item}>{item}</option>)}
-            </select>
-            <label htmlFor="lab-equipment-asset-tag">Asset tag (optional)</label>
-            <input id="lab-equipment-asset-tag" value={equipmentAssetTag} onChange={e => setEquipmentAssetTag(e.target.value)} maxLength={100} />
-            <label htmlFor="lab-equipment-location">Location (optional)</label>
-            <input id="lab-equipment-location" value={equipmentLocation} onChange={e => setEquipmentLocation(e.target.value)} maxLength={200} />
-            <button className="primary-button" type="submit" disabled={busy || !equipmentName.trim()}>Register equipment</button>
-          </form>
-          <div className="lab-list">
-            {equipment.length === 0 ? <p className="muted">No equipment registered.</p> : equipment.map(item =>
-              <div className="lab-list-item" key={item.equipment_id}>
-                <strong>{item.name}</strong><span>{item.category} · {item.status}</span>
-              </div>)}
-          </div>
-        </article>
       </section>
     </div>
   );
