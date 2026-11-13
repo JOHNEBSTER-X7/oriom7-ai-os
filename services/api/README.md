@@ -167,3 +167,13 @@ equipment, schedule physical experiments, verify scientific results, provide
 laboratory safety certification or replace calibrated instruments and local
 operating procedures. Those capabilities require separately designed and
 validated integrations, human approval and safety controls.
+
+
+### ORIOM7 Digital Notebook
+
+Apply `migrations/019_lab_digital_notebook.sql` after migration 018. The notebook adds project-linked research records with optional experiment linkage:
+
+- `POST /v1/labs/projects/{project_id}/notebook` — append a note, hypothesis, observation, measurement, result, decision, protocol, review or deviation.
+- `GET /v1/labs/projects/{project_id}/notebook` — retrieve the chronological notebook, with optional `entry_type` and `experiment_id` filters.
+
+Entries are attributed to the authenticated subject; the client cannot supply an owner identity. Entries are append-only at the database layer: corrections are new entries that should reference the original record in their content/metadata. Content is limited to 20,000 characters and metadata to 16 KB. This is an auditable application record, not a qualified electronic-signature system, regulated clinical record, validated laboratory information management system (LIMS), or guarantee of scientific integrity. Retention, backup, access review and regulatory validation remain deployment responsibilities.
