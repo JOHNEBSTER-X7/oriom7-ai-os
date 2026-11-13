@@ -894,9 +894,16 @@ async def add_equipment_calibration(
             if equipment is None:
                 raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
             if payload.outcome == "fail":
-                # A failed calibration removes the asset from normal availability.
+                # A failed calibration removes the asset from normal availability
+                # and cancels its future confirmed reservations.
                 await con.execute(
                     "UPDATE lab_equipment SET status='maintenance', updated_at=now() WHERE equipment_id=$1 AND owner_subject=$2",
+                    equipment_id, subject,
+                )
+                await con.execute(
+                    """UPDATE lab_equipment_bookings SET status='cancelled', updated_at=now()
+                       WHERE equipment_id=$1 AND owner_subject=$2
+                         AND status='confirmed' AND starts_at > now()""",
                     equipment_id, subject,
                 )
             row = await con.fetchrow(
