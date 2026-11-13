@@ -2543,6 +2543,271 @@
           }
         }
       }
+    },
+    "/labs/quality/inspections": {
+      "post": {
+        "operationId": "createLabQualityInspection",
+        "summary": "Record a lot quality inspection",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Append-only inspection evidence; failed and conditional lots are quarantined."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabQualityInspections",
+        "summary": "List lot quality inspections",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped quality inspection records."
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/quality/nonconformances": {
+      "post": {
+        "operationId": "createLabQualityNonconformance",
+        "summary": "Open a quality non-conformance",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner-scoped non-conformance record."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabQualityNonconformances",
+        "summary": "List quality non-conformances",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped non-conformance records."
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/quality/capa": {
+      "post": {
+        "operationId": "createLabQualityCapa",
+        "summary": "Create a corrective or preventive action",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "CAPA action and immutable creation event."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabQualityCapa",
+        "summary": "List corrective and preventive actions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped CAPA actions."
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/quality/capa/{action_id}": {
+      "patch": {
+        "operationId": "updateLabQualityCapaStatus",
+        "summary": "Advance CAPA action status",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status updated and event appended"
+          },
+          "404": {
+            "description": "Action not found"
+          },
+          "409": {
+            "description": "Invalid verification transition"
+          }
+        }
+      }
+    },
+    "/labs/quality/capa/{action_id}/events": {
+      "get": {
+        "operationId": "listLabQualityCapaEvents",
+        "summary": "Read immutable CAPA event history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped CAPA events"
+          },
+          "404": {
+            "description": "Action not found"
+          }
+        }
+      }
+    },
+    "/labs/quality/compliance-documents": {
+      "post": {
+        "operationId": "createLabComplianceDocument",
+        "summary": "Register a compliance document",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Document reference awaiting review."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabComplianceDocuments",
+        "summary": "List compliance documents and expiry state",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped document register with expiry flags."
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/quality/compliance-documents/{document_id}/review": {
+      "patch": {
+        "operationId": "reviewLabComplianceDocument",
+        "summary": "Record compliance document review",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review decision recorded"
+          },
+          "404": {
+            "description": "Document not found or already reviewed"
+          }
+        }
+      }
+    },
+    "/labs/quality/analytics": {
+      "get": {
+        "operationId": "getLabQualityAnalytics",
+        "summary": "Quality metrics and supplier quality scorecards",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped quality and compliance analytics"
+          }
+        }
+      }
     }
   },
   "components": {
