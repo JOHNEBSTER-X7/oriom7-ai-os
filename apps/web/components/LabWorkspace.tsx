@@ -54,6 +54,8 @@ export default function LabWorkspace() {
   const [hypothesis, setHypothesis] = useState("");
   const [equipmentName, setEquipmentName] = useState("");
   const [equipmentCategory, setEquipmentCategory] = useState("electronics");
+  const [equipmentAssetTag, setEquipmentAssetTag] = useState("");
+  const [equipmentLocation, setEquipmentLocation] = useState("");
   const [calibrationDate, setCalibrationDate] = useState("");
   const [calibrationDueDate, setCalibrationDueDate] = useState("");
   const [calibrationOutcome, setCalibrationOutcome] = useState("pass");
@@ -280,9 +282,9 @@ export default function LabWorkspace() {
     try {
       const created = await api<Equipment>("/api/labs/equipment", {
         method: "POST",
-        body: JSON.stringify({ name: equipmentName, category: equipmentCategory }),
+        body: JSON.stringify({ name: equipmentName, category: equipmentCategory, asset_tag: equipmentAssetTag || null, location: equipmentLocation || null }),
       });
-      setEquipmentName("");
+      setEquipmentName(""); setEquipmentAssetTag(""); setEquipmentLocation("");
       setSelectedEquipmentId(created.equipment_id);
       await loadEquipment();
       setMessage("Equipment registered.");
@@ -446,6 +448,10 @@ export default function LabWorkspace() {
             <select id="lab-equipment-category" value={equipmentCategory} onChange={e => setEquipmentCategory(e.target.value)}>
               {["electronics","compute","robotics","mechanical","optical","telecommunications","materials","energy","environmental","other"].map(item => <option key={item}>{item}</option>)}
             </select>
+            <label htmlFor="lab-equipment-asset-tag">Asset tag (optional)</label>
+            <input id="lab-equipment-asset-tag" value={equipmentAssetTag} onChange={e => setEquipmentAssetTag(e.target.value)} maxLength={100} />
+            <label htmlFor="lab-equipment-location">Location (optional)</label>
+            <input id="lab-equipment-location" value={equipmentLocation} onChange={e => setEquipmentLocation(e.target.value)} maxLength={200} />
             <button className="primary-button" type="submit" disabled={busy || !equipmentName.trim()}>Register equipment</button>
           </form>
           <div className="lab-list">
