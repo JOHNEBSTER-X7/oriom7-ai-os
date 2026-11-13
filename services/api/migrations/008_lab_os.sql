@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS lab_projects (
     status TEXT NOT NULL DEFAULT 'planning'
         CHECK (status IN ('planning','active','paused','completed','archived')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (project_id, owner_subject)
 );
 
 CREATE INDEX IF NOT EXISTS lab_projects_owner_updated_idx
@@ -28,7 +29,7 @@ CREATE INDEX IF NOT EXISTS lab_projects_owner_discipline_status_idx
 
 CREATE TABLE IF NOT EXISTS lab_experiments (
     experiment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES lab_projects(project_id) ON DELETE RESTRICT,
+    project_id UUID NOT NULL,
     owner_subject TEXT NOT NULL,
     title TEXT NOT NULL CHECK (char_length(title) BETWEEN 3 AND 160),
     hypothesis TEXT,
@@ -39,7 +40,10 @@ CREATE TABLE IF NOT EXISTS lab_experiments (
         CHECK (status IN ('planned','queued','running','completed','failed','cancelled')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (experiment_id, owner_subject)
+    UNIQUE (experiment_id, owner_subject),
+    FOREIGN KEY (project_id, owner_subject)
+        REFERENCES lab_projects (project_id, owner_subject)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS lab_experiments_project_updated_idx
