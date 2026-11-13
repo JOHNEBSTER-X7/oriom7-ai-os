@@ -6,6 +6,8 @@ function targetPath(segments: string[], search: string): string | null {
   const path = segments.join("/");
   const base = "/v1/labs/";
   if (path === "projects" || path === "equipment" || path === "equipment/summary") return base + path + search;
+  if (/^inventory\/(items|suppliers|requisitions|purchase-orders|receipts|summary)$/i.test(path)) return base + path + search;
+  if (/^inventory\/items\/[0-9a-f-]{36}\/issues$/i.test(path)) return base + path + search;
   if (/^projects\/[0-9a-f-]{36}$/i.test(path)) return base + path + search;
   if (/^projects\/[0-9a-f-]{36}\/(experiments|notebook)$/i.test(path)) return base + path + search;
   if (/^experiments\/[0-9a-f-]{36}(\/events)?$/i.test(path)) return base + path + search;
