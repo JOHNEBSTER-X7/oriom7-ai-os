@@ -130,3 +130,90 @@ Every assertion must reference eligible indexed evidence. Submitted and extracte
 ## Research agent worker
 
 Run `python worker.py` as a separate supervised process. Apply migrations 001–010 first. The worker processes approved crawl jobs and durable research-agent jobs, and enqueues due recurring schedules. Configure the worker with DATABASE_URL, model provider credentials and search provider credentials. Without a configured model provider, research jobs cannot execute.
+
+## ORIOM7 LAB OS foundation
+
+The first LAB OS API slice provides authenticated, owner-scoped research project,
+experiment, append-only experiment-event and equipment-register endpoints.
+
+Endpoints:
+- `POST /v1/labs/projects` — create a research project.
+- `GET /v1/labs/projects` — list the authenticated user's projects.
+- `GET /v1/labs/projects/{project_id}` — retrieve an owned project.
+- `PATCH /v1/labs/projects/{project_id}` — update project lifecycle status.
+- `POST /v1/labs/projects/{project_id}/experiments` — register an experiment plan.
+- `GET /v1/labs/projects/{project_id}/experiments` — list experiments for an owned project.
+- `GET /v1/labs/experiments/{experiment_id}` — retrieve an owned experiment.
+- `POST /v1/labs/experiments/{experiment_id}/events` — append a note, protocol update, status change, measurement, result summary, deviation or review event.
+- `GET /v1/labs/experiments/{experiment_id}/events` — read the experiment event history.
+- `POST /v1/labs/equipment` — register equipment metadata.
+- `GET /v1/labs/equipment` — list registered equipment.
+- `PATCH /v1/labs/equipment/{equipment_id}` — update equipment register status.
+
+Apply `migrations/011_lab_os.sql` after migrations 001–007. The API requires
+the existing trusted authentication middleware and a configured PostgreSQL
+`DATABASE_URL`; there is deliberately no in-memory fallback for laboratory
+records. User identity is derived from trusted middleware, never from request
+payloads. Project and experiment ownership is enforced in application queries
+and by composite database foreign keys.
+
+Experiment events are append-only. Corrections should be recorded as new events.
+Status transitions are constrained: planned → queued/cancelled; queued →
+running/cancelled; running → completed/failed/cancelled. Terminal states cannot
+be reopened through the event API.
+
+This foundation is a research-management system only. It does not actuate
+equipment, schedule physical experiments, verify scientific results, provide
+laboratory safety certification or replace calibrated instruments and local
+operating procedures. Those capabilities require separately designed and
+validated integrations, human approval and safety controls.
+
+
+### ORIOM7 Digital Notebook
+
+Apply `migrations/012_lab_digital_notebook.sql` after migration 011. The notebook adds project-linked research records with optional experiment linkage:
+
+- `POST /v1/labs/projects/{project_id}/notebook` — append a note, hypothesis, observation, measurement, result, decision, protocol, review or deviation.
+- `GET /v1/labs/projects/{project_id}/notebook` — retrieve the chronological notebook, with optional `entry_type` and `experiment_id` filters.
+
+Entries are attributed to the authenticated subject; the client cannot supply an owner identity. Entries are append-only at the database layer: corrections are new entries that should reference the original record in their content/metadata. Content is limited to 20,000 characters and metadata to 16 KB. This is an auditable application record, not a qualified electronic-signature system, regulated clinical record, validated laboratory information management system (LIMS), or guarantee of scientific integrity. Retention, backup, access review and regulatory validation remain deployment responsibilities.
+
+
+### ORIOM7 Equipment Manager
+
+Apply `migrations/013_equipment_manager.sql` after migration 012. The Equipment Manager extends the original equipment register with append-only calibration and maintenance records and a reservation schedule.
+
+- `POST /v1/labs/equipment/{equipment_id}/calibrations` and `GET /v1/labs/equipment/{equipment_id}/calibrations` — record and list calibration history, due dates, outcomes and certificate references.
+- `POST /v1/labs/equipment/{equipment_id}/maintenance` and `GET /v1/labs/equipment/{equipment_id}/maintenance` — record and list preventive/corrective maintenance, inspections and next-due dates.
+- `POST /v1/labs/equipment/{equipment_id}/bookings` and `GET /v1/labs/equipment/{equipment_id}/bookings` — create and list equipment reservations.
+- `PATCH /v1/labs/equipment/bookings/{booking_id}` — cancel or complete an active reservation.
+- `GET /v1/labs/equipment/summary` — owner-scoped asset, calibration, maintenance and booking counters.
+
+All operations are scoped to the authenticated owner. Booking creation locks the equipment row and rejects overlapping confirmed reservations; equipment in maintenance or retired status cannot be booked. A failed or conditional calibration automatically moves the asset into maintenance and cancels its active/future confirmed bookings. An asset cannot be returned to available/in-use while its latest calibration has failed, is conditional, or is overdue. Equipment cannot be moved into maintenance/retired while a confirmed booking remains active. Calibration and maintenance history is append-only. Calibration records are evidence supplied by the operator, not independent accreditation or certification. The booking system does not control instruments, guarantee room/facility availability, or replace local safety and authorisation checks.
+
+
+## LAB inventory and procurement
+
+Apply `migrations/014_lab_inventory_procurement.sql` after migrations 011–013. The authenticated `/v1/labs/inventory` API provides owner-scoped stock items, supplier records, purchase requisitions, purchase orders, goods receipts, lot/batch tracking, traceable issues/write-offs and stock valuation.
+
+Goods receipts update the item balance, lot balance, purchase-order received quantity and append-only stock movement ledger in one database transaction. Issues require an accepted, unexpired lot and cannot reduce stock below zero. Rejected, quarantined or pending lots cannot be issued for normal use. Corrections are represented by compensating ledger entries; the movement ledger cannot be edited or deleted.
+
+The inventory valuation is a weighted-average estimate based on recorded receipt costs and does not replace accounting valuation policy. Supplier entries are user-supplied records, not verified suppliers. Chemical hazard classifications and Safety Data Sheet references are metadata only; the API does not authorize purchasing, handling, storage or disposal of hazardous or controlled materials.
+
+
+## LAB quality, compliance and analytics
+
+Apply `migrations/015_lab_quality_compliance.sql` after migrations 011–014. The authenticated `/v1/labs/quality` API records lot inspections, non-conformances, corrective and preventive actions (CAPA), CAPA event history and supplier compliance-document references. Failed or conditional inspections quarantine the lot; a passing inspection records acceptance. CAPA verification is permitted only after the action is marked completed. Inspection evidence and CAPA events are append-only.
+
+Quality analytics include inspection outcomes, open and overdue CAPA actions, document review/expiry counts and supplier inspection pass/fail/conditional scorecards. These are operational indicators, not accredited quality statistics or supplier certification. Compliance-document references are metadata; the service does not validate the referenced file, determine legal compliance or provide a validated QMS.
+
+
+### LAB OS database migration sequence
+Apply the LAB OS schema migrations in order: `011_lab_os.sql`, `012_lab_digital_notebook.sql`, `013_equipment_manager.sql`, `014_lab_inventory_procurement.sql`, then `015_lab_quality_compliance.sql`, then `016_lab_financial_management.sql`. Validate the complete sequence against a disposable or staging PostgreSQL database before production use.
+
+
+## LAB financial management and project costing
+
+Apply `migrations/016_lab_financial_management.sql` after migration 015. The authenticated `/v1/labs/finance` endpoints maintain cost centres, project budgets, funding-grant registers, append-only expense/credit entries, equipment straight-line depreciation assumptions and currency-separated analytics. Transactions can be linked to projects, experiments, budgets, grants, cost centres, equipment and inventory items. Invoice references are unique per owner/supplier where supplied.
+
+Currency totals are never combined across currencies and no exchange rate is inferred. Budget/grant utilisation is a management estimate based on recorded transactions; the API does not verify funder eligibility, grant terms, invoices, payments or tax treatment. Depreciation is a straight-line planning estimate, not statutory or tax accounting. This module is not a general ledger, accounts payable system, audited accounting package or financial advice.

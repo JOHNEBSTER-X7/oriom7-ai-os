@@ -295,3 +295,71 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .agent-history ul { list-style: none; padding: 0; display: grid; gap: 8px; }
 .agent-history li { display: grid; gap: 4px; border-bottom: 1px solid var(--border); padding: 9px 0; }
 .agent-history li button { justify-self: start; text-align: left; color: var(--accent); background: transparent; border: 0; padding: 5px 0; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* ORIOM7 LAB OS */
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.lab-grid > article:last-child { grid-column: 1 / -1; }
+.lab-workspace input, .lab-workspace select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #777;
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.lab-list { display: grid; gap: 10px; margin-top: 20px; }
+.lab-list-item {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+button.lab-list-item { cursor: pointer; }
+.lab-list-item.selected { border: 2px solid var(--accent); }
+.lab-list-item span { color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
+.lab-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.lab-actions .secondary-button { min-height: 40px; padding: 7px 12px; }
+@media (max-width: 760px) {
+  .lab-grid { grid-template-columns: 1fr; }
+  .lab-grid > article:last-child { grid-column: auto; }
+}
+
+.notebook-panel { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.notebook-panel h3 { margin: 6px 0 14px; }
+.lab-workspace textarea { width: 100%; border: 1px solid #777; border-radius: 9px; padding: 10px 12px; background: var(--surface); color: var(--text); font: inherit; resize: vertical; }
+.notebook-panel .lab-list-item p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ORIOM7 Equipment Manager */
+.equipment-manager-panel { margin: 24px 0; padding: clamp(18px,3vw,28px); border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.equipment-manager-layout { display: grid; grid-template-columns: minmax(220px,.7fr) minmax(0,2fr); gap: 22px; align-items: start; }
+.equipment-detail { min-width: 0; }
+.equipment-status-row { display: grid; grid-template-columns: 1fr minmax(120px,180px) minmax(150px,220px); gap: 12px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.equipment-status-row h3 { margin: 0; }
+.equipment-manager-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-top: 18px; }
+.equipment-subpanel { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.equipment-subpanel h3 { margin: 0 0 12px; }
+.equipment-subpanel .lab-list-item { overflow-wrap: anywhere; }
+.equipment-subpanel .lab-list-item span { white-space: pre-wrap; }
+.equipment-subpanel textarea { width: 100%; border: 1px solid #777; border-radius: 9px; padding: 10px 12px; background: var(--surface); color: var(--text); font: inherit; resize: vertical; }
+@media (max-width: 900px) { .equipment-manager-layout { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .equipment-manager-grid { grid-template-columns: 1fr; } .equipment-status-row { grid-template-columns: 1fr; } }
+
+.equipment-metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(135px,1fr)); gap: 10px; margin: 18px 0 24px; }
+.equipment-metric { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--page); }
+.equipment-metric span { color: var(--muted); font-size: .82rem; }
+.equipment-metric strong { font-size: 1.55rem; }
+
+.equipment-register-form { display: grid; gap: 9px; max-width: 560px; margin: 18px 0 24px; }
+.equipment-register-form label { font-weight: 650; }

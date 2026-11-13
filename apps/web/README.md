@@ -19,3 +19,48 @@ The first page contains an interactive accessibility preference screen with disp
 The controls configure preferences; they do not themselves provide microphone capture, speech synthesis, switch-device support or full screen-reader certification. Those capabilities require the corresponding adapters and testing.
 
 Keep provider credentials and orchestration logic server-side; never embed secrets in client bundles.
+
+## LAB OS workspace
+
+The `/labs` route provides the initial research-operations workspace:
+- Create and select research projects.
+- Register experiment plans and hypotheses.
+- Record controlled status transitions through append-only events.
+- Register and view laboratory equipment metadata.
+
+The same-origin proxy is `/api/labs/[...path]`; it forwards the existing session cookie
+or bearer token to the FastAPI service. Set `ORIOM7_API_URL` to the API origin and
+configure trusted authentication middleware there. The persistent LAB OS endpoints
+also require PostgreSQL migration `011_lab_os.sql`.
+
+The UI records research plans and notebook entries, manages equipment assets, calibration and maintenance histories, and books equipment time slots. It does not run experiments, control instruments, book physical facilities, or verify scientific results.
+
+
+The LAB OS workspace now includes a Digital Notebook for project-level or experiment-linked notes, hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Notebook entries are append-only and require database migration `012_lab_digital_notebook.sql` after migration 011. This is not a validated regulated LIMS or electronic-signature system.
+
+
+The Equipment Manager provides asset selection/status, calibration records and due dates, maintenance history, and equipment bookings with conflict rejection. Apply `013_equipment_manager.sql` after `012_lab_digital_notebook.sql`. Records remain owner-scoped; calibration and maintenance entries are append-only.
+
+
+## LAB inventory and procurement
+
+The `/labs` workspace now includes inventory and procurement controls for stock item registration, supplier records, purchase requisitions, purchase orders, goods receipts, lot tracking, stock on hand and procurement metrics. Apply API migration `014_lab_inventory_procurement.sql` after 011–013.
+
+The stock movement ledger is append-only. Goods receipts and stock issues are traceable to batch/lot records; normal issues require accepted, unexpired lots. Hazard classifications and Safety Data Sheet references are informational records only and do not authorize hazardous-material handling or purchasing.
+
+
+## LAB quality, compliance and analytics
+
+The `/labs` workspace includes lot inspection records, automatic quarantine and non-conformance creation for failed/conditional results, CAPA tracking and status history, compliance-document review/expiry monitoring, inspection history and supplier quality scorecards. Apply migration `015_lab_quality_compliance.sql` after 011–014.
+
+A passing inspection records lot acceptance; failed and conditional inspections quarantine the lot. CAPA actions must reach completed before they can be verified. Document references are not independently authenticated, and this module is not a validated QMS or legal compliance service.
+
+
+### LAB OS migration order
+Run migrations 011, 012, 013, 014, 015 and 016 sequentially. The quality and compliance workspace depends on inventory suppliers and lot records created by migration 014.
+
+
+
+## LAB financial management and project costing
+
+The API finance module provides cost centres, project/experiment budgets, grant registers and utilisation, transaction ledger entries, equipment depreciation assumptions and budget-versus-actual analytics. API migration `016_lab_financial_management.sql` follows migration 015. Financial totals remain separated by currency. The current UI integration is pending; these endpoints are accessible through the same-origin LAB API proxy. This is management information, not statutory accounting or verified grant reporting.

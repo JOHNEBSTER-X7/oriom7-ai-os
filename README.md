@@ -22,11 +22,13 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - `docs/` — architecture, specifications, implementation plan, universal language/voice access, accessibility/inclusion and adaptive accessibility.
 - `packages/accessibility-engine/` — typed preference model, JSON Schema, resolver and contract test cases.
 - `contracts/` — machine-readable API contract.
-- `apps/web/` — frontend implementation notes.
+- `apps/web/` — Next.js frontend, including the `/labs` LAB OS workspace.
 - `services/api/` — FastAPI service, accessibility endpoints and provider-independent model orchestration.
 - `infra/` — deployment guidance.
 - `data/` — data and indexing design.
 - `research/hardware/` — exploratory hardware research.
+- `services/api/labs.py` — authenticated ORIOM7 LAB OS project, experiment, event and equipment APIs.
+- `services/api/migrations/011_lab_os.sql` — persistent LAB OS schema.
 - `services/api/knowledge_graph.py` — evidence-linked entity and relationship API.
 
 ## Product specifications
@@ -41,6 +43,8 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
 - [Architecture Decisions](docs/architecture/ADRS.md)
 - [OpenAPI contract](contracts/openapi.json)
+- [Global Technology Intelligence & Proprietary Product Development Programme](docs/GLOBAL_TECHNOLOGY_INTELLIGENCE_AND_PRODUCT_DEVELOPMENT_PROGRAMME.md)
+- [Global Research, Digital & Physical Laboratories Programme](docs/ORIOM7_GLOBAL_RESEARCH_DIGITAL_AND_PHYSICAL_LABORATORIES_PROGRAMME.md)
 
 ## Status and scope
 This repository establishes the architecture baseline; it does not claim that a global search index, agent catalogue, proprietary models, cloud or silicon already exist. Targets such as 195+ countries/languages, 120+ agents and 300+ tools are ambitions, not current capabilities. Language support must be evaluated per language, dialect and task before it is advertised. Accessibility must be tested with assistive technologies and disabled users; automated scans alone are insufficient.
@@ -83,3 +87,33 @@ The `/research/review` workspace lets explicitly authorised human reviewers insp
 ## Autonomous research agents
 
 ORIOM7 now queues user-initiated research for a separate PostgreSQL-backed worker. It uses specialist planning, evidence-retrieval and synthesis stages, stores run history, retries bounded failures and supports opt-in recurring schedules. Candidate graph assertions still require human review. Apply migration 010 and run `python worker.py` alongside the API. See [Autonomous Research Agents](docs/AUTONOMOUS_RESEARCH_AGENTS.md).
+
+## ORIOM7 LAB OS foundation
+
+The first authenticated LAB OS API slice supports user-scoped research projects,
+experiment plans, append-only experiment events and laboratory equipment metadata.
+It is a digital research-management foundation only: it does not actuate equipment,
+run physical experiments, certify scientific results or replace laboratory safety
+systems. Apply `services/api/migrations/011_lab_os.sql` after migrations 001–010.
+See [LAB OS API documentation](services/api/README.md#oriom7-lab-os-foundation)
+and the [laboratories programme](docs/ORIOM7_GLOBAL_RESEARCH_DIGITAL_AND_PHYSICAL_LABORATORIES_PROGRAMME.md).
+
+
+### ORIOM7 Digital Notebook
+
+The LAB OS now includes an authenticated, append-only project notebook for hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Entries can be linked to an experiment in the same project and are attributed to the trusted authenticated subject. Apply `services/api/migrations/012_lab_digital_notebook.sql` after migration 011. The notebook is an auditable application record, not a validated regulated LIMS or electronic-signature system. See [LAB OS API documentation](services/api/README.md#oriom7-digital-notebook).
+
+
+### ORIOM7 Equipment Manager
+
+The LAB OS equipment register now supports calibration history, maintenance and inspection records, and time-window bookings. Confirmed overlapping bookings are rejected using a transaction that locks the equipment asset; assets marked maintenance or retired cannot be booked. Apply `services/api/migrations/013_equipment_manager.sql` after migration 012. Calibration and maintenance records are append-only and do not constitute external certification or a safety approval.
+
+
+## LAB OS inventory and procurement
+
+The LAB OS now includes an inventory and procurement module for laboratory consumables, reagents, components and other research materials. It records suppliers, stock thresholds, requisitions, purchase orders, goods receipts, batch/lot and expiry data, stock issues/write-offs and inventory valuation. Apply migrations 011–015 in order. Inventory movements are append-only and quantities are transactionally maintained. Supplier identity and compliance are not independently verified; hazardous-material metadata is not authorization to buy, handle, store or dispose of regulated materials.
+
+
+## LAB OS quality, compliance and analytics
+
+Migration 015 adds owner-scoped laboratory quality inspections, non-conformance records, CAPA actions and immutable CAPA event history, plus supplier compliance-document references and expiry tracking. The quality workspace records lot inspection outcomes, quarantines failed/conditional lots, releases passing lots, tracks corrective/preventive actions, and reports supplier inspection scorecards and quality/compliance indicators. Apply migrations 011–015 in order. These features provide management traceability, not accredited certification, independently verified compliance, or a validated QMS.
