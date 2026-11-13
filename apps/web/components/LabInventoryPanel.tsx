@@ -6,7 +6,7 @@ type Item = { item_id:string; sku:string; name:string; category:string; unit:str
 type Supplier = { supplier_id:string; name:string; email:string|null };
 type Requisition = { requisition_id:string; requested_by:string; purpose:string; status:string; needed_by:string|null; lines:unknown[] };
 type PurchaseOrder = { purchase_order_id:string; order_number:string; status:string; currency:string; supplier_name:string; lines:{line_id:string;item_id:string;quantity_ordered:string;quantity_received:string;unit_cost:string}[] };
-type Summary = { total_items:number; low_stock_items:number; inventory_value:string; expired_lots:number; expiring_30_days:number; open_purchase_orders:number };
+type Summary = { total_items:number; low_stock_items:number; inventory_value_by_currency:Record<string,string>; expired_lots:number; expiring_30_days:number; open_purchase_orders:number };
 type Lot = { lot_id:string; item_id:string; sku:string; name:string; lot_code:string; expiry_date:string|null; quantity_remaining:string; inspection_status:string };
 
 async function call<T>(path:string, method="GET", body?:unknown):Promise<T>{
@@ -30,7 +30,7 @@ export default function LabInventoryPanel(){
  async function run(fn:()=>Promise<unknown>,done:string){setBusy(true);setMessage("");try{await fn();await load();setMessage(done);}catch(e){setMessage(e instanceof Error?e.message:"Request failed");}finally{setBusy(false);}}
  return <section className="research-search-card inventory-panel" aria-label="Laboratory inventory and procurement">
   <p className="eyebrow">04 · INVENTORY & PROCUREMENT</p><h2>Laboratory stock and purchasing</h2>
-  {summary&&<div className="equipment-metrics">{[["Stock items",summary.total_items],["Low stock",summary.low_stock_items],["Inventory value",`${summary.inventory_value} USD`],["Expired lots",summary.expired_lots],["Expiring in 30 days",summary.expiring_30_days],["Open purchase orders",summary.open_purchase_orders]].map(([k,v])=><div className="equipment-metric" key={String(k)}><span>{k}</span><strong>{v}</strong></div>)}</div>}
+  {summary&&<div className="equipment-metrics">{[["Stock items",summary.total_items],["Low stock",summary.low_stock_items],["Inventory value",Object.entries(summary.inventory_value_by_currency||{}).map(([currency,value])=>`${value} ${currency}`).join(" · ")||"0"],["Expired lots",summary.expired_lots],["Expiring in 30 days",summary.expiring_30_days],["Open purchase orders",summary.open_purchase_orders]].map(([k,v])=><div className="equipment-metric" key={String(k)}><span>{k}</span><strong>{v}</strong></div>)}</div>}
   {message&&<p role="status" className="muted">{message}</p>}
   <div className="equipment-manager-grid">
    <section className="equipment-subpanel"><h3>Register stock item</h3><form className="research-form" onSubmit={e=>{e.preventDefault();void run(()=>call("/api/labs/inventory/items","POST",{sku,name,category,unit,reorder_level:reorder,hazard_classification:hazard||null,safety_data_sheet_reference:sds||null}),"Item registered.");setSku("");setName("");}}>
