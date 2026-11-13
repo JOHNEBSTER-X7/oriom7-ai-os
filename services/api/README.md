@@ -130,3 +130,40 @@ Every assertion must reference eligible indexed evidence. Submitted and extracte
 ## Research agent worker
 
 Run `python worker.py` as a separate supervised process. Apply migrations 001–010 first. The worker processes approved crawl jobs and durable research-agent jobs, and enqueues due recurring schedules. Configure the worker with DATABASE_URL, model provider credentials and search provider credentials. Without a configured model provider, research jobs cannot execute.
+
+## ORIOM7 LAB OS foundation
+
+The first LAB OS API slice provides authenticated, owner-scoped research project,
+experiment, append-only experiment-event and equipment-register endpoints.
+
+Endpoints:
+- `POST /v1/labs/projects` — create a research project.
+- `GET /v1/labs/projects` — list the authenticated user's projects.
+- `GET /v1/labs/projects/{project_id}` — retrieve an owned project.
+- `PATCH /v1/labs/projects/{project_id}` — update project lifecycle status.
+- `POST /v1/labs/projects/{project_id}/experiments` — register an experiment plan.
+- `GET /v1/labs/projects/{project_id}/experiments` — list experiments for an owned project.
+- `GET /v1/labs/experiments/{experiment_id}` — retrieve an owned experiment.
+- `POST /v1/labs/experiments/{experiment_id}/events` — append a note, protocol update, status change, measurement, result summary, deviation or review event.
+- `GET /v1/labs/experiments/{experiment_id}/events` — read the experiment event history.
+- `POST /v1/labs/equipment` — register equipment metadata.
+- `GET /v1/labs/equipment` — list registered equipment.
+- `PATCH /v1/labs/equipment/{equipment_id}` — update equipment register status.
+
+Apply `migrations/008_lab_os.sql` after migrations 001–007. The API requires
+the existing trusted authentication middleware and a configured PostgreSQL
+`DATABASE_URL`; there is deliberately no in-memory fallback for laboratory
+records. User identity is derived from trusted middleware, never from request
+payloads. Project and experiment ownership is enforced in application queries
+and by composite database foreign keys.
+
+Experiment events are append-only. Corrections should be recorded as new events.
+Status transitions are constrained: planned → queued/cancelled; queued →
+running/cancelled; running → completed/failed/cancelled. Terminal states cannot
+be reopened through the event API.
+
+This foundation is a research-management system only. It does not actuate
+equipment, schedule physical experiments, verify scientific results, provide
+laboratory safety certification or replace calibrated instruments and local
+operating procedures. Those capabilities require separately designed and
+validated integrations, human approval and safety controls.
