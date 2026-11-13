@@ -2524,6 +2524,25 @@
           }
         }
       }
+    },
+    "/labs/inventory/movements": {
+      "get": {
+        "operationId": "listLabInventoryMovements",
+        "summary": "Read append-only stock movement history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped stock movement ledger"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
     }
   },
   "components": {
