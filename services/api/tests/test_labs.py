@@ -90,3 +90,43 @@ def test_status_models_reject_unknown_values_and_extra_fields():
 
     with pytest.raises(ValidationError):
         EquipmentStatusUpdate(status="working", owner_subject="attacker")
+
+
+def test_notebook_entry_validates_content_and_rejects_client_identity():
+    from labs import NotebookEntryCreate
+
+    entry = NotebookEntryCreate(
+        entry_type="measurement",
+        title="GPU memory bandwidth result",
+        content="Measured 812 GB/s under the documented test conditions.",
+        metadata={"unit": "GB/s", "run": 3},
+    )
+    assert entry.entry_type == "measurement"
+    assert entry.content.startswith("Measured")
+
+    with pytest.raises(ValidationError):
+        NotebookEntryCreate(
+            entry_type="note", title="A valid title", content="Valid content",
+            owner_subject="attacker",
+        )
+
+    with pytest.raises(ValidationError):
+        NotebookEntryCreate(entry_type="note", title="  ", content="   ")
+
+    with pytest.raises(ValidationError):
+        NotebookEntryCreate(
+            entry_type="note", title="A valid title", content="Valid content",
+            metadata={"large": "x" * 17000},
+        )
+
+
+def test_notebook_entry_rejects_unknown_entry_type_and_oversized_content():
+    from labs import NotebookEntryCreate
+
+    with pytest.raises(ValidationError):
+        NotebookEntryCreate(entry_type="chat", title="Valid title", content="Body")
+
+    with pytest.raises(ValidationError):
+        NotebookEntryCreate(
+            entry_type="note", title="Valid title", content="x" * 20001,
+        )
