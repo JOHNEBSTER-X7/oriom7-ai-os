@@ -95,7 +95,8 @@ CREATE TABLE IF NOT EXISTS lab_inventory_requisitions (
   lines JSONB NOT NULL CHECK (jsonb_typeof(lines)='array' AND jsonb_array_length(lines)>0),
   needed_by DATE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(requisition_id, owner_subject)
 );
 CREATE INDEX IF NOT EXISTS lab_inventory_requisitions_owner_idx
   ON lab_inventory_requisitions(owner_subject, created_at DESC);
@@ -113,8 +114,9 @@ CREATE TABLE IF NOT EXISTS lab_inventory_purchase_orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(owner_subject, order_number),
+  UNIQUE(purchase_order_id, owner_subject),
   FOREIGN KEY (supplier_id, owner_subject) REFERENCES lab_inventory_suppliers(supplier_id, owner_subject) ON DELETE RESTRICT,
-  FOREIGN KEY (requisition_id) REFERENCES lab_inventory_requisitions(requisition_id) ON DELETE RESTRICT
+  FOREIGN KEY (requisition_id, owner_subject) REFERENCES lab_inventory_requisitions(requisition_id, owner_subject) ON DELETE RESTRICT
 );
 CREATE TABLE IF NOT EXISTS lab_inventory_purchase_order_lines (
   line_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -125,7 +127,8 @@ CREATE TABLE IF NOT EXISTS lab_inventory_purchase_order_lines (
   quantity_received NUMERIC(18,4) NOT NULL DEFAULT 0 CHECK (quantity_received >= 0 AND quantity_received <= quantity_ordered),
   unit_cost NUMERIC(18,4) NOT NULL CHECK (unit_cost >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  FOREIGN KEY (item_id, owner_subject) REFERENCES lab_inventory_items(item_id, owner_subject) ON DELETE RESTRICT
+  FOREIGN KEY (item_id, owner_subject) REFERENCES lab_inventory_items(item_id, owner_subject) ON DELETE RESTRICT,
+  FOREIGN KEY (purchase_order_id, owner_subject) REFERENCES lab_inventory_purchase_orders(purchase_order_id, owner_subject) ON DELETE RESTRICT
 );
 CREATE INDEX IF NOT EXISTS lab_inventory_po_lines_order_idx ON lab_inventory_purchase_order_lines(purchase_order_id);
 
