@@ -11,6 +11,7 @@ type Experiment = {
   protocol: string | null; configuration: Record<string, unknown>; status: string;
   created_at: string; updated_at: string;
 };
+type NotebookEntry = { entry_id: string; entry_type: string; title: string; content: string; experiment_id: string | null; created_at: string };
 type Equipment = {
   equipment_id: string; name: string; category: string; manufacturer: string | null;
   model: string | null; asset_tag: string | null; location: string | null;
@@ -37,12 +38,17 @@ export default function LabWorkspace() {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [notebookEntries, setNotebookEntries] = useState<NotebookEntry[]>([]);
   const [projectTitle, setProjectTitle] = useState("");
   const [discipline, setDiscipline] = useState("ai");
   const [experimentTitle, setExperimentTitle] = useState("");
   const [hypothesis, setHypothesis] = useState("");
   const [equipmentName, setEquipmentName] = useState("");
   const [equipmentCategory, setEquipmentCategory] = useState("electronics");
+  const [notebookType, setNotebookType] = useState("observation");
+  const [notebookTitle, setNotebookTitle] = useState("");
+  const [notebookContent, setNotebookContent] = useState("");
+  const [notebookExperimentId, setNotebookExperimentId] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Loading your research workspace…");
   const [error, setError] = useState(false);
@@ -61,6 +67,12 @@ export default function LabWorkspace() {
     if (!projectId) { setExperiments([]); return; }
     const result = await api<ListResponse<Experiment>>(`/api/labs/projects/${projectId}/experiments?limit=100`);
     setExperiments(result.items || []);
+  }
+
+  async function loadNotebook(projectId: string) {
+    if (!projectId) { setNotebookEntries([]); return; }
+    const result = await api<ListResponse<NotebookEntry>>(`/api/labs/projects/${projectId}/notebook?limit=100`);
+    setNotebookEntries(result.items || []);
   }
 
   async function loadEquipment() {
@@ -82,7 +94,7 @@ export default function LabWorkspace() {
 
   useEffect(() => {
     if (!selectedProjectId) { setExperiments([]); return; }
-    loadExperiments(selectedProjectId).catch(err => {
+    Promise.all([loadExperiments(selectedProjectId), loadNotebook(selectedProjectId)]).catch(err => {
       setError(true); setMessage(err instanceof Error ? err.message : "Could not load experiments.");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,6 +149,23 @@ export default function LabWorkspace() {
       setMessage(`Experiment status updated to ${nextStatus}.`);
     } catch (err) {
       setError(true); setMessage(err instanceof Error ? err.message : "Status update failed.");
+    } finally { setBusy(false); }
+  }
+
+  async function createNotebookEntry(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProjectId || !notebookTitle.trim() || !notebookContent.trim()) return;
+    setBusy(true); setError(false); setMessage("Saving notebook entry…");
+    try {
+      await api<NotebookEntry>(`/api/labs/projects/${selectedProjectId}/notebook`, {
+        method: "POST",
+        body: JSON.stringify({ entry_type: notebookType, title: notebookTitle, content: notebookContent, experiment_id: notebookExperimentId || null }),
+      });
+      setNotebookTitle(""); setNotebookContent("");
+      await loadNotebook(selectedProjectId);
+      setMessage("Notebook entry saved to the append-only project record.");
+    } catch (err) {
+      setError(true); setMessage(err instanceof Error ? err.message : "Notebook entry could not be saved.");
     } finally { setBusy(false); }
   }
 
@@ -214,6 +243,33 @@ export default function LabWorkspace() {
                     </>}
                   </div>
                 </div>)}
+            </div>
+            <div className="notebook-panel">
+              <p className="eyebrow">DIGITAL RESEARCH NOTEBOOK</p>
+              <h3>Record research evidence</h3>
+              <form className="research-form" onSubmit={createNotebookEntry}>
+                <label htmlFor="lab-notebook-type">Entry type</label>
+                <select id="lab-notebook-type" value={notebookType} onChange={e => setNotebookType(e.target.value)}>
+                  {["note","hypothesis","observation","measurement","result","decision","protocol","review","deviation"].map(item => <option key={item} value={item}>{item}</option>)}
+                </select>
+                <label htmlFor="lab-notebook-experiment">Link to experiment (optional)</label>
+                <select id="lab-notebook-experiment" value={notebookExperimentId} onChange={e => setNotebookExperimentId(e.target.value)}>
+                  <option value="">Project-level entry</option>
+                  {experiments.map(item => <option key={item.experiment_id} value={item.experiment_id}>{item.title}</option>)}
+                </select>
+                <label htmlFor="lab-notebook-title">Entry title</label>
+                <input id="lab-notebook-title" value={notebookTitle} onChange={e => setNotebookTitle(e.target.value)} maxLength={180} required />
+                <label htmlFor="lab-notebook-content">Observation, method, result or decision</label>
+                <textarea id="lab-notebook-content" value={notebookContent} onChange={e => setNotebookContent(e.target.value)} rows={5} maxLength={20000} required />
+                <button className="primary-button" type="submit" disabled={busy || !notebookTitle.trim() || !notebookContent.trim()}>Add notebook entry</button>
+              </form>
+              <div className="lab-list" aria-label="Research notebook timeline">
+                {notebookEntries.length === 0 ? <p className="muted">No notebook entries recorded for this project.</p> : notebookEntries.map(entry =>
+                  <div className="lab-list-item" key={entry.entry_id}>
+                    <strong>{entry.title}</strong><span>{entry.entry_type} · {new Date(entry.created_at).toLocaleString()}</span>
+                    <p>{entry.content}</p>
+                  </div>)}
+              </div>
             </div>
           </> : <p className="muted">Create or select a project to register experiment plans.</p>}
         </article>
