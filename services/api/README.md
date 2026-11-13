@@ -209,4 +209,11 @@ Quality analytics include inspection outcomes, open and overdue CAPA actions, do
 
 
 ### LAB OS database migration sequence
-Apply the LAB OS schema migrations in order: `011_lab_os.sql`, `012_lab_digital_notebook.sql`, `013_equipment_manager.sql`, `014_lab_inventory_procurement.sql`, then `015_lab_quality_compliance.sql`. Validate the complete sequence against a disposable or staging PostgreSQL database before production use.
+Apply the LAB OS schema migrations in order: `011_lab_os.sql`, `012_lab_digital_notebook.sql`, `013_equipment_manager.sql`, `014_lab_inventory_procurement.sql`, then `015_lab_quality_compliance.sql`, then `016_lab_financial_management.sql`. Validate the complete sequence against a disposable or staging PostgreSQL database before production use.
+
+
+## LAB financial management and project costing
+
+Apply `migrations/016_lab_financial_management.sql` after migration 015. The authenticated `/v1/labs/finance` endpoints maintain cost centres, project budgets, funding-grant registers, append-only expense/credit entries, equipment straight-line depreciation assumptions and currency-separated analytics. Transactions can be linked to projects, experiments, budgets, grants, cost centres, equipment and inventory items. Invoice references are unique per owner/supplier where supplied.
+
+Currency totals are never combined across currencies and no exchange rate is inferred. Budget/grant utilisation is a management estimate based on recorded transactions; the API does not verify funder eligibility, grant terms, invoices, payments or tax treatment. Depreciation is a straight-line planning estimate, not statutory or tax accounting. This module is not a general ledger, accounts payable system, audited accounting package or financial advice.
