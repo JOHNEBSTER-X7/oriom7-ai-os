@@ -52,6 +52,9 @@ CREATE TABLE IF NOT EXISTS lab_funding_grants (
 CREATE UNIQUE INDEX IF NOT EXISTS lab_grant_reference_unique
   ON lab_funding_grants(owner_subject, grant_reference) WHERE grant_reference IS NOT NULL;
 
+ALTER TABLE lab_experiments
+  ADD CONSTRAINT lab_experiments_id_project_owner_unique UNIQUE(experiment_id, project_id, owner_subject);
+
 CREATE TABLE IF NOT EXISTS lab_financial_transactions (
   transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_subject TEXT NOT NULL,
@@ -74,7 +77,7 @@ CREATE TABLE IF NOT EXISTS lab_financial_transactions (
   source_reference TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   FOREIGN KEY(project_id, owner_subject) REFERENCES lab_projects(project_id, owner_subject) ON DELETE RESTRICT,
-  FOREIGN KEY(experiment_id, owner_subject) REFERENCES lab_experiments(experiment_id, owner_subject) ON DELETE RESTRICT,
+  FOREIGN KEY(experiment_id, project_id, owner_subject) REFERENCES lab_experiments(experiment_id, project_id, owner_subject) ON DELETE RESTRICT,
   FOREIGN KEY(budget_id, owner_subject) REFERENCES lab_budgets(budget_id, owner_subject) ON DELETE RESTRICT,
   FOREIGN KEY(grant_id, owner_subject) REFERENCES lab_funding_grants(grant_id, owner_subject) ON DELETE RESTRICT,
   FOREIGN KEY(cost_centre_id, owner_subject) REFERENCES lab_cost_centres(cost_centre_id, owner_subject) ON DELETE RESTRICT,
