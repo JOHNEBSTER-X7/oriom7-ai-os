@@ -171,9 +171,21 @@ validated integrations, human approval and safety controls.
 
 ### ORIOM7 Digital Notebook
 
-Apply `migrations/019_lab_digital_notebook.sql` after migration 018. The notebook adds project-linked research records with optional experiment linkage:
+Apply `migrations/012_lab_digital_notebook.sql` after migration 011. The notebook adds project-linked research records with optional experiment linkage:
 
 - `POST /v1/labs/projects/{project_id}/notebook` — append a note, hypothesis, observation, measurement, result, decision, protocol, review or deviation.
 - `GET /v1/labs/projects/{project_id}/notebook` — retrieve the chronological notebook, with optional `entry_type` and `experiment_id` filters.
 
 Entries are attributed to the authenticated subject; the client cannot supply an owner identity. Entries are append-only at the database layer: corrections are new entries that should reference the original record in their content/metadata. Content is limited to 20,000 characters and metadata to 16 KB. This is an auditable application record, not a qualified electronic-signature system, regulated clinical record, validated laboratory information management system (LIMS), or guarantee of scientific integrity. Retention, backup, access review and regulatory validation remain deployment responsibilities.
+
+
+### ORIOM7 Equipment Manager
+
+Apply `migrations/013_equipment_manager.sql` after migration 012. The Equipment Manager extends the original equipment register with append-only calibration and maintenance records and a reservation schedule.
+
+- `POST /v1/labs/equipment/{equipment_id}/calibrations` and `GET /v1/labs/equipment/{equipment_id}/calibrations` — record and list calibration history, due dates, outcomes and certificate references.
+- `POST /v1/labs/equipment/{equipment_id}/maintenance` and `GET /v1/labs/equipment/{equipment_id}/maintenance` — record and list preventive/corrective maintenance, inspections and next-due dates.
+- `POST /v1/labs/equipment/{equipment_id}/bookings` and `GET /v1/labs/equipment/{equipment_id}/bookings` — create and list equipment reservations.
+- `PATCH /v1/labs/equipment/bookings/{booking_id}` — cancel or complete an active reservation.
+
+All operations are scoped to the authenticated owner. Booking creation locks the equipment row and rejects overlapping confirmed reservations; equipment in maintenance or retired status cannot be booked. Calibration and maintenance history is append-only. Calibration records are evidence supplied by the operator, not independent accreditation or certification. The booking system does not control instruments, guarantee room/facility availability, or replace local safety and authorisation checks.
