@@ -47,3 +47,9 @@ def test_inventory_currency_is_a_three_letter_code():
     from inventory import ItemCreate
     with pytest.raises(ValidationError):
         ItemCreate(sku="SKU-1", name="Sample vial", category="consumables", unit="each", currency="US")
+
+def test_lot_inspection_only_accepts_defined_dispositions():
+    from inventory import LotInspectionUpdate
+    assert LotInspectionUpdate(inspection_status="accepted").inspection_status == "accepted"
+    with pytest.raises(ValidationError):
+        LotInspectionUpdate(inspection_status="released")
