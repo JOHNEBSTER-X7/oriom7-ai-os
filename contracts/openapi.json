@@ -2151,7 +2151,54 @@
         ],
         "responses": {
           "200": {
-            "description": "Owner-scoped asset, calibration, maintenance and booking counters"
+            "description": "Owner-scoped equipment metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "total_assets",
+                    "available_assets",
+                    "in_use_assets",
+                    "maintenance_assets",
+                    "retired_assets",
+                    "calibration_attention_assets",
+                    "active_bookings",
+                    "maintenance_due_30_days",
+                    "overdue_maintenance_assets"
+                  ],
+                  "properties": {
+                    "total_assets": {
+                      "type": "integer"
+                    },
+                    "available_assets": {
+                      "type": "integer"
+                    },
+                    "in_use_assets": {
+                      "type": "integer"
+                    },
+                    "maintenance_assets": {
+                      "type": "integer"
+                    },
+                    "retired_assets": {
+                      "type": "integer"
+                    },
+                    "calibration_attention_assets": {
+                      "type": "integer"
+                    },
+                    "active_bookings": {
+                      "type": "integer"
+                    },
+                    "maintenance_due_30_days": {
+                      "type": "integer"
+                    },
+                    "overdue_maintenance_assets": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
