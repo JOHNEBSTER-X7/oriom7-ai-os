@@ -554,3 +554,148 @@ async def update_equipment_status(
     if row is None:
         raise HTTPException(404, detail={"code": "lab_equipment_not_found"})
     return _equipment(row)
+
+
+# ORIOM7 DIGITAL NOTEBOOK -----------------------------------------------------
+NotebookEntryType = Literal[
+    "note", "hypothesis", "observation", "measurement", "result",
+    "decision", "protocol", "review", "deviation",
+]
+
+
+class NotebookEntryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    entry_type: NotebookEntryType
+    title: str = Field(min_length=3, max_length=180)
+    content: str = Field(min_length=1, max_length=20000)
+    experiment_id: uuid.UUID | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("title")
+    @classmethod
+    def clean_notebook_title(cls, value: str) -> str:
+        value = _clean_text(value)
+        if len(value) < 3:
+            raise ValueError("title must contain at least three non-space characters")
+        return value
+
+    @field_validator("content")
+    @classmethod
+    def validate_notebook_content(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("content cannot be blank")
+        return value
+
+    @field_validator("metadata")
+    @classmethod
+    def bound_notebook_metadata(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if _json_size(value) > 16000:
+            raise ValueError("metadata must not exceed 16 KB")
+        return value
+
+
+def _notebook_entry(row: Any) -> dict[str, Any]:
+    metadata = row["metadata"]
+    if isinstance(metadata, str):
+        metadata = json.loads(metadata)
+    return {
+        "entry_id": row["entry_id"],
+        "project_id": row["project_id"],
+        "experiment_id": row["experiment_id"],
+        "entry_type": row["entry_type"],
+        "title": row["title"],
+        "content": row["content"],
+        "metadata": metadata,
+        "created_at": row["created_at"].isoformat(),
+    }
+
+
+@router.post("/projects/{project_id}/notebook", status_code=status.HTTP_201_CREATED)
+async def create_notebook_entry(
+    project_id: uuid.UUID,
+    payload: NotebookEntryCreate,
+    request: Request,
+    subject: str = Depends(authenticated_subject),
+):
+    """Append a user-attributed, immutable notebook entry to an owned project."""
+    pool = await _pool(request)
+    entry_id = str(uuid.uuid4())
+    async with pool.acquire() as con:
+        async with con.transaction():
+            project = await con.fetchrow(
+                "SELECT project_id FROM lab_projects WHERE project_id=$1 AND owner_subject=$2",
+                project_id, subject,
+            )
+            if project is None:
+                raise HTTPException(404, detail={"code": "lab_project_not_found"})
+            if payload.experiment_id is not None:
+                experiment = await con.fetchrow(
+                    """SELECT experiment_id FROM lab_experiments
+                       WHERE experiment_id=$1 AND project_id=$2 AND owner_subject=$3""",
+                    payload.experiment_id, project_id, subject,
+                )
+                if experiment is None:
+                    raise HTTPException(404, detail={"code": "lab_experiment_not_found"})
+            row = await con.fetchrow(
+                """INSERT INTO lab_notebook_entries
+                   (entry_id, project_id, experiment_id, owner_subject,
+                    entry_type, title, content, metadata)
+                   VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8::jsonb)
+                   RETURNING entry_id::text, project_id::text, experiment_id::text,
+                             entry_type, title, content, metadata, created_at""",
+                entry_id, project_id, payload.experiment_id, subject,
+                payload.entry_type, payload.title, payload.content,
+                json.dumps(payload.metadata, ensure_ascii=False, allow_nan=False),
+            )
+    return _notebook_entry(row)
+
+
+@router.get("/projects/{project_id}/notebook")
+async def list_notebook_entries(
+    project_id: uuid.UUID,
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0, le=100000),
+    entry_type: NotebookEntryType | None = None,
+    experiment_id: uuid.UUID | None = None,
+    subject: str = Depends(authenticated_subject),
+):
+    """Read an owned project's append-only notebook timeline."""
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        exists = await con.fetchval(
+            "SELECT 1 FROM lab_projects WHERE project_id=$1 AND owner_subject=$2",
+            project_id, subject,
+        )
+        if not exists:
+            raise HTTPException(404, detail={"code": "lab_project_not_found"})
+        if experiment_id is not None:
+            experiment_exists = await con.fetchval(
+                """SELECT 1 FROM lab_experiments
+                   WHERE experiment_id=$1 AND project_id=$2 AND owner_subject=$3""",
+                experiment_id, project_id, subject,
+            )
+            if not experiment_exists:
+                raise HTTPException(404, detail={"code": "lab_experiment_not_found"})
+        rows = await con.fetch(
+            """SELECT entry_id::text, project_id::text, experiment_id::text,
+                      entry_type, title, content, metadata, created_at
+               FROM lab_notebook_entries
+               WHERE project_id=$1 AND owner_subject=$2
+                 AND ($3::text IS NULL OR entry_type=$3)
+                 AND ($4::uuid IS NULL OR experiment_id=$4)
+               ORDER BY created_at ASC, entry_id ASC LIMIT $5 OFFSET $6""",
+            project_id, subject, entry_type, experiment_id, limit, offset,
+        )
+        total = await con.fetchval(
+            """SELECT count(*) FROM lab_notebook_entries
+               WHERE project_id=$1 AND owner_subject=$2
+                 AND ($3::text IS NULL OR entry_type=$3)
+                 AND ($4::uuid IS NULL OR experiment_id=$4)""",
+            project_id, subject, entry_type, experiment_id,
+        )
+    return {
+        "items": [_notebook_entry(row) for row in rows],
+        "total": total, "limit": limit, "offset": offset,
+    }
