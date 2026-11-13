@@ -1558,6 +1558,168 @@
           }
         }
       }
+    },
+    "/labs/projects/{project_id}/notebook": {
+      "post": {
+        "operationId": "createLabNotebookEntry",
+        "summary": "Append a digital notebook entry",
+        "description": "Creates an immutable authenticated project notebook entry. An optional experiment must belong to the same project.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "entry_type",
+                  "title",
+                  "content"
+                ],
+                "properties": {
+                  "entry_type": {
+                    "type": "string",
+                    "enum": [
+                      "note",
+                      "hypothesis",
+                      "observation",
+                      "measurement",
+                      "result",
+                      "decision",
+                      "protocol",
+                      "review",
+                      "deviation"
+                    ]
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 180
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20000
+                  },
+                  "experiment_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  },
+                  "metadata": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notebook entry created"
+          },
+          "404": {
+            "description": "Project or experiment not found"
+          },
+          "422": {
+            "description": "Invalid notebook entry"
+          },
+          "503": {
+            "description": "Persistent storage unavailable"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabNotebookEntries",
+        "summary": "List digital notebook entries",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "entry_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "note",
+                "hypothesis",
+                "observation",
+                "measurement",
+                "result",
+                "decision",
+                "protocol",
+                "review",
+                "deviation"
+              ]
+            }
+          },
+          {
+            "name": "experiment_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chronological notebook entries"
+          },
+          "404": {
+            "description": "Project or experiment not found"
+          }
+        }
+      }
     }
   },
   "components": {
