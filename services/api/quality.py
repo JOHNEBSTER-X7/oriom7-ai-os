@@ -131,6 +131,11 @@ async def create_inspection(payload: InspectionCreate, request: Request, subject
                 await con.execute(
                     "UPDATE lab_inventory_lots SET inspection_status='quarantined' WHERE lot_id=$1 AND owner_subject=$2",
                     payload.lot_id, subject)
+            else:
+                # A passing, recorded quality inspection is the release decision for this lot.
+                await con.execute(
+                    "UPDATE lab_inventory_lots SET inspection_status='accepted' WHERE lot_id=$1 AND owner_subject=$2",
+                    payload.lot_id, subject)
                 ncr = await con.fetchrow(
                     """INSERT INTO lab_quality_nonconformances(owner_subject,source_inspection_id,title,description,severity)
                        VALUES($1,$2,$3,$4,$5) RETURNING nonconformance_id::text,status,severity""",
@@ -219,7 +224,7 @@ async def update_capa(action_id: uuid.UUID, payload: CapaStatusUpdate, request: 
                 raise HTTPException(404,detail={"code":"quality_capa_action_not_found"})
             if row["status"]=="verified" and payload.status!="verified":
                 raise HTTPException(409,detail={"code":"quality_verified_action_is_terminal"})
-            if row["status"]=="planned" and payload.status=="verified":
+            if row["status"]!="completed" and payload.status=="verified":
                 raise HTTPException(409,detail={"code":"quality_action_must_be_completed_before_verification"})
             updated=await con.fetchrow(
                 """UPDATE lab_quality_capa_actions SET status=$2,updated_at=now()
@@ -292,6 +297,7 @@ async def quality_analytics(request: Request, subject: str = Depends(authenticat
                  (SELECT count(*)::int FROM lab_quality_inspections WHERE owner_subject=$1) AS total_inspections,
                  (SELECT count(*)::int FROM lab_quality_inspections WHERE owner_subject=$1 AND outcome='pass') AS passed_inspections,
                  (SELECT count(*)::int FROM lab_quality_inspections WHERE owner_subject=$1 AND outcome='fail') AS failed_inspections,
+                 (SELECT count(*)::int FROM lab_quality_inspections WHERE owner_subject=$1 AND outcome='conditional') AS conditional_inspections,
                  (SELECT count(*)::int FROM lab_quality_nonconformances WHERE owner_subject=$1 AND status NOT IN ('verified','closed')) AS open_nonconformances,
                  (SELECT count(*)::int FROM lab_quality_capa_actions WHERE owner_subject=$1 AND status<>'verified') AS open_capa_actions,
                  (SELECT count(*)::int FROM lab_quality_capa_actions WHERE owner_subject=$1 AND due_date<CURRENT_DATE AND status<>'verified') AS overdue_capa_actions,
@@ -303,6 +309,7 @@ async def quality_analytics(request: Request, subject: str = Depends(authenticat
                  count(q.inspection_id)::int AS inspections,
                  count(q.inspection_id) FILTER(WHERE q.outcome='pass')::int AS passed,
                  count(q.inspection_id) FILTER(WHERE q.outcome='fail')::int AS failed,
+                 count(q.inspection_id) FILTER(WHERE q.outcome='conditional')::int AS conditional,
                  CASE WHEN count(q.inspection_id)=0 THEN NULL ELSE round(100.0*count(q.inspection_id) FILTER(WHERE q.outcome='pass')/count(q.inspection_id),1) END AS pass_rate_percent
                FROM lab_inventory_suppliers s
                LEFT JOIN lab_inventory_lots l ON l.supplier_id=s.supplier_id AND l.owner_subject=s.owner_subject
