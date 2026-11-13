@@ -422,6 +422,24 @@ async def issue_stock(item_id: uuid.UUID, payload: StockIssueCreate, request: Re
             "movement_type": payload.movement_type, "quantity_delta": str(-payload.quantity), "created_at": movement["created_at"].isoformat()}
 
 
+
+@router.get("/movements")
+async def list_movements(request: Request, item_id: uuid.UUID | None = None, limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0, le=100000), subject: str = Depends(authenticated_subject)):
+    pool = await _pool(request)
+    async with pool.acquire() as con:
+        rows = await con.fetch(
+            """SELECT m.movement_id::text,m.item_id::text,i.sku,i.name,m.lot_id::text,l.lot_code,
+                      m.movement_type,m.quantity_delta::text,m.unit_cost::text,m.reference,m.reason,m.recorded_by,m.created_at
+               FROM lab_inventory_movements m
+               JOIN lab_inventory_items i ON i.item_id=m.item_id AND i.owner_subject=m.owner_subject
+               LEFT JOIN lab_inventory_lots l ON l.lot_id=m.lot_id AND l.owner_subject=m.owner_subject
+               WHERE m.owner_subject=$1 AND ($2::uuid IS NULL OR m.item_id=$2)
+               ORDER BY m.created_at DESC,m.movement_id DESC LIMIT $3 OFFSET $4""",
+            subject,item_id,limit,offset)
+        total = await con.fetchval("SELECT count(*) FROM lab_inventory_movements WHERE owner_subject=$1 AND ($2::uuid IS NULL OR item_id=$2)",subject,item_id)
+    return {"items":[dict(row) for row in rows],"total":total,"limit":limit,"offset":offset}
+
+
 @router.get("/summary")
 async def inventory_summary(request: Request, subject: str = Depends(authenticated_subject)):
     pool=await _pool(request)
