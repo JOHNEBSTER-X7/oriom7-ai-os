@@ -131,7 +131,10 @@ class PurchaseOrderCreate(BaseModel):
     @field_validator("currency")
     @classmethod
     def clean_currency(cls, value: str) -> str:
-        return _text(value).upper()
+        value = _text(value).upper()
+        if len(value) != 3 or not value.isalpha():
+            raise ValueError("currency must be a three-letter code")
+        return value
 
 
 class LotInspectionUpdate(BaseModel):
@@ -273,8 +276,11 @@ async def create_purchase_order(payload: PurchaseOrderCreate, request: Request, 
             if payload.requisition_id and not await con.fetchval("SELECT 1 FROM lab_inventory_requisitions WHERE requisition_id=$1 AND owner_subject=$2 AND status IN ('approved','submitted')",payload.requisition_id,subject):
                 raise HTTPException(404,detail={"code":"inventory_requisition_not_found_or_not_eligible"})
             for line in payload.lines:
-                if not await con.fetchval("SELECT 1 FROM lab_inventory_items WHERE item_id=$1 AND owner_subject=$2 AND status='active'",line.item_id,subject):
+                item_currency = await con.fetchval("SELECT currency FROM lab_inventory_items WHERE item_id=$1 AND owner_subject=$2 AND status='active'",line.item_id,subject)
+                if item_currency is None:
                     raise HTTPException(404,detail={"code":"inventory_item_not_found"})
+                if item_currency != payload.currency:
+                    raise HTTPException(422,detail={"code":"inventory_currency_mismatch","message":"Purchase order currency must match each item's stock valuation currency."})
             po=await con.fetchrow(
                 """INSERT INTO lab_inventory_purchase_orders(owner_subject,supplier_id,requisition_id,order_number,currency,expected_at,notes)
                    VALUES($1,$2,$3,$4,$5,$6,$7)
