@@ -2202,6 +2202,276 @@
           }
         }
       }
+    },
+    "/labs/inventory/items": {
+      "post": {
+        "operationId": "createLabInventoryItems",
+        "summary": "Create laboratory inventory items",
+        "description": "Authenticated, owner-scoped inventory and procurement record.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Record created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabInventoryItems",
+        "summary": "List laboratory inventory items",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped inventory records"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/inventory/suppliers": {
+      "post": {
+        "operationId": "createLabInventorySuppliers",
+        "summary": "Create laboratory inventory suppliers",
+        "description": "Authenticated, owner-scoped inventory and procurement record.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Record created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabInventorySuppliers",
+        "summary": "List laboratory inventory suppliers",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped inventory records"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/inventory/requisitions": {
+      "post": {
+        "operationId": "createLabInventoryRequisitions",
+        "summary": "Create laboratory inventory requisitions",
+        "description": "Authenticated, owner-scoped inventory and procurement record.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Record created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabInventoryRequisitions",
+        "summary": "List laboratory inventory requisitions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped inventory records"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/inventory/purchase-orders": {
+      "post": {
+        "operationId": "createLabInventoryPurchaseOrders",
+        "summary": "Create laboratory inventory purchase-orders",
+        "description": "Authenticated, owner-scoped inventory and procurement record.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Record created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabInventoryPurchaseOrders",
+        "summary": "List laboratory inventory purchase-orders",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped inventory records"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/inventory/receipts": {
+      "post": {
+        "operationId": "createLabInventoryReceipts",
+        "summary": "Create laboratory inventory receipts",
+        "description": "Authenticated, owner-scoped inventory and procurement record.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Record created"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLabInventoryReceipts",
+        "summary": "List laboratory inventory receipts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped inventory records"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/inventory/summary": {
+      "get": {
+        "operationId": "listLabInventorySummary",
+        "summary": "List laboratory inventory summary",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-scoped inventory records"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/labs/inventory/items/{item_id}/issues": {
+      "post": {
+        "operationId": "issueLabInventoryStock",
+        "summary": "Issue or write off stock against a batch lot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Append-only stock movement recorded"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Insufficient, expired or unreleased stock"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
     }
   },
   "components": {
