@@ -37,4 +37,7 @@ The UI records plans and inventory only. It does not run experiments, control
 instruments, book physical facilities, or verify scientific results.
 
 
-The LAB OS workspace now includes a Digital Notebook for project-level or experiment-linked notes, hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Notebook entries are append-only and require database migration `019_lab_digital_notebook.sql` after migration 018. This is not a validated regulated LIMS or electronic-signature system.
+The LAB OS workspace now includes a Digital Notebook for project-level or experiment-linked notes, hypotheses, observations, measurements, results, decisions, protocols, reviews and deviations. Notebook entries are append-only and require database migration `012_lab_digital_notebook.sql` after migration 011. This is not a validated regulated LIMS or electronic-signature system.
+
+
+The Equipment Manager provides asset selection/status, calibration records and due dates, maintenance history, and equipment bookings with conflict rejection. Apply `013_equipment_manager.sql` after `012_lab_digital_notebook.sql`. Records remain owner-scoped; calibration and maintenance entries are append-only.
