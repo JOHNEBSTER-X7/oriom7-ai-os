@@ -40,6 +40,11 @@ Its product promise is universal access: people should be able to use ORIOM7 reg
 - [Technical Specifications](docs/TECHNICAL_SPECIFICATIONS.md)
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
 - [Architecture Decisions](docs/architecture/ADRS.md)
+- [Adaptive Evidence and Compute Controller — R&D Plan](docs/research/ADAPTIVE_EVIDENCE_COMPUTE_CONTROLLER_RESEARCH_PLAN.md)
+- [UK R&D&I Funding Eligibility Readiness](docs/funding/INNOVATE_UK_RDI_ELIGIBILITY_READINESS.md)
+- [Competition-Specific Bid Checklist](docs/funding/ORIOM7_COMPETITION_BID_CHECKLIST.md)
+- [Life After Crisis CIC Applicant Eligibility Assessment](docs/funding/LIFE_AFTER_CRISIS_CIC_APPLICANT_ELIGIBILITY_ASSESSMENT.md)
+- [Efficient, Structured and Controllable AI Systems — Application Draft](docs/funding/EFFICIENT_STRUCTURED_CONTROLLABLE_AI_APPLICATION_DRAFT.md)
 - [OpenAPI contract](contracts/openapi.json)
 
 ## Status and scope
