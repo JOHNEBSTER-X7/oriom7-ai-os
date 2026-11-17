@@ -1,14 +1,14 @@
 # ORIOM7 — UK R&D&I Funding Eligibility Readiness
 
 **Status:** preparation framework; not an award, eligibility determination or submitted application.  
-**Applicant model:** UK-registered SME as sole business applicant, if the chosen competition permits it.  
+**Proposed applicant:** LIFE AFTER CRISIS GLOBAL ORGANISATION COMMUNITY INTEREST COMPANY (CIC), conditional on proving economic activity, SME status, CIC-purpose compatibility, financial viability and IP rights.  
 **Research focus:** adaptive evidence acquisition and compute allocation for evidence-grounded AI research.  
 **Product baseline:** existing ORIOM7 monorepo on the `main` branch.  
 **Funding envelope:** £500,000 is the wider programme ambition, not the budget for the previously reviewed Innovate UK competition.
 
 ## 1. Important competition boundary
 
-The Innovate UK competition previously reviewed, **Efficient, Structured and Controllable AI Systems**, closed at 11:00 UK time on 17 November 2026. This document prepares ORIOM7 for a future competition; it does not reopen that round or imply that a future call will have the same rules.
+The Innovate UK competition **Efficient, Structured and Controllable AI Systems** closes at 11:00 UK time on 18 November 2026. This is an imminent deadline; verify the live competition page before submission.
 
 That competition's published limits included:
 - £50,000–£150,000 eligible project costs;
@@ -22,20 +22,26 @@ A £150,000 project at a 70% grant rate would require £45,000 of eligible match
 
 **No grant rate, match requirement, duration, eligible cost or theme should be carried into a future application without checking that future competition's live guidance.**
 
-## 2. Applicant eligibility — evidence required
+## 2. Applicant eligibility — Life After Crisis CIC
+
+The proposed applicant is LIFE AFTER CRISIS GLOBAL ORGANISATION COMMUNITY INTEREST COMPANY, company number 12963202. It is shown as Active on Companies House and its accounts for the year ended 31 October 2025 were filed on 13 January 2026. Its 2026 confirmation statement was due by 2 November 2026; the founder reports that filing is in process, but acceptance evidence has not yet been reviewed. See `docs/funding/LIFE_AFTER_CRISIS_CIC_APPLICANT_ELIGIBILITY_ASSESSMENT.md`.
+
+CIC status does not automatically establish SME eligibility or non-economic research-organisation status. Innovate UK defines a business as an enterprise undertaking economic activities; the actual activity and organisation category must be established. The CIC's community-interest purpose and asset lock must also be respected in project design, IP ownership and commercialisation.
+
+
 
 The company must complete and retain documentary evidence for each item. Do not state an item is satisfied until verified.
 
 | Gate | Evidence to assemble | Current status |
 |---|---|---|
-| UK legal entity | Companies House company number, incorporation record and registered office | Founder confirmation required |
-| SME classification | Latest accounts, employee count, turnover/balance-sheet data and linked/partner enterprise analysis | To verify |
+| UK legal entity | Companies House company number, incorporation record and registered office | Public record reviewed: 12963202; active CIC; confirm filing status |
+| SME/business classification | Economic activity, FTE staff, turnover/balance-sheet data and linked/partner enterprise analysis | To verify; CIC form alone is insufficient |
 | Ownership and control | Share register, PSC register, cap table and group structure | To verify |
 | Financial health | Filed accounts, current management accounts, cash-flow forecast and going-concern evidence | To verify |
 | Match funding | Bank evidence, board-approved allocation, investor commitment or other permitted source | Not confirmed |
 | Subsidy control | Record of relevant public support and confirmation of applicable subsidy route | To verify |
 | Project capacity | Named delivery lead, staff CVs, time allocation and delivery plan | To assemble |
-| IP ownership | Founder/employee/contractor assignments, licences, open-source notices and third-party terms | To audit |
+| IP ownership and CIC asset lock | Founder/employee/contractor assignments, licences, open-source notices, CIC articles and compliant commercialisation route | To audit |
 | Data and security | Data map, lawful access/rights basis, retention, security controls and supplier terms | To audit |
 
 A company-only application is possible only where the particular competition explicitly allows a single applicant. A university is not assumed to be a partner, subcontractor or cost recipient in this proposal.
